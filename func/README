@@ -1,0 +1,24 @@
+The 'func' directory holds shell scripts that are executed when the appropriate 
+function button is clicked in the web interface. This feature is useful for 
+turning on lights, sounding horns, opening barriers etc ... on a remote site.
+
+The shell scripts MUST be of the format 'func<2 dig num 01-16>.sh
+
+For example :
+
+Create a file called func08.sh in the func directory, containing the following ...
+
+#!/bin/bash
+touch ~/Desktop/f8\ has\ been\ pressed
+
+Make it executable with ...
+
+chmod +x func08.sh
+
+And tell kmotion to update with...
+
+kmotion restart
+
+Finally reload your web page, press 'func' followed by 'f8' and magically a file 
+called 'f8 has been pressed' appears on your desktop.
+

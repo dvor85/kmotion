@@ -1,0 +1,8 @@
+*************************** DEBIAN : AUTO INSTALL ******************************
+
+sudo ./install.py 
+kmotion start
+
+and if you want to uninstall
+
+sudo ./uninstall.py

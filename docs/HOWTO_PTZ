@@ -1,0 +1,33 @@
+PT(Z) HOWTO
+
+PT(Z) is achieved either through motion or kmotions own drivers and is selected 
+by the driver dropdown list in the PT(Z) configuration.
+
+I struggled for quite a while to get my PT(Z) Logitec orbit webcam to pan and 
+tilt under Linux. This is how I got it to go :)
+
+Check the motion documentation and ensure you have setup ...
+
+http://www.lavrsen.dk/twiki/bin/view/Motion/ConfigOptionControlPort
+http://www.lavrsen.dk/twiki/bin/view/Motion/ConfigOptionTrackType
+
+On ubuntu you need sudo apt-get install cmake g++ libxml2-dev 
+
+Follow this link to compile the module and uvcdynctrl tool ...
+
+http://www.lavrsen.dk/twiki/bin/view/Motion/UvcvideoDynctrl
+
+The Logitec 'logitec.xml' file will not work. It needs to be modified follow this link ... 
+http://www.lavrsen.dk/twiki/bin/view/Motion/SupportQuestion2008x01x29x112921
+I have included a copy of my 'modified_logitec.xml' file in the kmotion docs folder.
+
+Finally execute the following ...
+
+libwebcam-0.1.1/build/Apps/uvcdynctrl$ ./uvcdynctrl -i /.../modified_logitech.xml
+
+And test with test 'http://localhost:8080/1/track/set'
+
+*NOTE* You need to execute 
+'libwebcam-0.1.1/build/Apps/uvcdynctrl$ ./uvcdynctrl -i /.../modified_logitech.xml' 
+every time you boot.
+

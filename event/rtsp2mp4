@@ -1,0 +1,24 @@
+#!/bin/bash
+
+[[ -n "$1" ]] && IN=$1 || exit 1;
+[[ -n "$2" ]] && OUT=$2 || exit 1;
+[[ -z "$FPS" ]] && FPS=25;
+[[ -z "$sound" ]] && sound=0;
+[[ -z "$recode" ]] && recode=0;
+[[ -z "$bitrate" ]] && bitrate=800;
+
+[[ -n "$user_passwd" ]] && IN=`echo $IN | sed  "s/rtsp:\/\//rtsp:\/\/$user_passwd\@/g"`
+
+[[ $sound -eq 1 ]] && audio="-c:a libfaac -b:a 64k -ac 1 -ar 22050" || audio="-an";
+[[ $recode -eq 1 ]] && vcodec="libx264 -preset ultrafast -profile:v baseline -level 3.0 -movflags +faststart -b:v ${bitrate}k -qp 30" || vcodec='copy';
+
+nice -n 20 ffmpeg -rtsp_transport tcp -n -i $IN -c:v $vcodec $audio $OUT &> /dev/null &
+
+ret=$?
+pid=$!
+if [ $ret -eq 0 ]; then
+    sleep 3
+    [[ -d "/proc/$pid" ]] && printf $pid;
+fi;
+
+

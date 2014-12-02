@@ -1,0 +1,5 @@
+MSG HOWTO
+
+Copy 'msg' from ./www/templates to this directory.
+execute a 'kmotion reload'
+reload your browser and all will become clear :)

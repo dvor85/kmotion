@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Copyright 2008 David Selby dave6502@googlemail.com
+
+# This file is part of kmotion.
+
+# kmotion is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# kmotion is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
+
+# Activates a ptz preset, executable from anywhere in the system
+# kmotion_ptz <feed 1...16> <preset 1...4>
+
+if [[ $UID = 0 ]]; then
+    echo -e '\nkmotion_ptz cant be run as root\n'
+    exit 0
+fi
+
+if [[ $1 = '-h' || $1 = '--help' ]]; then
+    echo -e '\nkmotion_ptz <feed 1..16> <preset 1..4>\n'
+    exit 0
+fi
+
+if [ -z $2 ]; then
+    echo -e '\nkmotion_ptz - to few parameters'
+    echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\n'
+    exit 0
+fi
+
+if [ ! -z $3 ]; then
+    echo -e '\nkmotion_ptz - to many parameters'
+    echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\n'
+    exit 0
+fi
+
+if [[ $1 -lt 1 || $1 -gt 16 || $2 -lt 1 || $2 -gt 4 ]]; then
+    echo -e '\nkmotion_ptz - parameters out of range\n'
+    exit 0
+fi
+
+KMOTION_DIR=/usr/local/kmotion3
+cd $KMOTION_DIR/core && ./kmotion_ptz.py $1 $2
+
+

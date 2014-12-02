@@ -1,0 +1,51 @@
+#!/bin/bash
+
+[[ -n "$1" ]] && QUERY=$1 || exit 1;
+[[ -n "$2" ]] && OUT=$2 || exit 1;
+[[ ( -n "$3" ) && ( $3 -ne 0 ) ]] && secs=$3 || exit;
+[[ $secs -gt 10 ]] && secs=10;
+[[ -z "$ramdisk_dir" ]] && exit 1;
+[[ -z "$sound" ]] && sound=0;
+[[ -z "$FPS" ]] && FPS=15;
+
+audiofile=$kmotion_dir/silent_$secs.mp3
+
+if [[ $sound -eq 1 ]]; then
+    [[ -s $audiofile ]] && audio="-oac copy -audiofile $audiofile" || exit 1;
+else
+    audio="-nosound";
+fi;
+
+tmp=$ramdisk_dir/tmp/$$/
+mkdir -p $tmp
+cp `find $QUERY -maxdepth 1 -type f -size +0 -name "*.jpg" | head -$secs` $tmp
+
+if [[ ( -n $width ) && ( -n $height ) ]]; then
+    must_resize=false;
+    for j in ${tmp}/*.jpg; do
+	if [[ ! $must_resize ]]; then
+    	    cur_width=`php -r '$size=getimagesize($argv[1]); echo "$size[0]";' -- $j`;
+	    cur_height=`php -r '$size=getimagesize($argv[1]); echo "$size[1]";' -- $j`;
+	    [[ ( ! $width -eq $cur_width ) || ( ! $height -eq $cur_height ) ]] && must_resize=true;
+	fi;
+	[[ $must_resize ]] && $kmotion_dir/core/image_resize.php $j $j "${width}x${height}" 85 || break;
+    done;
+fi;
+
+for i in `seq 1 $(($FPS-1))`; do
+    find $tmp -maxdepth 1 -type f -name "*.jpg" -exec ln -s {} {}_$i \;
+done
+    
+/usr/bin/mencoder -quiet \
+ -noskip \
+ -mc 0 \
+ -mf fps=$FPS:type=jpeg \
+ -ovc lavc \
+ -of lavf \
+ -lavfopts format=flv \
+ -lavcopts vcodec=flv:keyint=$FPS:vbitrate=100 \
+ $audio \
+ -o $OUT mf://$tmp &> /dev/null
+
+rm -rf $tmp
+

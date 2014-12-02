@@ -1,0 +1,13 @@
+<br><br>Welcome to kmotion version 2.
+
+You are reading the contents of the 'msg' file. Anything you put in this file will be displayed as the first thing users see when they log into kmotion. After creating or changing the 'msg' file you have to 'kmotion reload' to activate it. 
+
+To de-activate this feature simply remove 'msg' in kmotions root directory and once again 'kmotion restart'.
+
+This can be usefull for warnings, legal disclaimers or contact information. This file is renderd as HTML so it is possible to insert HTML tags such as <i>italic</i>, <u>underline</u>, <span style="color:#0000FF;">colour</span>, <a href="http://kmotion.eu">links</a> and even
+
+<img src="images/msg_image.png" alt=""/> images !
+
+Have fun ...
+
+

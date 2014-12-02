@@ -1,0 +1,141 @@
+************************** FEDORA : MANUAL INSTALL *****************************
+
+(1) Disable SELinux
+
+vi /etc/selinux/config
+
+and change ...
+SELINUX=enforcing
+
+to ...
+SELINUX=disabled
+
+reboot machine
+
+
+
+
+(2)  Download packages
+
+install mod_python through YUM ... this pulls in apache as a dependency
+
+Download motion repository from ...
+http://www.lavrsen.dk/twiki/bin/view/Motion/DownloadFiles
+
+Download kmotion, v2.14a or later ...
+
+
+
+
+(3) make www
+
+mkdir /www
+chmod a=rwx /www
+cd /www
+
+kmotion runs as a normal user, not root, so copy the kmotion_2.14a_beta.tar.gz 
+to /www but ensure that the owner and group are set to your users name and group, 
+ie in my case dave ...
+
+-rw-rw-r--  1 dave dave 962560 2010-02-27 03:16 kmotion_2.14_Beta.tar.gz
+
+Then as a user dave, gunzip and untar ...
+gunzip kmotion_2.14a_beta.tar.gz
+tar xvf kmotion_2.14_beta.tar
+
+
+
+
+(4)  Selecting the ramdisk location
+
+kmotion needs a ramdisk directory to store frequently changing images, Normally 
+this is in /dev/shm/ but if /dev/shm is less than 30MB (execute df -h) or your 
+distro does not support ramdisks you can use any directory as a virtual ramdisk. 
+
+Edit /www/kmotion/core/core_rc and change the ramdisk location to 
+something like
+
+ramdisk_dir = /dev/shm/kmotion_ramdisk ... or ...
+ramdisk_dir = /www/kmotion/www/virtual_ramdisk
+
+*NOTE* definitely use a real ramdisk if you have a SSD (ie flash) drive
+
+
+
+
+(5)  Install core
+
+cd /www/kmotion
+./install_core.py
+
+
+
+
+(6) Modifying apache2 conf
+
+Edit your apache2 configuration file, its at '/etc/httpd/conf/httpd.conf' At the
+end of the file add:
+
+# Include kmotion vhosts directory
+Include /www/kmotion/www/vhosts/kmotion
+
+
+
+
+(7) Restart apache2
+
+/etc/init.d/httpd restart  
+
+
+
+
+(8) Moving the exe's
+
+Move the kmotion exe's 'kmotion' and 'kmotion_ptz' to your path, ie 
+'/usr/local/bin', '/usr/bin' or '/bin' etc. 
+
+cd /www/kmotion
+mv kmotion /usr/local/bin
+mv kmotion_ptz /usr/local/bin
+
+
+
+
+(9) Setting permissions and GID's
+
+chgrp apache /www/kmotion/www/fifo* 
+chmod 0660  /www/kmotion/www/fifo* 
+
+chgrp apache /www/kmotion/servo_state
+chmod 0640 /www/kmotion/servo_state
+
+chgrp -R apache /www/kmotion/www/mutex
+chmod -R 0770 /www/kmotion/www/mutex
+
+
+
+
+(10) Getting kmotion to start when your system starts
+
+
+A '/etc/init.d/httpd start' needs to be executed as root on startup else apache
+fails to start.
+
+Also 'kmotion start' needs to be executed on startup as a normal user, in my
+case dave. There are many ways this can be done but my personal favourite is by
+using cron.
+
+crontab -e
+and add:
+@reboot /usr/local/bin/kmotion start &
+
+
+
+
+(11) Start kmotion
+
+kmotion start
+
+Point your browser (hopefully firefox) to 'http://localhost:8085' OR 
+'http://xx.xx.xx.xx:8085' the default username is 'kmotion', the default 
+password is 'kmotion'.

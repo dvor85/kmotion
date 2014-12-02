@@ -1,0 +1,42 @@
+*************************** SLACKWARE : AUTO INSTALL ******************************
+
+This is the only distro that I have not personally installed kmotion on, if the
+following fails please let me know so I can correct this HOWTO.
+
+In Slackware 13.1, Apache 2.2.15 and Python 2.6.4 are included in the disto and 
+installed by default. Anyway, if you have an embedded system, you can manually 
+install them with the Slackware Package Manager (pkgtool) in this way 
+(all the packages are named PACKAGE-ver.subver-arch.txz or *.tgz for older versions):
+
+sudo installpkg httpd-2.2.15-x86_64-1.txz           
+(you can find it in /slackware/n/ in the slackware 
+iso or in an online slackware repository)
+
+sudo installpkg python-2.6.4-x86_64-1.txz           
+(you can find it in /slackware/d/ in the slackware iso or in an online slackware 
+repository)
+
+sudo installpkg mod_python-3.3.1-x86_64-1_SBo.txz   
+(not included in a slackware distro, you have to download all the stuff from 
+http://slackbuilds.org/repository/13.1/network/mod_python/ and build with the 
+slackbuild tool - a slackware user "should" be albe to do this!)
+
+sudo installpkg motion-3.2.12-x86_64-1_SBo.txz      
+(same as above, download from http://slackbuilds.org/repository/13.1/system/motion/)
+
+cd to the kmotion directory ...
+
+sudo ./install.py 
+kmotion start
+
+Slackware does not understand the cron @reboot directive so after a restart 
+kmotion will not be restarted. A workaround is to edit "/etc/rc.d/rc.local" and
+add the line ...
+
+su -c "/usr/local/bin/kmotion start" <user that kmotion is to be run as>
+
+(thanks to koen for supplying this tip)
+
+and if you want to uninstall
+
+sudo ./uninstall.py

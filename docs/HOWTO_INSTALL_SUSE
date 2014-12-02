@@ -1,0 +1,13 @@
+**************************** SUSE : AUTO INSTALL *******************************
+
+First install 'apache2-mod_python', then execute ...
+sudo /usr/sbin/a2enmod python
+
+Then ...
+
+sudo ./install.py 
+kmotion start
+
+and if you want to uninstall
+
+sudo ./uninstall.py

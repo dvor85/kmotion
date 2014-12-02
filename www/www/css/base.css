@@ -1,0 +1,515 @@
+/*
+Copyright 2008 David Selby dave6502@googlemail.com
+
+This file is part of kmotion.
+
+kmotion is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+kmotion is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+body {
+	margin: 0;
+	font-family: Arial, Helvetica, sans-serif;
+	overflow-x: hidden;
+	overflow-y: auto;
+	background-color:#000000;
+	color: #C1C1C1;
+}
+
+/* *****************************************************************************
+Common CSS classes and id's
+***************************************************************************** */
+
+.italic {
+	font-style: italic;
+}
+
+/* shut down all those fancy link colors and underlines */
+a:link {
+	color: #C1C1C1;
+	text-decoration: none;
+}
+a:visited {
+	color: #C1C1C1;
+	text-decoration: none;
+}
+a:focus {
+	color: #C1C1C1;
+	text-decoration: none;
+}
+a:hover {
+	color: #C1C1C1;
+	text-decoration: none;
+}
+a:active {
+	color: #C1C1C1;
+	text-decoration: none;
+}
+
+/* 'info_*' used to display centred messages */
+#info_high_line {
+	position: absolute;
+	top: 30%; 
+	width: 98%; 
+	height: 1px; 
+	overflow: visible }
+	
+#info_mid_line {
+	position: absolute;
+	top: 50%; 
+	width: 98%; 
+	height: 1px; 
+	overflow: visible }
+
+#info_text {
+	font-size: 70px; 
+	font-weight: bold; 
+	text-align: center;
+	color: #C1C1C1; 
+	position: relative; 
+	bottom: 60px;
+}
+
+#info_small_text {
+	font-size: 17px;
+	position: relative;
+	bottom: 35px;
+}
+
+/* *****************************************************************************
+Button bar section
+***************************************************************************** */
+#toggle_button_bar {
+	position: absolute; 
+	top: 6px;
+	right: 165px;
+	bottom: 6px; 
+	width: 10px;	
+	margin: 0px;
+	border: 0px;	
+	padding: 0px;
+	background-color: #C1C1C1;	
+	cursor: pointer;
+}
+
+#toggle_button_bar:hover {
+	background-color: #a1a1a1;
+}
+
+#button_bar {
+	position: absolute; 
+	top: 0px;
+	right: 0px;
+	bottom: 0px; 
+	width: 155px;	
+	margin: 6px 6px 6px 0px;	
+	border: 2px solid;
+	border-left: 0px;
+	border-color: #C1C1C1;
+	padding: 2px;
+	border-bottom:2px solid #C1C1C1;
+	overflow-y:auto;
+	text-align:center;
+}
+
+#button_bar #title {	
+	font-size: 37px;
+	font-weight: bold;
+	text-align: center;
+}
+
+#button_bar #version_num {
+	font-size: 15px;
+	letter-spacing:1.6px;
+	display: block;
+	text-align: center;
+}
+
+#button_bar .divider {
+	display: block;
+	font-size: 13px;
+	text-align: center;
+	padding-bottom: 3px;
+	margin: 0px;
+	padding: 0px;
+}
+
+
+#button_bar .header {
+	display: block;
+	font-size: 17px;
+	text-align: center;
+	font-weight: bold;
+	margin: 0px;
+	padding-bottom: 4px;
+}
+
+
+
+#button_bar .display_button {
+	float: left;
+	padding-top: 2px;
+	padding-right: 2px;
+}
+
+#button_bar .camera_button {
+	background: url(../images/temp1.png) no-repeat bottom left;
+	float: left;
+	height: 32px;
+	width: 32px;
+	padding-top: 2px;
+	padding-right: 2px;
+	outline: none; /* hide dotted border in firefox */
+}
+
+#button_bar .camera_button span {
+	display: block;
+	padding-top: 7px;
+	text-align: center;
+	font-weight: bold;
+	cursor: default; /* hide text 'bar' cursor */
+}
+
+#button_bar .function_button {
+	background: url(../images/temp2.png) no-repeat bottom left;
+	float: left;
+	height: 32px;
+	width: 67px;
+	padding-top: 2px;
+	padding-right: 2px;
+	outline: none; /* hide dotted border in firefox */
+	display: none;
+}
+
+#button_bar .function_button span {
+	display: block;
+	padding-top: 7px;
+	text-align: center;
+	font-weight: bold;
+	cursor: default; /* hide text 'bar' cursor */
+}
+
+#button_bar .button_line {
+	padding-left: 9px; /* can't use text-align because of floats */
+}
+
+#button_bar #lower_section {
+	position: absolute; 
+	bottom: 3px;
+	left: 23px; /* can't use text-align because of position:absolute; */
+}
+
+#button_bar .css_button {
+	padding-left: 9px;
+}
+
+#ptz_button_display  {
+	display: none;
+}
+
+
+
+/* *****************************************************************************
+Main display section
+***************************************************************************** */
+
+#main_display {
+	position: absolute; 
+	left: 0px; 
+	top: 0px; 
+	right: 167px; 
+	bottom: 0px;	
+	margin: 6px;	
+	margin-right: 0px;	
+	border: 2px solid #C1C1C1;
+	border-right: 0px;	
+	padding: 2px;	
+	color: #C1C1C1;	
+}
+
+#main_display .title { 
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 34px;
+	font-weight: bold;
+	height:40px;	
+	overflow:hidden;
+}
+
+
+#main_display .divider {
+	font-size: 1px;
+	padding: 0px;
+	margin: 0px;
+	text-align: center;
+}
+
+#main_display .link_word {
+}
+
+/* *****************************************************************************
+Main display section - CSS specific to 'archive'
+***************************************************************************** */
+
+#main_display #archive_flash_warn {
+	text-align: center;
+	padding-top: 30px;
+	font-size: 20px;
+	font-weight: bold;
+}
+
+#main_display .archive_title_hlight {
+}
+
+#main_display .archive_bar {
+	margin-top: 8px;
+	height: 20px;
+	text-align: center;
+}
+
+#main_display .archive_backdrop {
+	margin-top: 11px;
+	overflow: auto;
+	font-size: 17px;
+	font-weight: bold;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #505050;
+	color: #C1C1C1;	
+}
+
+#main_display .archive_msg { 
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 17px;
+	font-weight: bold;
+}
+
+#main_display .archive_timeline {
+	margin-top: 11px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#main_display #display_html span {
+	cursor: pointer;
+	margin:auto;
+}
+
+#main_display #display_html span:hover {
+	background-color: #202020;
+}
+
+
+/* *****************************************************************************
+Main display section - CSS specific to 'config' - General
+***************************************************************************** */
+
+#main_display .config_backdrop {
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #505050;
+	color: #C1C1C1; 
+}
+
+#config_html {
+	padding-right:20px;
+	overflow-y:auto;
+	overflow-x:hidden;
+	position:relative;
+	
+}
+
+#main_display .config_margin_left_20px {
+	margin-left: 20px;
+}
+
+#main_display .config_button_bar {
+	text-align: center;
+}
+
+#main_display .config_divider{
+	text-align: center;
+}
+
+#main_display .config_tick_margin { 
+	font-size: 17px;
+	font-weight: bold;
+	margin-left: 16px;
+	float:left;
+
+}
+
+#main_display .config_text_margin { 
+	font-size: 17px;
+	font-weight: bold;
+	margin-left: 20px;
+	
+}
+
+#main_display .config_text { 
+	font-size: 17px;
+	font-weight: bold;
+	margin: 10px;
+	height:17px;
+	
+	
+}
+
+#main_display .clear_float { 
+	clear:both;
+}
+
+#main_display .config_text_center {
+	font-size: 17px;
+	font-weight: bold;
+	text-align: center;
+}
+
+#main_display .disabled {
+	color: #E2E2E2;
+}
+
+/* *****************************************************************************
+Main display section - CSS specific to 'config' - Misc
+***************************************************************************** */
+
+#main_display .config_group_margin { 
+	font-size: 17px;
+	font-weight: bold;
+	margin-left: 16px;
+	width:100%;
+}
+
+/* *****************************************************************************
+Main display section - CSS specific to 'config' - Schedules
+***************************************************************************** */
+
+#main_display .sched_selector {
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 19px;
+	font-weight: bold;
+}
+
+#main_display .sched_status {
+	vertical-align: bottom;
+}
+
+#main_display .sched_timeline {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/* *****************************************************************************
+Main display section - CSS specific to 'config' - Server load
+***************************************************************************** */
+
+#main_display .bar_bground {
+	height: 28px;
+	width: 955px;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #C1C1C1;
+	border-style: solid;
+}
+
+#main_display .bar_fground{
+	height: 28px;
+	width: 0px;
+	position: relative;
+}
+
+#main_display .bar_value {
+	color: #000000;
+	line-height: 28px;
+	font-size: 17px;
+	font-weight: bold;
+	float: left;
+	position:relative;
+	z-index: 1;
+}
+
+#main_display .bar_text { /* progress bar text in a 75px window to align stats */
+	width: 75px;
+	color: #000000;
+	line-height: 28px;
+	font-size: 17px;
+	font-weight: bold;
+	padding-left: 5px;
+	float: left;
+	position: relative;
+	z-index: 1;
+}
+
+#main_display .bar_text_IE { /* IE progress bar text in a 75px window to align stats */
+	width: 75px;
+	color: #000000;
+	line-height: 28px;
+	font-size: 17px;
+	font-weight: bold;
+	padding-left: 5px;
+	float: left;
+	position: relative;
+	top: -28px;
+	z-index: 1;
+}
+
+/* *****************************************************************************
+Main display section - CSS specific to 'config' - Server Error
+***************************************************************************** */
+
+#main_display .config_error_block {
+	font-size: 17px;
+	font-weight: bold;
+	margin-left: 23px;
+	overflow: auto;
+}
+
+/* *****************************************************************************
+Main display section - CSS specific to 'logs', 'about' and 'msg'
+***************************************************************************** */
+
+#main_display .para_msg { 
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 17px;
+	font-weight: bold;
+	width: 992px;
+}
+
+#main_display .logs_backdrop {	
+	font-size: 17px;
+	font-weight: bold;
+	margin-top: 18px;
+	margin-left: auto;
+	margin-right: auto;
+	overflow: auto;
+	background-color: #505050;
+	color: #C1C1C1; 
+}
+
+#hint
+{
+	display: none;
+	position: absolute;
+	max-width: 300px;
+	width: expression("300px");
+	height: auto;
+	border: 1px solid #000000;
+	background-color: #FFFBC6;
+	color: #000000;
+	padding: 3px;font-size:95%;
+	z-index: 50;
+}	

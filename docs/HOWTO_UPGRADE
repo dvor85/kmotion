@@ -1,0 +1,7 @@
+***** AUTO UPGRADE *****
+
+The auto upgrade script will upgrade your kmotion install to the latest version. It automatically locates the latest version of kmotion, downloads it and updates all files.
+
+sudo ./upgrade.py
+kmotion start
+

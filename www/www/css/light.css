@@ -1,0 +1,25 @@
+body {
+	background-color:#ffffff;
+	color: #505050;
+}
+
+#main_display {
+	background-color:#ffffff;
+	color: #505050;
+}
+
+
+#main_display .archive_backdrop {
+	background-color: #c1c1c1;
+	color: #505050;
+}
+
+#main_display .config_backdrop {
+	background-color: #c1c1c1;
+	color: #505050;
+}
+
+#main_display .logs_backdrop {	
+	background-color: #c1c1c1;
+	color: #505050;
+}

@@ -1,0 +1,139 @@
+*************************** GENERIC : AUTO INSTALL *****************************
+
+
+The auto install script, try this first.
+
+sudo ./install.py 
+kmotion start
+
+and if you want to uninstall
+
+sudo ./uninstall.py
+
+
+*************************** GENERIC : MANUAL INSTALL ***************************
+
+
+If the automated install script fails for any reason you may want to try a 
+manual install.
+
+Where you find <path to kmotion dir>, substitute your path to kmotion your 
+kmotion directory ie  in my case '/home/dave/kmotion' !!
+
+
+(1)  Check the dependencies
+
+kmotion v2 needs a minimum of :
+
+apache2 ...             v2.2.x 
+apache2 python module   v3.3.x
+motion ...              v3.2.x
+python ...              v2.4.x
+
+If you are running Debian / Ubuntu or a derivative use the following command
+
+apt-get install apache2 libapache2-mod-python motion python
+
+
+
+
+(2)  Selecting the ramdisk location
+
+kmotion needs a ramdisk directory to store frequently changing images, Normally 
+this is in /dev/shm/ but if /dev/shm is less than 30MB (execute df -h) or your 
+distro does not support ramdisks you can use any directory as a virtual ramdisk. 
+
+Edit /<path to kmotion dir>/core/core_rc and change the ramdisk location to 
+something like
+
+ramdisk_dir = /dev/shm/kmotion_ramdisk ... or ...
+ramdisk_dir = <path to kmotion dir>/www/virtual_ramdisk
+
+*NOTE* definitely use a real ramdisk if you have a SSD (ie flash) drive
+
+
+
+
+(3)  Install core
+
+cd <path to kmotion>/kmotion
+./install_core.py
+
+
+
+
+(4) Modifying apache2 conf
+
+Locate and edit your apache2 configuration file, normally its  
+'/etc/apache2/apache2.conf' but may be under a different name or location 
+dependent on your distro. At the end of the file add:
+
+# Include kmotion vhosts directory
+Include <path to kmotion dir>/www/vhosts/kmotion
+
+
+
+
+(5) Restart apache2
+
+Restart apache2, normally this is something like:
+
+sudo /etc/init.d/apache2 restart  
+
+
+
+
+(6) Moving the exe's
+
+Move the kmotion exe's 'kmotion' and 'kmotion_ptz' to your path, ie 
+'/usr/local/bin', '/usr/bin' or '/bin' etc. The exe's can be found at 
+<path to kmotion dir>.
+
+cd <path to kmotion dir>
+mv kmotion /usr/local/bin
+mv kmotion_ptz /usr/local/bin
+
+
+
+
+(7) Setting permissions and GID's
+
+You need to change the permissions and group of the following to the 'run as' 
+group of apache.
+
+The 'run as' group is specific to each distro and can be found in the apache
+config files. For Debian / Ubuntu it is 'www-data', for Suse it is 'www' etc ...
+
+Assuming a 'run as' group of 'www-data' ...
+
+chgrp www-data <path to kmotion dir>/www/fifo* 
+chmod 0660  <path to kmotion dir>/www/fifo* 
+
+chgrp www-data <path to kmotion dir>/servo_state
+chmod 0640 <path to kmotion dir>/servo_state
+
+chgrp -R www-data <path to kmotion dir>/www/mutex
+chmod -R 0770 <path to kmotion dir>/www/mutex
+
+
+
+
+(8) Getting kmotion to start when your system starts
+
+A 'kmotion start' needs to be executed as a normal user on system startup. There 
+are many ways this can be done but my personal favourite is by using cron.
+
+crontab -e
+and add:
+@reboot <path to kmotion exe's>/kmotion start &
+
+
+
+
+(9) Start kmotion
+
+kmotion start
+
+Point your browser (hopefully firefox) to 'http://localhost:8085' OR 
+'http://xx.xx.xx.xx:8085' the default username is 'kmotion', the default 
+password is 'kmotion'.
