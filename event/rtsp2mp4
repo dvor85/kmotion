@@ -9,10 +9,10 @@
 
 [[ -n "$user_passwd" ]] && IN=`echo $IN | sed  "s/rtsp:\/\//rtsp:\/\/$user_passwd\@/g"`
 
-[[ $sound -eq 1 ]] && audio="-c:a libfaac -b:a 64k -ac 1 -ar 22050" || audio="-an";
-[[ $recode -eq 1 ]] && vcodec="libx264 -preset ultrafast -profile:v baseline -level 3.0 -movflags +faststart -b:v ${bitrate}k -qp 30" || vcodec='copy';
+[[ $sound -eq 1 ]] && audio="-c:a libfaac -ac 1 -ar 22050 -b:a 64k" || audio="-an";
+[[ $recode -eq 1 ]] && vcodec="-c:v libx264 -preset ultrafast -profile:v baseline -b:v ${bitrate}k -qp 30" || vcodec='-c:v copy';
 
-nice -n 20 ffmpeg -rtsp_transport tcp -n -i $IN -c:v $vcodec $audio $OUT &> /dev/null &
+nice -n 20 avconv -rtsp_transport tcp -n -i $IN $vcodec $audio $OUT &> /dev/null &
 
 ret=$?
 pid=$!

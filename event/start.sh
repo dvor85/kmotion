@@ -23,7 +23,7 @@ feed_file=$kmotion_dir/event/$event.sh;
 . $kmotion_dir/core/ini;
 export ramdisk_dir=$(get_ini_section_param $kmotion_dir/kmotion_rc dirs ramdisk_dir)
 export images_dbase_dir=$(get_ini_section_param $kmotion_dir/kmotion_rc dirs images_dbase_dir)
-[[ -z $format ]] && export format='flv'
+[[ -z $format ]] && export format='mp4'
 
 
 event_date=`date +%Y%m%d`
@@ -81,9 +81,6 @@ if [[ ( -n "$pid" ) && ( -d "/proc/$pid" ) ]]; then
     fi
     logmsg "start grabbing to $movie_dir/$movie_file.$format with pid=$pid"
     echo -e "pid=$pid\nmovie=$movie_file\ndate=$event_date" > $pid_file
-    t2=$(date +%s.%N)
-    dt=`echo "scale=0;($t2-$t1+0.51)/1" | bc`;
-    [[ $format = 'flv' ]] && $kmotion_dir/event/jpg2flv $ramdisk_dir/$event $movie_dir/${movie_file}_jpg.$format $dt
 else
     rm -f $movie_dir/$movie_file.$format;
 fi;

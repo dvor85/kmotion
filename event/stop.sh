@@ -23,7 +23,7 @@ feed_file=$kmotion_dir/event/$event.sh;
 . $kmotion_dir/core/ini;
 export images_dbase_dir=$(get_ini_section_param $kmotion_dir/kmotion_rc dirs images_dbase_dir)
 export ramdisk_dir=$(get_ini_section_param $kmotion_dir/kmotion_rc dirs ramdisk_dir)
-[[ -z $format ]] && export format='flv'
+[[ -z $format ]] && export format='mp4'
 
 
 
@@ -53,23 +53,7 @@ if [[ -n "$pid" ]]; then
     movie_dir=$images_dbase_dir/$event_date/$event/movie
     movie_journal=$images_dbase_dir/$event_date/$event/movie_journal
     
-    if [[ -s "$movie_dir/${movie_file}_jpg.flv" ]]; then
-	if [[ -s "$movie_dir/$movie_file.flv" ]]; then
-	    echo "$"$event_end_time >> $movie_journal
-    	    /usr/bin/mencoder -noskip -mc 0 -ovc copy -oac copy -of lavf -lavfopts format=flv $movie_dir/${movie_file}_jpg.flv $movie_dir/$movie_file.flv -o $movie_dir/${movie_file}_com.flv &> /dev/null
-	    if [[ $? -eq 0 ]]; then
-		mv -f $movie_dir/${movie_file}_com.flv $movie_dir/$movie_file.flv
-	    else
-		rm -f $movie_dir/${movie_file}_com.flv;
-	    fi;
-	else
-	    mv -f $movie_dir/${movie_file}_jpg.flv $movie_dir/$movie_file.flv && echo "$"$event_end_time >> $movie_journal;
-	fi;
-    else
-	[[ -s "$movie_dir/$movie_file.$format" ]] && echo "$"$event_end_time >> $movie_journal || rm -f $movie_dir/$movie_file.$format
-    fi;
-    rm -f $movie_dir/${movie_file}_jpg.flv;
-    
+    [[ -s "$movie_dir/$movie_file.$format" ]] && echo "$"$event_end_time >> $movie_journal || rm -f $movie_dir/$movie_file.$format
     
     npid=$(get_ini_param $pid_file pid)
     if [[ $pid -eq $npid ]]; then
