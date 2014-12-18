@@ -1,30 +1,27 @@
 #!/usr/bin/env python
-
 # Copyright 2008 David Selby dave6502@googlemail.com
-
 # This file is part of kmotion.
-
 # kmotion is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
 # kmotion is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
 # You should have received a copy of the GNU General Public License
 # along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 Copys, moves or deletes files from images_dbase_dir/tmp to images_dbase_dir/snap
 generating a 'sanitized' snap sequence. Also updates journals. On SIGHUP
 force a config re-read.
 """
 
-import os, sys, time, signal, shutil, ConfigParser, traceback
-import logger, daemon_whip, mutex
+import os, sys, time, signal, shutil, traceback
+
+from mutex_parsers import *
+import logger, daemon_whip
+
 
 log_level = 'WARNING'
 logger = logger.Logger('kmotion_hkd2', log_level)
@@ -35,18 +32,18 @@ class Hkd2_Feed:
     
     def __init__(self, feed):
         
-        self.kmotion_dir = ''            # the 'root' directory of kmotion
-        self.feed = feed                 # the feed number 1 - 16
-        self.ramdisk_dir = ''            # the 'root' dir of the ramdisk
-        self.images_dbase_dir = ''       # the 'root' dir of the images dbase
-        self.feed_enabled = True         # feed enabled 
-        self.feed_snap_enabled = True    # feed snap enabled
-        self.feed_snap_interval = ''     # snap interval in seconds
-        self.feed_fps = ''               # frame fps
-        self.feed_name = ''              # feed name
-        self.old_date = ''               # old date
-        self.epoch_time = time.time()    # secs since epoch 
-        self.reload_flag = False         # true if reload required
+        self.kmotion_dir = os.path.abspath('..')         # the 'root' directory of kmotion
+#         self.feed = feed                 # the feed number 1 - 16
+#         self.ramdisk_dir = ''            # the 'root' dir of the ramdisk
+#         self.images_dbase_dir = ''       # the 'root' dir of the images dbase
+#         self.feed_enabled = True         # feed enabled 
+#         self.feed_snap_enabled = True    # feed snap enabled
+#         self.feed_snap_interval = ''     # snap interval in seconds
+#         self.feed_fps = ''               # frame fps
+#         self.feed_name = ''              # feed name
+#         self.old_date = ''               # old date
+#         self.epoch_time = time.time()    # secs since epoch 
+#         self.reload_flag = False         # true if reload required
         
         self.read_config()
                 
@@ -61,7 +58,7 @@ class Hkd2_Feed:
         """
         
         self.kmotion_dir = os.getcwd()[:-5]
-        parser = self.mutex_kmotion_parser_rd(self.kmotion_dir)
+        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         try: # try - except because kmotion_rc is user changeable file
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
@@ -71,7 +68,7 @@ class Hkd2_Feed:
             logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
             daemon_whip.kill_daemons()
             
-        parser = self.mutex_www_parser_rd(self.kmotion_dir) 
+        parser = mutex_www_parser_rd(self.kmotion_dir) 
         self.feed_enabled = (parser.getboolean('motion_feed%02i' % self.feed, 'feed_enabled'))
         self.feed_snap_enabled = (parser.getboolean('motion_feed%02i' % self.feed, 'feed_snap_enabled'))
         self.feed_snap_interval = int(parser.get('motion_feed%02i' % self.feed, 'feed_snap_interval'))
@@ -300,45 +297,6 @@ class Hkd2_Feed:
         time_obj = time.localtime(self.epoch_time)
         return (time.strftime('%Y%m%d', time_obj), time.strftime('%H%M%S', time_obj))
             
-            
-    def mutex_www_parser_rd(self, kmotion_dir):
-        """
-        Safely generate a parser instance and under mutex control read 'www_rc'
-        returning the parser instance.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion   
-        excepts : 
-        return  : parser ... a parser instance
-        """
-        
-        parser = ConfigParser.SafeConfigParser()
-        try:
-            mutex.acquire(kmotion_dir, 'www_rc')
-            parser.read('%s/www/www_rc' % kmotion_dir)
-        finally:
-            mutex.release(kmotion_dir, 'www_rc')
-        return parser
-    
-    
-    def mutex_kmotion_parser_rd(self, kmotion_dir):
-        """
-        Safely generate a parser instance and under mutex control read 'kmotion_rc'
-        returning the parser instance.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion   
-        excepts : 
-        return  : parser ... a parser instance
-        """
-        
-        parser = ConfigParser.SafeConfigParser()
-        try:
-            mutex.acquire(kmotion_dir, 'kmotion_rc')
-            parser.read('%s/kmotion_rc' % kmotion_dir)
-        finally:
-            mutex.release(kmotion_dir, 'kmotion_rc')
-        return parser
-    
-    
     def call_signal_term(self):
         """
         Updates journals with #HHMMSS$0 signifying no more snaps
@@ -388,7 +346,7 @@ class Kmotion_Hkd2:
         
         logger.log('starting daemon ...', 'CRIT')
         
-        parser = self.mutex_kmotion_parser_rd(self.kmotion_dir)
+        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         max_feed = parser.getint('misc', 'max_feed')
         for feed in range(1, max_feed):
@@ -410,24 +368,6 @@ class Kmotion_Hkd2:
             time.sleep(2)
 
 
-    def mutex_kmotion_parser_rd(self, kmotion_dir):
-        """
-        Safely generate a parser instance and under mutex control read 'kmotion_rc'
-        returning the parser instance.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion   
-        excepts : 
-        return  : parser ... a parser instance
-        """
-        
-        parser = ConfigParser.SafeConfigParser()
-        try:
-            mutex.acquire(kmotion_dir, 'kmotion_rc')
-            parser.read('%s/kmotion_rc' % kmotion_dir)
-        finally:
-            mutex.release(kmotion_dir, 'kmotion_rc')
-        return parser
-            
     def signal_hup(self, signum, frame):
         """ 
         SIGHUP

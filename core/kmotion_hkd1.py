@@ -23,8 +23,11 @@ when 90% of max_size_gb is reached. Responds to a SIGHUP by re-reading its
 configuration. Checks the current kmotion software version every 24 hours.
 """
 
-import os, sys, urllib, time, signal, shutil, ConfigParser, traceback
-import logger, daemon_whip, sort_rc, update_logs, mutex
+import os, sys, time, signal, shutil, traceback
+
+from mutex_parsers import *
+import logger, daemon_whip, update_logs
+
 
 log_level = 'WARNING'
 logger = logger.Logger('kmotion_hkd1', log_level)
@@ -37,12 +40,7 @@ class Kmotion_Hkd1:
     
     
     def __init__(self):
-        
-        self.images_dbase_dir = ''    # the 'root' directory of the images dbase
-        self.kmotion_dir = ''         # the 'root' directory of kmotion
-        self.max_size_gb = 0          # max size permitted for the images dbase
-        self.version = ''             # the current kmotion software version
-        
+        self.kmotion_dir = os.path.abspath('..')         # the 'root' directory of kmotion
         self.read_config()
         signal.signal(signal.SIGHUP, self.signal_hup)
         signal.signal(signal.SIGTERM, self.signal_term)       
@@ -59,7 +57,7 @@ class Kmotion_Hkd1:
         
         logger.log('starting daemon ...', 'CRIT') 
         time.sleep(60) # delay to let stack settle else 'update_version' returns 
-                       # IOError on system boot  
+        # IOError on system boot  
         old_date = time.strftime('%Y%m%d', time.localtime(time.time()))
         #self.update_version()
         
@@ -125,70 +123,70 @@ class Kmotion_Hkd1:
         return  : str ... the version string
         """
         
-        parser = self.mutex_www_parser_rd(self.kmotion_dir)
+        parser = mutex_www_parser_rd(self.kmotion_dir)
         parser.set('system', 'version_latest', version)
-        self.mutex_www_parser_wr(self.kmotion_dir, parser)
+        mutex_www_parser_wr(self.kmotion_dir, parser)
         
-        mutex.acquire(self.kmotion_dir, 'www_rc') 
-        sort_rc.sort_rc('../www/www_rc')
-        mutex.release(self.kmotion_dir, 'www_rc')
+#         mutex.acquire(self.kmotion_dir, 'www_rc') 
+#         sort_rc.sort_rc('../www/www_rc')
+#         mutex.release(self.kmotion_dir, 'www_rc')
                 
     
-    def get_version(self):
-        """        
-        Returns the latest kmotion software version by parsing the webpage
-        'http://code.google.com/p/kmotion-v2-code/downloads/list'
-        
-        args    : 
-        excepts : 
-        return  : str ... the version string or 'failed_parse'
-        """
-        
-        url = 'http://code.google.com/p/kmotion-v2-code/downloads/list'
-        opener = urllib.FancyURLopener()
-        try: # read the webpage
-            f_obj = opener.open(url)
-            html = f_obj.read()
-            f_obj.close()
-        except IOError:
-            logger.log('can\'t parse latest version from  \'%s\' IOError' % url, 'CRIT')
-            return 'failed_parse' 
-            
-        # parse the webpage for the current version, if not there must be an 
-        # 'unauthorised' version ie SVN
-        start = html.find('http://kmotion-v2-code.googlecode.com/files/kmotion_' + self.version.replace(' ', '_') + '.tar.gz')
-        if start == -1:
-            logger.log('running SVN version', 'DEBUG')
-            return 'SVN' 
-        
-        # parse the webpage for the latest version
-        start = html.find('http://kmotion-v2-code.googlecode.com/files/kmotion_') + 52
-        end = html.find('.tar.gz', start)
-        
-        if start == 44: # cant find = -1, plus 45 = 44
-            logger.log('can\'t parse latest version from  \'%s\' can\'t find string' % url, 'CRIT')
-            return 'failed_parse' 
-        
-        return html[start:end].replace('_', ' ')
+#     def get_version(self):
+#         """        
+#         Returns the latest kmotion software version by parsing the webpage
+#         'http://code.google.com/p/kmotion-v2-code/downloads/list'
+#         
+#         args    : 
+#         excepts : 
+#         return  : str ... the version string or 'failed_parse'
+#         """
+#         
+#         url = 'http://code.google.com/p/kmotion-v2-code/downloads/list'
+#         opener = urllib.FancyURLopener()
+#         try: # read the webpage
+#             f_obj = opener.open(url)
+#             html = f_obj.read()
+#             f_obj.close()
+#         except IOError:
+#             logger.log('can\'t parse latest version from  \'%s\' IOError' % url, 'CRIT')
+#             return 'failed_parse' 
+#             
+#         # parse the webpage for the current version, if not there must be an 
+#         # 'unauthorised' version ie SVN
+#         start = html.find('http://kmotion-v2-code.googlecode.com/files/kmotion_' + self.version.replace(' ', '_') + '.tar.gz')
+#         if start == -1:
+#             logger.log('running SVN version', 'DEBUG')
+#             return 'SVN' 
+#         
+#         # parse the webpage for the latest version
+#         start = html.find('http://kmotion-v2-code.googlecode.com/files/kmotion_') + 52
+#         end = html.find('.tar.gz', start)
+#         
+#         if start == 44: # cant find = -1, plus 45 = 44
+#             logger.log('can\'t parse latest version from  \'%s\' can\'t find string' % url, 'CRIT')
+#             return 'failed_parse' 
+#         
+#         return html[start:end].replace('_', ' ')
                 
     
-    def ping_server_0000(self):
-        """        
-        Loads the 'server_0000' file at midnight
-        
-        args    : 
-        excepts : 
-        return  : 
-        """
-        
-        url = 'http://kmotion2.googlecode.com/files/server_0000?rnd=' + str(time.time())
-        opener = urllib.FancyURLopener()
-        try: 
-            f_obj = opener.open(url)
-            f_obj.read()
-            f_obj.close()
-        except IOError:
-            pass
+#     def ping_server_0000(self):
+#         """        
+#         Loads the 'server_0000' file at midnight
+#         
+#         args    : 
+#         excepts : 
+#         return  : 
+#         """
+#         
+#         url = 'http://kmotion2.googlecode.com/files/server_0000?rnd=' + str(time.time())
+#         opener = urllib.FancyURLopener()
+#         try: 
+#             f_obj = opener.open(url)
+#             f_obj.read()
+#             f_obj.close()
+#         except IOError:
+#             pass
     
     
     def build_smovie_cache(self, date):
@@ -543,9 +541,9 @@ class Kmotion_Hkd1:
         return  : none
         """
         
-        self.kmotion_dir = os.getcwd()[:-5]
         
-        parser = self.mutex_kmotion_parser_rd(self.kmotion_dir)
+        
+        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         
         try: # try - except because kmotion_rc is a user changeable file
             self.version = parser.get('version', 'string')
@@ -560,64 +558,6 @@ class Kmotion_Hkd1:
             logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
             daemon_whip.kill_daemons()
             
-            
-    def mutex_www_parser_rd(self, kmotion_dir):
-        """
-        Safely generate a parser instance and under mutex control read 'www_rc'
-        returning the parser instance.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion   
-        excepts : 
-        return  : parser ... a parser instance
-        """
-        
-        parser = ConfigParser.SafeConfigParser()
-        try:
-            mutex.acquire(kmotion_dir, 'www_rc')
-            parser.read('%s/www/www_rc' % kmotion_dir)
-        finally:
-            mutex.release(kmotion_dir, 'www_rc')
-        return parser
-     
-     
-    def mutex_www_parser_wr(self, kmotion_dir, parser):
-        """
-        Safely write a parser instance to 'www_rc' under mutex control.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion
-                  parser      ... the parser instance 
-        excepts : 
-        return  : 
-        """
-    
-        try:
-            mutex.acquire(kmotion_dir, 'www_rc')
-            f_obj = open('%s/www/www_rc' % kmotion_dir, 'w')
-            parser.write(f_obj)
-            f_obj.close()
-        finally:
-            mutex.release(kmotion_dir, 'www_rc')
-            
-            
-    def mutex_kmotion_parser_rd(self, kmotion_dir):
-        """
-        Safely generate a parser instance and under mutex control read 'www_rc'
-        returning the parser instance.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion   
-        excepts : 
-        return  : parser ... a parser instance
-        """
-        
-        parser = ConfigParser.SafeConfigParser()
-        try:
-            mutex.acquire(kmotion_dir, 'kmotion_rc')
-            parser.read('%s/kmotion_rc' % kmotion_dir)
-        finally:
-            mutex.release(kmotion_dir, 'kmotion_rc')
-        return parser
-
-        
             
     def signal_hup(self, signum, frame):
         """
