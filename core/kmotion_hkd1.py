@@ -38,7 +38,6 @@ class SigTerm(Exception):
 
 class Kmotion_Hkd1:
     
-    
     def __init__(self):
         self.kmotion_dir = os.path.abspath('..')         # the 'root' directory of kmotion
         self.read_config()

@@ -1,22 +1,16 @@
 #!/usr/bin/env python
-
 # Copyright 2008 David Selby dave6502@googlemail.com
-
 # This file is part of kmotion.
-
 # kmotion is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
 # kmotion is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
 # You should have received a copy of the GNU General Public License
 # along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 Called by the kmotion exe file this module re-initialises the kmotion core then 
 reloads the kmotion daemon configs
@@ -25,11 +19,10 @@ The kmotion exe file cannot call this code directly because it may be in a
 different working directory
 """
 
-
-
-
 from subprocess import *  # breaking habit of a lifetime !
+import ConfigParser
 import time
+import os, sys
 
 from init_core import InitCore
 from init_motion import InitMotion
@@ -76,14 +69,14 @@ def main():
         logger.log('** CRITICAL ERROR ** kmotion failed to start ...', 'CRIT')
         logger.log('** CRITICAL ERROR ** Another instance of motion daemon has been detected', 'CRIT')
         raise exit_("""An instance of the motion daemon has been detected which is not under control 
-of kmotion. Please kill this instance and ensure that motion is not started
-automatically on system bootup. This a known problem with Ubuntu 8.04 
-Reference Bug #235599.""")
+                        of kmotion. Please kill this instance and ensure that motion is not started
+                        automatically on system bootup. This a known problem with Ubuntu 8.04 
+                        Reference Bug #235599.""")
 
-    init_core = InitCore(kmotion_dir)
-    init_motion = InitMotion(kmotion_dir)
+    initCore = InitCore(kmotion_dir)
+    initMotion = InitMotion(kmotion_dir)
     # init the ramdisk dir
-    init_core.init_ramdisk_dir()
+    initCore.init_ramdisk_dir()
     
     # init the mutex's
 #     mutex.init_mutex(kmotion_dir, 'www_rc')
@@ -94,18 +87,18 @@ Reference Bug #235599.""")
 #     ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
 #     max_feed = parser.getint('misc', 'max_feed')
     
-    try: # wrapping in a try - except because parsing data from kmotion_rc
-        init_core.update_rcs()
+    try:  # wrapping in a try - except because parsing data from kmotion_rc
+        initCore.update_rcs()
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
     
-    try: # wrapping in a try - except because parsing data from kmotion_rc
-        init_core.gen_vhost()
+    try:  # wrapping in a try - except because parsing data from kmotion_rc
+        initCore.gen_vhost()
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
 
     # init motion_conf directory with motion.conf, thread1.conf ...
-    init_motion.gen_motion_configs()
+    initMotion.gen_motion_configs()
     
     # speed kmotion startup
     if daemon_whip.no_daemons_running():
@@ -116,7 +109,7 @@ Reference Bug #235599.""")
         daemon_whip.start_daemons()
         daemon_whip.reload_all_configs()
           
-    time.sleep(1) # purge all fifo buffers, FIFO bug workaround :)
+    time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
     purge_str = '#' * 1000 + '99999999'
     for fifo in ['fifo_func', 'fifo_ptz', 'fifo_ptz_preset', 'fifo_settings_wr']:
         

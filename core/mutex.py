@@ -54,23 +54,23 @@ class Mutex:
         """
     
         while True:
-        # wait for any other locks to go
+            # wait for any other locks to go
             while True:
                 if self.check_lock() == 0:
                     break
                 time.sleep(0.01)
         
-        # add our lock
+            # add our lock
             with open('%s/%s' % (self.mutex_dir, os.getpid()), 'w'):
                 pass
             
-        # wait ... see if another lock has appeared, if so remove our lock
-        # and loop
+            # wait ... see if another lock has appeared, if so remove our lock
+            # and loop
             time.sleep(0.1)
             if self.check_lock() == 1:
                 break
             os.remove('%s/%s' % (self.mutex_dir, os.getpid()))
-        # random to avoid mexican stand-offs
+            # random to avoid mexican stand-offs
             time.sleep(float(random.randint(01, 40)) / 1000)
             
         
