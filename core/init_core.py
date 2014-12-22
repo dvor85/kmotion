@@ -21,8 +21,9 @@
 Exports various methods used to initialize core configuration
 """
 from subprocess import *
+
 from mutex_parsers import *
-import logger,os
+import logger, os
 
 
 class InitCore:
@@ -72,7 +73,6 @@ class InitCore:
     def __init__(self, kmotion_dir):
         self.logger = logger.Logger('init_core', InitCore.log_level)
         self.kmotion_dir = kmotion_dir
-        self.logger.log('init_rcs() - Setting images_dbase_dir to \'%s/images_dbase\' in kmotion_rc' % self.kmotion_dir, 'DEBUG')
         with open('%s/www/motion_out' % kmotion_dir, 'w'): 
             pass
         

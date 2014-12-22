@@ -25,7 +25,7 @@ import os, sys, time, urllib, shutil, ConfigParser, stat
 from subprocess import * # breaking habit of a lifetime !
 
 import core.mutex       as mutex
-import core.daemon_whip as daemon_whip
+import core.daemon_control as daemon_whip
 import core.init_core   as init_core
 
 class exit_(Exception): pass

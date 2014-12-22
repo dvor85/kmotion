@@ -24,7 +24,7 @@ The auto installer
 import os, sys, pwd, grp, time, stat, ConfigParser, shutil
 from subprocess import * # breaking habit of a lifetime !
 import core.init_core   as init_core
-import core.daemon_whip as daemon_whip
+import core.daemon_control as daemon_whip
 
 class exit_(Exception): pass
 

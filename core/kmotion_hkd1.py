@@ -25,8 +25,9 @@ configuration. Checks the current kmotion software version every 24 hours.
 
 import os, sys, time, signal, shutil, traceback
 
+from daemon_control import DaemonControl
 from mutex_parsers import *
-import logger, daemon_whip, update_logs
+import logger, update_logs
 
 
 log_level = 'WARNING'
@@ -40,9 +41,11 @@ class Kmotion_Hkd1:
     
     def __init__(self):
         self.kmotion_dir = os.path.abspath('..')         # the 'root' directory of kmotion
+        self.daemonControl = DaemonControl(self.kmotion_dir)  
         self.read_config()
         signal.signal(signal.SIGHUP, self.signal_hup)
-        signal.signal(signal.SIGTERM, self.signal_term)       
+        signal.signal(signal.SIGTERM, self.signal_term) 
+            
         
         
     def main(self):    
@@ -72,20 +75,17 @@ class Kmotion_Hkd1:
                 dir_ = os.listdir(self.images_dbase_dir)
                 dir_.sort()
                 
-                if len(dir_) > 0 and dir_[0] == '.svn': 
-                    dir_.pop(0)  # skip '.svn' directory
-                    
                 # if need to delete current recording, shut down kmotion 
                 if date == dir_[0]:
                     logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
                     logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
                     logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
                     update_logs.add_no_space_event()
-                    daemon_whip.kill_daemons()
+                    self.daemonControl.kill_daemons()
                     sys.exit()
                 
                 update_logs.add_deletion_event(dir_[0])
-                logger.log('image storeage limit reached - deleteing %s/%s' % 
+                logger.log('image storage limit reached - deleteing %s/%s' % 
                            (self.images_dbase_dir, dir_[0]), 'CRIT')
                 shutil.rmtree('%s/%s' % (self.images_dbase_dir, dir_[0])) 
                 
@@ -546,7 +546,7 @@ class Kmotion_Hkd1:
         
         try: # try - except because kmotion_rc is a user changeable file
             self.version = parser.get('version', 'string')
-    	    self.max_feed = parser.getint('misc', 'max_feed')
+            self.max_feed = parser.getint('misc', 'max_feed')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             # 2**30 = 1GB
             self.max_size_gb = int(parser.get('storage', 'images_dbase_limit_gb')) * 2**30
@@ -555,7 +555,7 @@ class Kmotion_Hkd1:
             logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
                        sys.exc_info()[1], 'CRIT')
             logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
-            daemon_whip.kill_daemons()
+            self.daemonControl.kill_daemons()
             
             
     def signal_hup(self, signum, frame):
@@ -588,8 +588,8 @@ class Kmotion_Hkd1:
 while True:
     update_logs.add_startup_event()
     try:    
-	#print Kmotion_Hkd1().images_dbase_size()
-	#print Kmotion_Hkd1().max_size_gb
+        #print Kmotion_Hkd1().images_dbase_size()
+        #print Kmotion_Hkd1().max_size_gb
         Kmotion_Hkd1().main()
         
     except SigTerm: # special case for propogated SIGTERM

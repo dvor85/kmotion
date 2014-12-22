@@ -23,7 +23,8 @@ and modifiy 'www_rc', also updates 'feeds_cache'
 """
 
 import sys, os.path, subprocess, ConfigParser, logger, time, cPickle, traceback
-import sort_rc, daemon_whip, init_motion, mutex
+import sort_rc, init_motion, mutex
+from core import daemon_control
 
 log_level = 'WARNING'
 logger = logger.Logger('kmotion_setd', log_level)
@@ -390,13 +391,13 @@ def main():
         
         if reload_all_config: 
             init_motion.gen_motion_configs(kmotion_dir)
-            daemon_whip.reload_all_configs()
+            daemon_control.reload_all_configs()
             reload_all_config = False
             reload_ptz_config = False
             continue # skip 'reload_ptz_config', already done
     
         if reload_ptz_config: 
-            daemon_whip.reload_ptz_config()
+            daemon_control.reload_ptz_config()
             reload_ptz_config = False 
 
 

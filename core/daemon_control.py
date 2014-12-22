@@ -1,47 +1,60 @@
 #!/usr/bin/env python
-from core.init_core import InitCore
-
 # Copyright 2008 David Selby dave6502@googlemail.com
-
 # This file is part of kmotion.
-
 # kmotion is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
 # kmotion is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
 # You should have received a copy of the GNU General Public License
 # along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 Controls kmotion daemons allowing daemon starting, stopping, checking of status
 and config reloading
 """
 
-import time, os, ConfigParser
-from subprocess import * # breaking habit of a lifetime !
-from mutex_parsers import *
+from subprocess import *  # breaking habit of a lifetime !
+import time
 
+from init_core import InitCore
+from mutex_parsers import *
 import logger
 
 
-
-
-class Daemon:
+class DaemonControl:
     
     log_level = 'WARNING'
         
-    def __init__(self):
-        self.kmotion_dir = os.path.abspath('..')
-        self.logger = logger.Logger('daemon_whip', Daemon.log_level)
+    def __init__(self, kmotion_dir):
+        self.kmotion_dir = kmotion_dir
+        self.logger = logger.Logger('DaemonControl', DaemonControl.log_level)
         self.initCore = InitCore(self.kmotion_dir)
-        kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.motion_reload_bug = kmotion_parser.getboolean('workaround', 'motion_reload_bug')
+        
+    def start_motion(self):
+        # check for a 'motion.conf' file before starting 'motion'
+        if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir) and not self.is_motion_running():                
+            self.initCore.init_motion_out() # clear 'motion_out'
+            Popen('while true; do test -z "$(pgrep -f \'^motion.+-c.*\')" -o -z "$(netstat -an | grep 8080)" && ( pkill -9 -f \'^motion.+-c.*\'; motion -c {0}/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> {0}/www/motion_out & ); sleep 1; done &'.format(self.kmotion_dir), shell=True)
+            self.logger.log('start_daemons() - starting motion', 'DEBUG')
+        else:
+            self.logger.log('start_daemons() - no motion.conf, motion not started', 'CRIT')
+            
+    def stop_motion(self):
+        self.logger.log('kill_daemons() - killing daemons ...', 'DEBUG')
+        Popen('pkill -f \'.*motion.+-c.*\'', shell=True) # if motion hangs get nasty !
+        
+        while self.is_motion_running():
+            self.logger.log('kill_daemons() - resorting to kill -9 ... ouch !', 'DEBUG')
+            Popen('pkill -9 -f \'.*motion.+-c.*\'', shell=True) # if motion hangs get nasty !
+            time.sleep(1)
+        
+    def is_motion_running(self):
+        p_objs = Popen('/bin/ps ax | /bin/grep [m]otion\ -c', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+        stdout = p_objs.stdout.readline()
+        return stdout != ''
         
     def start_daemons(self):
         """ 
@@ -53,7 +66,6 @@ class Daemon:
         """ 
         
         self.logger.log('start_daemons() - starting daemons ...', 'DEBUG')
-        #self.kmotion_dir = load_rc()[0]
         
         p_objs = Popen('ps ax | grep kmotion_hkd1.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
         if p_objs.stdout.readline() == '':   
@@ -80,18 +92,7 @@ class Daemon:
             Popen('nohup %s/core/kmotion_ptzd.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
             self.logger.log('start_daemons() - starting kmotion_ptzd', 'DEBUG')
         
-        # check for a 'motion.conf' file before starting 'motion'
-        if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):                
-            p_objs = Popen('/bin/ps ax | /bin/grep [m]otion\ -c', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-            if p_objs.stdout.readline() == '':                 
-                self.initCore.init_motion_out() # clear 'motion_out'
-                Popen('while true; do test -z "$(pgrep -f \'^motion.+-c.*\')" -o -z "$(netstat -an | grep 8080)" && ( pkill -9 -f \'^motion.+-c.*\'; motion -c {0}/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> {0}/www/motion_out & ); sleep 1; done &'.format(self.kmotion_dir), shell=True)
-                #Popen('while true; do killall -9 -q motion; motion -c %s/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> %s/www/motion_out; sleep 1; done &' % (kmotion_dir, kmotion_dir), shell=True)
-                #Popen('nohup motion -c %s/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> %s/www/motion_out &' % (kmotion_dir, kmotion_dir), shell=True)
-                self.logger.log('start_daemons() - starting motion', 'DEBUG')
-                
-        else:
-            self.logger.log('start_daemons() - no motion.conf, motion not started', 'CRIT')
+        self.start_motion()
 
 
     def kill_daemons(self):
@@ -104,8 +105,7 @@ class Daemon:
         """
         
         self.logger.log('kill_daemons() - killing daemons ...', 'DEBUG')
-        #Popen('killall -q motion', shell=True)
-        Popen('pkill -f \'.*motion.+-c.*\'', shell=True) # if motion hangs get nasty !
+        self.stop_motion()
         Popen('pkill -f \'python.+kmotion_hkd2.py\'', shell=True)
         Popen('pkill -f \'python.+kmotion_fund.py\'', shell=True)
         Popen('pkill -f \'python.+kmotion_setd.py\'', shell=True)
@@ -116,7 +116,6 @@ class Daemon:
         time.sleep(1) 
         while not self.no_daemons_running():
             self.logger.log('kill_daemons() - resorting to kill -9 ... ouch !', 'DEBUG')
-            Popen('pkill -9 -f \'.*motion.+-c.*\'', shell=True) # if motion hangs get nasty !
             Popen('pkill -9 -f \'python.+kmotion_hkd2.py\'', shell=True)
             Popen('pkill -9 -f \'python.+kmotion_fund.py\'', shell=True)
             Popen('pkill -9 -f \'python.+kmotion_setd.py\'', shell=True)
@@ -130,11 +129,10 @@ class Daemon:
         Popen('pkill -f \'cat.+/www/fifo_settings_wr\'', shell=True) 
         Popen('pkill -f \'cat.+/www/fifo_func\'', shell=True) 
             
-            
         self.logger.log('kill_daemons() - daemons killed ...', 'DEBUG')
 
 
-    def all_daemons_running(self):
+    def is_daemons_running(self):
         """ 
         Check to see if all kmotion daemons are running
     
@@ -158,16 +156,8 @@ class Daemon:
         p_objs = Popen('ps ax | grep kmotion_ptzd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout5 = p_objs.stdout.readline()
         
-        p_objs = Popen('/bin/ps ax | /bin/grep [m]otion\ -c', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        stdout6 = p_objs.stdout.readline()
-        
         return (stdout1 != '' and stdout2 != '' and stdout3 != '' and stdout4 != '' 
-                and stdout5 != '' and stdout6 != '')
-
-
-    def no_daemons_running(self):
-        return not self.all_daemons_running()
-
+                and stdout5 != '' and self.is_motion_running())
 
     def daemon_status(self):
         """ 
@@ -255,44 +245,9 @@ class Daemon:
         """
     
         self.initCore.init_motion_out() # clear 'motion_out'
-        if self.motion_reload_bug: # motion_reload_bug workaround
-            trys = 0
-            while True:
-                trys += 1
-                if trys < 20:
-                    Popen('pkill -f \'.*motion.+-c.*\'', shell=True) # if motion hangs get nasty !
-                    #Popen('killall -q motion', shell=True)
-                else: 
-                    self.logger.log('reload_motion_config() - resorting to kill -9 ... ouch !', 'DEBUG')
-                    #Popen('killall -9 -q motion', shell=True) # if motion hangs get nasty !
-                    Popen('pkill -9 -f \'.*motion.+-c.*\'', shell=True) # if motion hangs get nasty !
-                
-                p_objs = Popen('/bin/ps ax | /bin/grep [m]otion\ -c', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-                stdout = p_objs.stdout.readline()
-                if stdout == '': break
-                
-                time.sleep(1)
-                self.logger.log('reload_motion_config() - motion not killed - retrying ...', 'DEBUG')
-                
-            self.logger.log('reload_motion_configs() - motion killed', 'DEBUG')
-        
-            # check for a 'motion.conf' file before starting 'motion'
-            if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):
-                self.logger.log('reload_motion_configs() - pausing for 2 seconds ...', 'DEBUG')
-                time.sleep(2)
-                self.initCore.init_motion_out() # clear 'motion_out'
-                Popen('while true; do test -z "$(pgrep -f \'^motion.+-c.*\')" -o -z "$(netstat -an | grep 8080)" && ( pkill -9 -f \'^motion.+-c.*\'; motion -c {0}/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> {0}/www/motion_out & ); sleep 1; done &'.format(self.kmotion_dir), shell=True)
-                #Popen('while true; do killall -9 -q motion; motion -c %s/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> %s/www/motion_out; sleep 1; done &' % (kmotion_dir, kmotion_dir), shell=True)
-                self.logger.log('reload_motion_configs() - restarting motion', 'DEBUG')
-                    
-            else:
-                self.logger.log('reload_motion_configs() - no motion.conf, motion not restarted', 'CRIT')
+        self.stop_motion()
+        self.start_motion()
             
-        else:        
-            self.initCore.init_motion_out() # clear 'motion_out'
-            os.popen('killall -s SIGHUP motion')
-            self.logger.log('reload_motion_configs() - motion sent SIGHUP signal', 'DEBUG')
-    
       
 
 

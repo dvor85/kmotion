@@ -26,7 +26,8 @@ import os, sys
 
 from init_core import InitCore
 from init_motion import InitMotion
-import daemon_whip, logger
+import logger
+from core import daemon_control
 
 
 log_level = 'WARNING' 
@@ -51,7 +52,7 @@ def main():
     # if 'stop' shutdown and exit here
     if option == 'stop':
         logger.log('stopping kmotion ...', 'CRIT')
-        daemon_whip.kill_daemons()
+        daemon_control.kill_daemons()
         return
     
     elif option == 'start':
@@ -59,7 +60,7 @@ def main():
     elif option == 'restart':
         logger.log('restarting kmotion ...', 'CRIT')
     elif option == 'status':
-	print daemon_whip.daemon_status()
+	print daemon_control.daemon_status()
 	return
     # check for any invalid motion processes
     p_objs = Popen('ps ax | grep -e [[:space:]]motion | grep -v \'\-c %s/core/motion_conf/motion.conf\'' % kmotion_dir, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
@@ -101,13 +102,13 @@ def main():
     initMotion.gen_motion_configs()
     
     # speed kmotion startup
-    if daemon_whip.no_daemons_running():
-        daemon_whip.start_daemons()
-    elif daemon_whip.all_daemons_running():
-        daemon_whip.reload_all_configs()
+    if daemon_control.no_daemons_running():
+        daemon_control.start_daemons()
+    elif daemon_control.all_daemons_running():
+        daemon_control.reload_all_configs()
     else:
-        daemon_whip.start_daemons()
-        daemon_whip.reload_all_configs()
+        daemon_control.start_daemons()
+        daemon_control.reload_all_configs()
           
     time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
     purge_str = '#' * 1000 + '99999999'

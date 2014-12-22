@@ -22,7 +22,8 @@ A menu driven daemon diagnostics module
 """
 
 import time, os, sys, ConfigParser
-import init_core, init_motion, daemon_whip, mutex
+import init_core, init_motion, mutex
+from core import daemon_control
 
 def daemon_diagnostic():
     """
@@ -55,14 +56,14 @@ ENTER: Refresh"""
         opt = raw_input('Option letter then ENTER to select : ')
         # 's' start daemons - lifted from 'kmotion.py' -------------------------
         if opt == 's':
-            if daemon_whip.all_daemons_running():
+            if daemon_control.all_daemons_running():
                 print '\nDaemons are already running ...'
                 
             else:          
                 init_configs(kmotion_dir)
-                daemon_whip.start_daemons()
+                daemon_control.start_daemons()
                 time.sleep(1)
-                if daemon_whip.all_daemons_running():
+                if daemon_control.all_daemons_running():
                     print '\nDaemons have been started ...'
                 else:
                     print """
@@ -73,14 +74,14 @@ Some daemons refused to start
         # 'k' kill daemons -----------------------------------------------------
         elif opt == 'k':
             print '\nDaemons are being killed ... this may take some time ...'
-            daemon_whip.kill_daemons()
+            daemon_control.kill_daemons()
                 
         # 'r' reload daemons ---------------------------------------------------
         elif opt == 'r':
-            if daemon_whip.all_daemons_running():
+            if daemon_control.all_daemons_running():
                 print '\nDaemons config being reloaded ... this may take some time ...'                
                 init_configs(kmotion_dir)
-                daemon_whip.reload_all_configs()
+                daemon_control.reload_all_configs()
             else:
                 print """
 **** W A R N I N G ****
@@ -104,7 +105,7 @@ def print_status():
     return  : none
     """
             
-    status = daemon_whip.daemon_status()
+    status = daemon_control.daemon_status()
     if status['kmotion_hkd1']:
         text = 'Running'
     else:

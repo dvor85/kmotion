@@ -155,7 +155,7 @@ class InitMotion:
                 else:
                     print >> f_obj1, 'norm 1' 
             
-                 # feed mask, 
+                # feed mask, 
                 if self.www_parser_rd.get('motion_feed%02i' % feed, 'feed_mask') != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
                     print >> f_obj1, 'mask_file %s/core/masks/mask%0.2d.pgm' % (self.kmotion_dir, feed)  
             
