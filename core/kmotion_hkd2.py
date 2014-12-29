@@ -123,14 +123,15 @@ class Hkd2_Feed:
         if self.feed_enabled: 
             
             tmp_snap_dir = '%s/%02i' % (self.ramdisk_dir, self.feed) 
-            snap_list = os.listdir(tmp_snap_dir)
+            snap_list = list(os.listdir(tmp_snap_dir))
             snap_list.sort()
+            
             
             # need this > 25 buffer to ensure kmotion can view jpegs before we 
             # move or delete them
             while (len(snap_list) >= 25):  
                 
-                snap_date_time = snap_list[0][:-4]  # [:-4] to strip '.jpg'
+                snap_date_time = snap_list.pop(0)[:-4]  # [:-4] to strip '.jpg'
                 
                 # if jpeg is in the past, delete it
                 if snap_date_time < date + time_: 
@@ -141,6 +142,11 @@ class Hkd2_Feed:
                         if os.path.isfile(feed_www_jpg):
                             os.remove(feed_www_jpg)
                 
+                        
+                    
+                # if jpeg is now, move it
+                elif snap_date_time == date + time_:  
+                    if self.feed_snap_enabled:
                         # need date time update here in case 00:00 crossed
                         date, time_ = self.current_date_time()
                         snap_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, self.feed)
@@ -148,16 +154,13 @@ class Hkd2_Feed:
                         # make sure 'snap_dir' exists, try in case motion creates dir
                         if not os.path.isdir(snap_dir):
                             os.makedirs(snap_dir)
-                    
-                # if jpeg is now, move it
-                elif snap_date_time == date + time_:  
-                    logger.log('service_snap() - move %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_), 'DEBUG')  
-                    os.popen3('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_))
-                    feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
-                    if os.path.isfile(feed_www_jpg):
-                        os.remove(feed_www_jpg)
-                    self.inc_date_time(self.feed_snap_interval)
-                snap_list = snap_list[1:] 
+                            
+                        logger.log('service_snap() - move %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_), 'DEBUG')  
+                        os.popen3('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_))
+                        feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
+                        if os.path.isfile(feed_www_jpg):
+                            os.remove(feed_www_jpg)
+                        self.inc_date_time(self.feed_snap_interval)
         
         
     def update_fps_journal(self, date, feed, time_, fps):

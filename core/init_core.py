@@ -21,8 +21,6 @@
 Exports various methods used to initialize core configuration
 """
 from subprocess import *
-
-from mutex_parsers import *
 import logger, os
 
 
@@ -70,19 +68,19 @@ class InitCore:
                 # along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
                 """
     
-    def __init__(self, kmotion_dir):
+    def __init__(self, settings):
         self.logger = logger.Logger('init_core', InitCore.log_level)
-        self.kmotion_dir = kmotion_dir
-        with open('%s/www/motion_out' % kmotion_dir, 'w'): 
+        self.settings = settings
+        self.kmotion_dir = self.settings.get('DEFAULT', 'kmotion_dir')
+        with open('%s/www/motion_out' % self.kmotion_dir, 'w'): 
             pass
         
-        kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.images_dbase_dir = kmotion_parser.get('dirs', 'images_dbase_dir')
-        self.port = kmotion_parser.get('misc', 'port')
-        self.ramdisk_dir = kmotion_parser.get('dirs', 'ramdisk_dir')
-        self.max_feed = kmotion_parser.getint('misc', 'max_feed')
-        self.version = kmotion_parser.get('version', 'string')
-        self.title = kmotion_parser.get('version', 'title')
+        self.images_dbase_dir = self.settings.get('DEFAULT', 'images_dbase_dir')
+        self.port = self.settings.get('DEFAULT', 'port')
+        self.ramdisk_dir = self.settings.get('DEFAULT', 'ramdisk_dir')
+        self.max_feed = len(self.settings.sections())
+        self.version = self.settings.get('DEFAULT', 'version')
+        self.title = self.settings.get('DEFAULT', 'title')
         
         
 
@@ -109,41 +107,7 @@ class InitCore:
         # Sets the 'func_f??_enabled' in 'www_rc' by scanning for valid files in 
         # the 'func' directory. Valid files have the format 'func<01-16>.sh'.
         self.logger.log('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', 'DEBUG')
-        www_parser = mutex_www_parser_rd(self.kmotion_dir)
-        for func_num in range(1, self.max_feed):
-            if os.path.isfile('%s/func/func%02i.sh' % (self.kmotion_dir, func_num)):
-                www_parser.set('system', 'func_f%02i_enabled' % func_num, 'true')
-            else:
-                www_parser.set('system', 'func_f%02i_enabled' % func_num, 'false')
-        #self.mutex_www_parser_wr(www_parser)
     
-        # copy 'msg' to 'www_rc' 
-        self.logger.log('update_rcs() - Copy \'msg\' to \'www_rc\'', 'DEBUG') 
-        # user generated file so error trap
-        try:
-            with open('../msg') as f_obj:
-                msg = f_obj.read()
-        except IOError:
-            msg = ''
-            self.logger.log('update_rcs() - unable to read \'msg\'', 'DEBUG') 
-        
-        msg = msg.replace('\n', '<br>') 
-        www_parser.set('system', 'msg', msg)
-        mutex_www_parser_wr(self.kmotion_dir,www_parser)
-    
-#         sort_rc.sort_rc('%s/kmotion_rc' % self.kmotion_dir)
-#         try:
-#             mutex.acquire(kmotion_dir, 'www_rc') 
-#             sort_rc.sort_rc('%s/www/www_rc' % kmotion_dir) 
-#         finally:
-#             mutex.release(kmotion_dir, 'www_rc')
-#         
-#     try:
-#         mutex.acquire(kmotion_dir, 'kmotion_rc') 
-#         sort_rc.sort_rc('%s/kmotion_rc' % kmotion_dir)
-#     finally:
-#         mutex.release(kmotion_dir, 'kmotion_rc')
-       
   
     def init_ramdisk_dir(self):
         """
@@ -181,17 +145,10 @@ class InitCore:
 
     
         for i in range(1, self.max_feed):
-            if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, i)):
-                self.logger.log('init_ramdisk_dir() - creating \'%02i\' folder' % i, 'DEBUG') 
-                os.makedirs('%s/%02i' % (self.ramdisk_dir, i))
+            if not os.path.isdir('%s/%i' % (self.ramdisk_dir, i)):
+                self.logger.log('init_ramdisk_dir() - creating \'%i\' folder' % i, 'DEBUG') 
+                os.makedirs('%s/%i' % (self.ramdisk_dir, i))
                 
-        
-                
-        if not os.path.isdir('%s/tmp' % self.ramdisk_dir): 
-            os.makedirs('%s/tmp' % self.ramdisk_dir)
-            self.logger.log('init_ramdisk_dir() - creating \'tmp\' folder', 'DEBUG')
-            
-    
     def set_uid_gid_mutex(self, uid, gid):
         """
         Set the 'mutex', 'logs', 'www_rc', 'kmotion_rc' and 'servo_state' directories 
@@ -295,8 +252,10 @@ class InitCore:
                     AuthName "kmotion"
                     AuthUserFile %s/www/passwords/users_digest\n
                     """ % self.kmotion_dir
-    
-        with open('%s/www/vhosts/kmotion' % self.kmotion_dir, 'w') as f_obj1:
+        kmotion_vhost_dir = '%s/www/vhosts/' % self.kmotion_dir
+        if not os.path.isdir(kmotion_vhost_dir):
+            os.makedirs(kmotion_vhost_dir)
+        with open('%s%s' % (kmotion_vhost_dir,'kmotion'), 'w') as f_obj1:
             with open('%s/www/templates/vhosts_template' % self.kmotion_dir) as f_obj2:                
                 lines = f_obj2.readlines()
     
@@ -323,28 +282,28 @@ class InitCore:
         """
     
         code = InitCore.CODE_TEXT + """
-                                    # Starts/stop/reloads the kmotion daemons, executable from anywhere in the system
-                                    # kmotion start|stop|reload
-                                    
-                                    if [[ $UID = 0 ]]; then
-                                        echo -e '\\nkmotion cant be run as root\\n'
-                                        exit 0
-                                    fi
-                                    
-                                    if [[ $1 != 'start' && $1 != 'stop' && $1 != 'restart' ]]; then
-                                        echo -e '\\nkmotion start|stop|restart\\n'
-                                        exit 0
-                                    fi
-                                    
-                                    if [[ ! -z $2 ]]; then
-                                        echo -e '\\nkmotion start|stop|restart\\n'
-                                        exit 0
-                                    fi
-                                    
-                                    cd %s/core
-                                    ./kmotion.py $1
-                                    
-                                    """ % self.kmotion_dir
+# Starts/stop/reloads the kmotion daemons, executable from anywhere in the system
+# kmotion start|stop|reload
+
+if [[ $UID = 0 ]]; then
+echo -e '\\nkmotion cant be run as root\\n'
+exit 0
+fi
+
+if [[ $1 != 'start' && $1 != 'stop' && $1 != 'restart' ]]; then
+echo -e '\\nkmotion start|stop|restart\\n'
+exit 0
+fi
+
+if [[ ! -z $2 ]]; then
+echo -e '\\nkmotion start|stop|restart\\n'
+exit 0
+fi
+
+cd %s/core
+./kmotion.py $1
+
+""" % self.kmotion_dir
     
         self.logger.log('gen_kmotion() - Generating \'kmotion\' exe', 'DEBUG')
         
@@ -368,40 +327,40 @@ class InitCore:
         """
     
         code = InitCore.CODE_TEXT + """
-                                    # Activates a ptz preset, executable from anywhere in the system
-                                    # kmotion_ptz <feed 1...16> <preset 1...4>
-                                    
-                                    if [[ $UID = 0 ]]; then
-                                        echo -e '\\nkmotion_ptz cant be run as root\\n'
-                                        exit 0
-                                    fi
-                                    
-                                    if [[ $1 = '-h' || $1 = '--help' ]]; then
-                                        echo -e '\\nkmotion_ptz <feed 1..16> <preset 1..4>\\n'
-                                        exit 0
-                                    fi
-                                    
-                                    if [ -z $2 ]; then
-                                        echo -e '\\nkmotion_ptz - to few parameters'
-                                        echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\\n'
-                                        exit 0
-                                    fi
-                                    
-                                    if [ ! -z $3 ]; then
-                                        echo -e '\\nkmotion_ptz - to many parameters'
-                                        echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\\n'
-                                        exit 0
-                                    fi
-                                    
-                                    if [[ $1 -lt 1 || $1 -gt 16 || $2 -lt 1 || $2 -gt 4 ]]; then
-                                        echo -e '\\nkmotion_ptz - parameters out of range\\n'
-                                        exit 0
-                                    fi
-                                        
-                                    cd %s/core
-                                    ./kmotion_ptz.py $1 $2
-                                    
-                                    """ % self.kmotion_dir
+# Activates a ptz preset, executable from anywhere in the system
+# kmotion_ptz <feed 1...16> <preset 1...4>
+
+if [[ $UID = 0 ]]; then
+echo -e '\\nkmotion_ptz cant be run as root\\n'
+exit 0
+fi
+
+if [[ $1 = '-h' || $1 = '--help' ]]; then
+echo -e '\\nkmotion_ptz <feed 1..16> <preset 1..4>\\n'
+exit 0
+fi
+
+if [ -z $2 ]; then
+echo -e '\\nkmotion_ptz - to few parameters'
+echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\\n'
+exit 0
+fi
+
+if [ ! -z $3 ]; then
+echo -e '\\nkmotion_ptz - to many parameters'
+echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\\n'
+exit 0
+fi
+
+if [[ $1 -lt 1 || $1 -gt 16 || $2 -lt 1 || $2 -gt 4 ]]; then
+echo -e '\\nkmotion_ptz - parameters out of range\\n'
+exit 0
+fi
+
+cd %s/core
+./kmotion_ptz.py $1 $2
+
+""" % self.kmotion_dir
         
         self.logger.log('gen_kmotion_ptz() - Generating \'kmotion_ptz\' exe', 'DEBUG')
     

@@ -24,10 +24,11 @@ import ConfigParser
 import time
 import os, sys
 
-from init_core import InitCore
-from init_motion import InitMotion
-import logger
-from core import daemon_control
+from core.init_core import InitCore
+from core.init_motion import InitMotion
+import core.logger as logger
+from core.daemon_control import DaemonControl
+from core.kmotion_hkd1 import Kmotion_Hkd1
 
 
 log_level = 'WARNING' 
@@ -36,7 +37,7 @@ logger = logger.Logger('kmotion', log_level)
 class exit_(Exception): pass
 
 
-def main():
+def main(settings):
     """
     Re-initialises the kmotion core and reload the kmotion daemon configs
        
@@ -45,14 +46,16 @@ def main():
     return  : none
     """
     
-    # set kmotion_dir, remove /core from path
-    kmotion_dir = os.path.abspath('..')
+    # set kmotion_dir, remove /core from path    
+        
+    daemonControl = DaemonControl(settings)
     
     option = sys.argv[1]
+    
     # if 'stop' shutdown and exit here
     if option == 'stop':
         logger.log('stopping kmotion ...', 'CRIT')
-        daemon_control.kill_daemons()
+        daemonControl.kill_daemons()
         return
     
     elif option == 'start':
@@ -60,13 +63,10 @@ def main():
     elif option == 'restart':
         logger.log('restarting kmotion ...', 'CRIT')
     elif option == 'status':
-	print daemon_control.daemon_status()
-	return
-    # check for any invalid motion processes
-    p_objs = Popen('ps ax | grep -e [[:space:]]motion | grep -v \'\-c %s/core/motion_conf/motion.conf\'' % kmotion_dir, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-    line = p_objs.stdout.readline()
+        print daemonControl.daemon_status()
+        return
     
-    if line != '':
+    if daemonControl.is_motion_running():
         logger.log('** CRITICAL ERROR ** kmotion failed to start ...', 'CRIT')
         logger.log('** CRITICAL ERROR ** Another instance of motion daemon has been detected', 'CRIT')
         raise exit_("""An instance of the motion daemon has been detected which is not under control 
@@ -74,53 +74,44 @@ def main():
                         automatically on system bootup. This a known problem with Ubuntu 8.04 
                         Reference Bug #235599.""")
 
-    initCore = InitCore(kmotion_dir)
-    initMotion = InitMotion(kmotion_dir)
+    initCore = InitCore(settings)
+    initMotion = InitMotion(settings)
     # init the ramdisk dir
     initCore.init_ramdisk_dir()
-    
-    # init the mutex's
-#     mutex.init_mutex(kmotion_dir, 'www_rc')
-#     mutex.init_mutex(kmotion_dir, 'kmotion_rc')
-#     mutex.init_mutex(kmotion_dir, 'logs')
-    
-#     parser = mutex_kmotion_parser_rd(kmotion_dir)
-#     ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-#     max_feed = parser.getint('misc', 'max_feed')
     
     try:  # wrapping in a try - except because parsing data from kmotion_rc
         initCore.update_rcs()
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-        raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
+        raise exit_('corrupt \'settings.cfg\' : %s' % (sys.exc_info()[1]))
     
     try:  # wrapping in a try - except because parsing data from kmotion_rc
         initCore.gen_vhost()
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-        raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
+        raise exit_('corrupt \'settings.cfg\' : %s' % (sys.exc_info()[1]))
 
     # init motion_conf directory with motion.conf, thread1.conf ...
     initMotion.gen_motion_configs()
     
     # speed kmotion startup
-    if daemon_control.no_daemons_running():
-        daemon_control.start_daemons()
-    elif daemon_control.all_daemons_running():
-        daemon_control.reload_all_configs()
+    if not daemonControl.is_daemons_running():
+        daemonControl.start_daemons()
     else:
-        daemon_control.start_daemons()
-        daemon_control.reload_all_configs()
+        daemonControl.reload_all_configs()
           
     time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
     purge_str = '#' * 1000 + '99999999'
-    for fifo in ['fifo_func', 'fifo_ptz', 'fifo_ptz_preset', 'fifo_settings_wr']:
-        
-        pipeout = os.open('%s/www/%s' % (kmotion_dir, fifo), os.O_WRONLY)
-        os.write(pipeout, purge_str)
-        os.close(pipeout)
-            
-            
+    
+    for fifo in ['fifo_func', 'fifo_ptz', 'fifo_ptz_preset', 'fifo_settings_wr']:        
+        with os.open('%s/www/%s' % (kmotion_dir, fifo), os.O_WRONLY) as pipeout:
+            os.write(pipeout, purge_str)
 
 if __name__ == '__main__':
-    main()
+    kmotion_dir = os.path.dirname(__file__)    
+    settings = ConfigParser.SafeConfigParser()
+    settings.read(os.path.join(kmotion_dir,'settings.cfg'))
+    settings.set('DEFAULT', 'kmotion_dir', kmotion_dir)
+    Kmotion_Hkd1(settings).start() 
+    print 'started'
+    #main(settings)
 
 

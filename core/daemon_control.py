@@ -17,10 +17,11 @@ and config reloading
 """
 
 from subprocess import *  # breaking habit of a lifetime !
+import ConfigParser
 import time
 
 from init_core import InitCore
-from mutex_parsers import *
+from kmotion_hkd1 import Kmotion_Hkd1
 import logger
 
 
@@ -28,10 +29,14 @@ class DaemonControl:
     
     log_level = 'WARNING'
         
-    def __init__(self, kmotion_dir):
-        self.kmotion_dir = kmotion_dir
+    def __init__(self, settings):
+        self.settings = settings
+        self.kmotion_dir = self.settings.get('DEFAULT', 'kmotion_dir')
         self.logger = logger.Logger('DaemonControl', DaemonControl.log_level)
-        self.initCore = InitCore(self.kmotion_dir)
+        self.initCore = InitCore(self.settings)
+        self.hkd1 = Kmotion_Hkd1(settings)
+        self.hkd1.daemon(True)
+        
         
     def start_motion(self):
         # check for a 'motion.conf' file before starting 'motion'
@@ -67,10 +72,12 @@ class DaemonControl:
         
         self.logger.log('start_daemons() - starting daemons ...', 'DEBUG')
         
-        p_objs = Popen('ps ax | grep kmotion_hkd1.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        if p_objs.stdout.readline() == '':   
-            Popen('nohup %s/core/kmotion_hkd1.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True) 
-            self.logger.log('start_daemons() - starting kmotion_hkd1', 'DEBUG')
+        
+        self.hkd1.start()
+#         p_objs = Popen('ps ax | grep kmotion_hkd1.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         if p_objs.stdout.readline() == '':   
+#             Popen('nohup %s/core/kmotion_hkd1.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True) 
+#             self.logger.log('start_daemons() - starting kmotion_hkd1', 'DEBUG')
     
         p_objs = Popen('ps ax | grep kmotion_hkd2.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
         if p_objs.stdout.readline() == '':   
@@ -114,7 +121,7 @@ class DaemonControl:
         Popen('pkill -f \'python.+kmotion_hkd1.py\'', shell=True)
         
         time.sleep(1) 
-        while not self.no_daemons_running():
+        while self.is_daemons_running():
             self.logger.log('kill_daemons() - resorting to kill -9 ... ouch !', 'DEBUG')
             Popen('pkill -9 -f \'python.+kmotion_hkd2.py\'', shell=True)
             Popen('pkill -9 -f \'python.+kmotion_fund.py\'', shell=True)
@@ -247,7 +254,8 @@ class DaemonControl:
         self.initCore.init_motion_out() # clear 'motion_out'
         self.stop_motion()
         self.start_motion()
-            
+        
+           
       
 
 

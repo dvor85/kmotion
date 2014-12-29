@@ -23,4 +23,5 @@ event/*
 !event/start.sh
 !event/stop.sh
 kmotion_rc
+settings.cfg
 tar.cmd
