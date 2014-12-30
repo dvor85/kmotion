@@ -1,6 +1,6 @@
 #!/usr/bin/env python
+import shutil
 
-# Copyright 2008 David Selby dave6502@googlemail.com
 
 # This file is part of kmotion.
 
@@ -175,6 +175,11 @@ class InitCore:
         os.chmod(www_rc, 0770)
         os.chown(kmotion_rc, uid, gid)
         os.chmod(kmotion_rc, 0770)
+        
+    def init_motion_out(self):
+        motion_out = os.path.join(self.kmotion_dir, 'www/motion_out')
+        if os.path.isfile(motion_out):
+            os.remove(motion_out)
     
 
     def set_uid_gid_named_pipes(self, uid, gid):

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# Copyright 2008 David Selby dave6502@googlemail.com
 # This file is part of kmotion.
 # kmotion is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -11,13 +10,15 @@
 # GNU General Public License for more details.
 # You should have received a copy of the GNU General Public License
 # along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 Checks the size of the images directory deleteing the oldest directorys first 
 when 90% of max_size_gb is reached. Responds to a SIGHUP by re-reading its 
 configuration. Checks the current kmotion software version every 24 hours.
 """
-
+import threading
 from threading import Thread
+from core.www_logs import WWWLog
 import ConfigParser
 import os, sys, time, signal, shutil, traceback
 
@@ -39,24 +40,20 @@ class Kmotion_Hkd1(Thread):
         self.settings = settings
         self.kmotion_dir = self.settings.get('DEFAULT', 'kmotion_dir')
         self.running = False
-        #self.daemonControl = DaemonControl(settings)  
+        self.www_log = WWWLog(self.settings)
         self.read_config()
         signal.signal(signal.SIGHUP, self.signal_hup)
-        signal.signal(signal.SIGTERM, self.signal_term)
+        signal.signal(signal.SIGTERM, self.signal_term)        
         self.running = True 
         self.start()
         
         
-    def stop(self):
-        """
-        Sets the 'self.reload_flag'
-        
-        args    : 
-        excepts : 
-        return  : none
-        """
-        
-        self.running = False
+    def sleep(self, seconds):
+        while seconds>0:
+            if not self.running:
+                raise SigTerm
+            time.sleep(1)
+            seconds-=1
             
         
         
@@ -71,38 +68,37 @@ class Kmotion_Hkd1(Thread):
         """
         # it is CRUCIAL that this code is bombproof
         while self.running:
-            #update_logs.add_startup_event()
+            self.www_log.add_startup_event()
             try:    
-                while self.running:   
-                            
+                while self.running: 
                     # sleep here to allow system to settle 
-                    time.sleep(15 * 60)
+                    print 'waiting...'
+                    self.sleep(15 * 60)
                     date = time.strftime('%Y%m%d', time.localtime(time.time()))
-        
+         
                     # if > 90% of max_size_gb, delete oldest
                     if  self.images_dbase_size() > self.max_size_gb * 0.9:
-                        
+                         
                         dir_ = os.listdir(self.images_dbase_dir)
                         dir_.sort()
-                        
+                         
                         # if need to delete current recording, shut down kmotion 
                         if date == dir_[0]:
                             logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
                             logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
                             logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
-                            #update_logs.add_no_space_event()
+                            self.www_log.add_no_space_event()
                             #self.daemonControl.kill_daemons()
                             sys.exit()
-                        
-                        #update_logs.add_deletion_event(dir_[0])
+                         
+                        self.www_log.add_deletion_event(dir_[0])
                         logger.log('image storage limit reached - deleteing %s/%s' % 
                                    (self.images_dbase_dir, dir_[0]), 'CRIT')
                         shutil.rmtree('%s/%s' % (self.images_dbase_dir, dir_[0])) 
                         
                 
             except SigTerm: # special case for propogated SIGTERM
-                #update_logs.add_shutdown_event()
-                self.running = False
+                self.www_log.add_shutdown_event()
                 sys.exit()
             except: # global exception catch        
                 exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -118,9 +114,9 @@ class Kmotion_Hkd1(Thread):
                            %exc_loc1, 'CRIT')
                 logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
                            %exc_loc2, 'CRIT')
-                time.sleep(60)
+                self.sleep(60)
                 logger.log('starting daemon ...', 'CRIT') 
-                time.sleep(60) # delay to let stack settle else 'update_version' returns 
+                self.sleep(60) # delay to let stack settle else 'update_version' returns 
                 
         
                 
@@ -290,15 +286,12 @@ class Kmotion_Hkd1(Thread):
         return  : none
         """
         
-        
-        
-        
         try: # try - except because kmotion_rc is a user changeable file
             self.version = self.settings.get('DEFAULT', 'version')
             self.max_feed = len(self.settings.sections())
             self.images_dbase_dir = self.settings.get('DEFAULT', 'images_dbase_dir')
             # 2**30 = 1GB
-            self.max_size_gb = self.settings.getint('storage', 'images_dbase_limit_gb') * 2**30
+            self.max_size_gb = self.settings.getint('DEFAULT', 'images_dbase_limit_gb') * 2**30
             
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
@@ -319,7 +312,6 @@ class Kmotion_Hkd1(Thread):
         logger.log('signal SIGHUP detected, re-reading config file', 'CRIT')
         self.read_config()
         
-    
     def signal_term(self, signum, frame):
         """
         On SIGTERM raise 'SigTerm' as a special case
@@ -328,16 +320,34 @@ class Kmotion_Hkd1(Thread):
         excepts : 
         return  : none
         """
-
-        raise SigTerm
+        self.stop()  
+        
+    def stop(self):
+        self.running = False  
+        
+                
+        
     
-if __name__ == '__main__':
+    
+    
+if __name__ == '__main__':    
     print '\nModule self test ...\n'
     kmotion_dir = os.path.abspath('..')
     settings = ConfigParser.SafeConfigParser()
     settings.read(os.path.join(kmotion_dir,'settings.cfg'))
     settings.set('DEFAULT', 'kmotion_dir', kmotion_dir)
-    Kmotion_Hkd1(settings) 
+    print 'My PID is:', os.getpid()
+   
+    hkd1=Kmotion_Hkd1(settings)    
+
+    running = True
+    while running:
+        running = False
+        for t in threading.enumerate():
+            if t != threading.currentThread():
+                running = running or t.is_alive()
+    print 'end hkd1'
+    
 
 
 

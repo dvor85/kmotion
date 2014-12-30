@@ -417,8 +417,8 @@ class Thread2_PTZ_Park(Servo_Control, threading.Thread):
 
                 else:
                     for feed in enabled_list:
-                        wait = ptz_park_delay[feed] - (time.time() - ptz_last_change[feed]) 
-                        sleep = min(sleep, wait)
+                        sleep = ptz_park_delay[feed] - (time.time() - ptz_last_change[feed]) 
+                        sleep = min(sleep, sleep)
                     sleep = max(0, sleep) # catch any neg edge conditions
 
                 logger.log('thread2_PTZ_Park() - sleeping for %s secs' % (sleep), 'DEBUG')
