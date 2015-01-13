@@ -28,6 +28,7 @@ from core.init_motion import InitMotion
 import core.logger as logger
 from core.daemon_control import DaemonControl
 from core.kmotion_hkd1 import Kmotion_Hkd1
+from core.www_logs import WWWLog
 
 
 
@@ -44,6 +45,7 @@ class Kmotion:
         self.settings = settings
         self.logger = logger.Logger('kmotion', Kmotion.log_level)
         self.daemonControl = DaemonControl(self.settings)
+        self.www_log = WWWLog(self.settings)
         self.initCore = InitCore(self.settings)
         self.initMotion = InitMotion(self.settings)
 
@@ -103,13 +105,13 @@ class Kmotion:
         time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
         purge_str = '#' * 1000 + '99999999'
         
-#         for fifo in ['fifo_func', 'fifo_ptz', 'fifo_ptz_preset', 'fifo_settings_wr']:        
+#         for fifo in ['fifo_settings_wr']:        
 #             with os.open('%s/www/%s' % (kmotion_dir, fifo), os.O_WRONLY) as pipeout:
 #                 os.write(pipeout, purge_str)                
         
             
     def signal_term(self,signum, frame):
-        print 'get signal term'
+        self.www_log.add_shutdown_event()
         for t in threading.enumerate():
             if t != threading.currentThread():
                 t.stop()
@@ -121,6 +123,7 @@ class Kmotion:
             for t in threading.enumerate():
                 if t != threading.currentThread():
                     running = running or t.is_alive()
+            time.sleep(1)
     
 
 if __name__ == '__main__':

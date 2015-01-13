@@ -38,12 +38,10 @@ class InitMotion:
         self.images_dbase_dir = self.settings.get('DEFAULT', 'images_dbase_dir')     
         self.ramdisk_dir = self.settings.get('DEFAULT', 'ramdisk_dir')
         
-        self.feeds = {}
-        i = 1
+        self.feeds = []
         for host in self.settings.sections():
             if self.settings.getboolean(host, 'feed_enabled'):
-                self.feeds[i] = host
-                i += 1
+                self.feeds.append(host)
 
     def gen_motion_configs(self):
         """
@@ -99,8 +97,8 @@ control_localhost on
                     opt = k.replace('motion.', '')
                     print >> f_obj1, opt, v
     
-            for feed in self.feeds.keys():
-                print >> f_obj1, 'thread %s/thread%i.conf' % (self.motion_conf_dir, feed)
+            for feed in self.feeds:
+                print >> f_obj1, 'thread %s/thread_%s.conf' % (self.motion_conf_dir, feed)
       
     def gen_threads_conf(self):
         """
@@ -115,9 +113,8 @@ control_localhost on
         return  : none
         """
     
-        for feed, host in self.feeds.items():
-            with open('%s/thread%i.conf' % (self.motion_conf_dir, feed), 'w') as f_obj1:
-                
+        for host in self.feeds:
+            with open('%s/thread_%s.conf' % (self.motion_conf_dir, host), 'w') as f_obj1:
                 for k, v in self.settings.items(host):
                     if k.find('motion.') > -1:
                         opt = k.replace('motion.', '')
@@ -125,7 +122,7 @@ control_localhost on
             
                 # feed mask, 
                 if self.settings.get(host, 'feed_mask') != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
-                    print >> f_obj1, 'mask_file %s/core/masks/mask%i.pgm' % (self.kmotion_dir, feed)  
+                    print >> f_obj1, 'mask_file %s/core/masks/mask_%s.pgm' % (self.kmotion_dir, host)  
             
                 print >> f_obj1, '''
 # ------------------------------------------------------------------------------
@@ -156,10 +153,10 @@ snapshot_interval 1
                 # print >> f_obj1, 'output_normal off'
                 # print >> f_obj1, 'jpeg_filename %s/%%Y%%m%%d/%i/snap/%%H%%M%%S' % (self.images_dbase_dir, feed)
         
-                print >> f_obj1, 'snapshot_filename %i/%%Y%%m%%d%%H%%M%%S' % feed
-                print >> f_obj1, 'on_event_start %s/core/event_start.sh %i' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_event_end %s/core/event_end.sh %i' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_camera_lost %s/core/camera_lost.sh %i' % (self.kmotion_dir, feed)
+                print >> f_obj1, 'snapshot_filename %s/%%Y%%m%%d%%H%%M%%S' % host
+                print >> f_obj1, 'on_event_start %s/core/event_start.sh %s' % (self.kmotion_dir, host)
+                print >> f_obj1, 'on_event_end %s/core/event_end.sh %s' % (self.kmotion_dir, host)
+                print >> f_obj1, 'on_camera_lost %s/core/camera_lost.sh %s' % (self.kmotion_dir, host)
                 print >> f_obj1, 'on_picture_save %s/core/picture_save.sh %%f' % (self.kmotion_dir)
         
         

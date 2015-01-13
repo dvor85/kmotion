@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # This file is part of kmotion.
 # kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 # kmotion is distributed in the hope that it will be useful,
@@ -20,42 +19,36 @@ import threading
 from threading import Thread
 from core.www_logs import WWWLog
 import ConfigParser
-import os, sys, time, signal, shutil, traceback
+import os, sys, time, shutil, traceback
 
 import logger
 
 
-log_level = 'WARNING'
-logger = logger.Logger('kmotion_hkd1', log_level)
-
-class SigTerm(Exception):
-    pass
 
 
 class Kmotion_Hkd1(Thread):
     
+    log_level = 'DEBUG'
+    
     def __init__(self, settings):
         Thread.__init__(self)
+        self.logger = logger.Logger('kmotion_hkd1', Kmotion_Hkd1.log_level)
         self.setName('kmotion_hkd1')
         self.settings = settings
         self.kmotion_dir = self.settings.get('DEFAULT', 'kmotion_dir')
         self.running = False
         self.www_log = WWWLog(self.settings)
         self.read_config()
-        signal.signal(signal.SIGHUP, self.signal_hup)
-        signal.signal(signal.SIGTERM, self.signal_term)        
         self.running = True 
         self.start()
         
         
     def sleep(self, seconds):
-        while seconds>0:
-            if not self.running:
-                raise SigTerm
+        while seconds>0 and self.running:
             time.sleep(1)
             seconds-=1
             
-        
+            
         
     def run(self):
            
@@ -67,6 +60,7 @@ class Kmotion_Hkd1(Thread):
         return  : none
         """
         # it is CRUCIAL that this code is bombproof
+        self.logger.log('starting daemon ...', 'CRIT') 
         while self.running:
             self.www_log.add_startup_event()
             try:    
@@ -84,38 +78,34 @@ class Kmotion_Hkd1(Thread):
                          
                         # if need to delete current recording, shut down kmotion 
                         if date == dir_[0]:
-                            logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
-                            logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
-                            logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
                             self.www_log.add_no_space_event()
                             #self.daemonControl.kill_daemons()
-                            sys.exit()
+                            self.stop()
                          
                         self.www_log.add_deletion_event(dir_[0])
-                        logger.log('image storage limit reached - deleteing %s/%s' % 
+                        self.logger.log('image storage limit reached - deleteing %s/%s' % 
                                    (self.images_dbase_dir, dir_[0]), 'CRIT')
                         shutil.rmtree('%s/%s' % (self.images_dbase_dir, dir_[0])) 
                         
-                
-            except SigTerm: # special case for propogated SIGTERM
-                self.www_log.add_shutdown_event()
-                sys.exit()
             except: # global exception catch        
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 exc_trace = traceback.extract_tb(exc_traceback)[-1]
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                 
-                logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - type: %s' 
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - type: %s' 
                            % exc_type, 'CRIT')
-                logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - value: %s' 
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - value: %s' 
                            % exc_value, 'CRIT')
-                logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
                            %exc_loc1, 'CRIT')
-                logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
                            %exc_loc2, 'CRIT')
                 self.sleep(60)
-                logger.log('starting daemon ...', 'CRIT') 
+                self.logger.log('starting daemon ...', 'CRIT') 
                 self.sleep(60) # delay to let stack settle else 'update_version' returns 
                 
         
@@ -146,11 +136,10 @@ class Kmotion_Hkd1(Thread):
             date_dir = '%s/%s' % (self.images_dbase_dir, date)
             if os.path.isfile('%s/dir_size' % date_dir):
                 
-                f_obj = open('%s/dir_size' % date_dir)
-                bytes_ += int(f_obj.readline())
-                f_obj.close()
+                with open('%s/dir_size' % date_dir) as f_obj:
+                    bytes_ += int(f_obj.readline())
     
-        logger.log('images_dbase_size() - size : %s' % bytes_, 'DEBUG')
+        self.logger.log('images_dbase_size() - size : %s' % bytes_, 'DEBUG')
         return bytes_
         
             
@@ -189,11 +178,10 @@ class Kmotion_Hkd1(Thread):
                 if os.path.isdir('%s/snap' % feed_dir):
                     bytes_ += self.size_snap(feed_dir) 
         
-            logger.log('update_dbase_sizes() - size : %s' % bytes_, 'DEBUG')
+            self.logger.log('update_dbase_sizes() - size : %s' % bytes_, 'DEBUG')
             
-            f_obj = open('%s/dir_size' % date_dir, 'w')
-            f_obj.write(str(bytes_))
-            f_obj.close()
+            with open('%s/dir_size' % date_dir, 'w') as f_obj:
+                f_obj.write(str(bytes_))
         
         
     def size_movie(self, feed_dir):
@@ -207,12 +195,11 @@ class Kmotion_Hkd1(Thread):
         """
         
         # don't use os.path.getsize as it does not report disk useage
-        f_obj = os.popen('nice -n 19 du -s %s/movie' % feed_dir)
-        line = f_obj.readline()
-        f_obj.close()
+        with os.popen('nice -n 19 du -s %s/movie' % feed_dir) as f_obj:
+            line = f_obj.readline()
         
         bytes_ = int(line.split()[0]) * 1000
-        logger.log('size_movie() - %s size : %s' % (feed_dir, bytes_), 'DEBUG')
+        self.logger.log('size_movie() - %s size : %s' % (feed_dir, bytes_), 'DEBUG')
         return bytes_
 
     
@@ -265,14 +252,13 @@ class Kmotion_Hkd1(Thread):
                 jpeg = tzone_jpegs[tzone][i]
                 
                 # don't use os.path.getsize as it does not report disk useage
-                f_obj = os.popen('nice -n 19 du -s %s/snap/%s' % (feed_dir, jpeg))
-                line = f_obj.readline()
-                f_obj.close()
+                with os.popen('nice -n 19 du -s %s/snap/%s' % (feed_dir, jpeg)) as f_obj:
+                    line = f_obj.readline()
                 total_bytes += int(line.split()[0]) * 1000
                 
             total_size += num_jpegs * (total_bytes / sample)
         
-        logger.log('size_snap() - %s size : %s' % (feed_dir, total_size), 'DEBUG')
+        self.logger.log('size_snap() - %s size : %s' % (feed_dir, total_size), 'DEBUG')
         return total_size
         
     
@@ -288,44 +274,19 @@ class Kmotion_Hkd1(Thread):
         
         try: # try - except because kmotion_rc is a user changeable file
             self.version = self.settings.get('DEFAULT', 'version')
-            self.max_feed = len(self.settings.sections())
             self.images_dbase_dir = self.settings.get('DEFAULT', 'images_dbase_dir')
             # 2**30 = 1GB
             self.max_size_gb = self.settings.getint('DEFAULT', 'images_dbase_limit_gb') * 2**30
             
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
+            self.logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
                        sys.exc_info()[1], 'CRIT')
-            logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
+            self.logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
             #self.daemonControl.kill_daemons()
             
-            
-    def signal_hup(self, signum, frame):
-        """
-        On SIGHUP re-read the config file 
-        
-        args    : discarded
-        excepts : 
-        return  : none
-        """
-        
-        logger.log('signal SIGHUP detected, re-reading config file', 'CRIT')
-        self.read_config()
-        
-    def signal_term(self, signum, frame):
-        """
-        On SIGTERM raise 'SigTerm' as a special case
-        
-        args    : discarded
-        excepts : 
-        return  : none
-        """
-        self.stop()  
-        
     def stop(self):
         self.running = False  
-        
-                
+        self.logger.log('stopping daemon ...', 'CRIT')
         
     
     

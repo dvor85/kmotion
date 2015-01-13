@@ -120,21 +120,23 @@ class InitCore:
         """
     
         self.logger.log('init_ramdisk_dir() - creating \'states\' folder', 'DEBUG')
-        if not os.path.isdir('%s/states' % self.ramdisk_dir):
-            os.makedirs('%s/states' % self.ramdisk_dir)
+        states_dir = os.path.join(self.ramdisk_dir,'states')
+        if not os.path.isdir(states_dir):
+            os.makedirs(states_dir)
 
-        for sfile in os.listdir('%s/states' % self.ramdisk_dir):
-            state_file='%s/states/%s' % (self.ramdisk_dir, sfile)
+        for sfile in os.listdir(states_dir):
+            state_file=os.path.join(states_dir, sfile)
             if os.path.isfile(state_file):
                 self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), 'DEBUG')
                 os.remove(state_file)
                     
-        if not os.path.isdir('%s/events' % self.ramdisk_dir):
+        events_dir = os.path.join(self.ramdisk_dir,'events')
+        if not os.path.isdir(events_dir):
             self.logger.log('init_ramdisk_dir() - creating \'events\' folder', 'DEBUG') 
-            os.makedirs('%s/events' % self.ramdisk_dir)
+            os.makedirs(events_dir)
             
-        for efile in os.listdir('%s/events' % self.ramdisk_dir):
-            event_file='%s/states/%s' % (self.ramdisk_dir, efile)
+        for efile in os.listdir(events_dir):
+            event_file=os.path.join(events_dir, efile)
             if os.path.isfile(event_file):
                 with open(event_file, 'r') as f_obj:
                     pid = f_obj.read()
@@ -143,11 +145,10 @@ class InitCore:
                         self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (event_file), 'DEBUG')
                         os.remove(event_file)
 
-    
-        for i in range(1, self.max_feed):
-            if not os.path.isdir('%s/%i' % (self.ramdisk_dir, i)):
-                self.logger.log('init_ramdisk_dir() - creating \'%i\' folder' % i, 'DEBUG') 
-                os.makedirs('%s/%i' % (self.ramdisk_dir, i))
+        for feed in self.settings.sections():
+            if not os.path.isdir(os.path.join(self.ramdisk_dir, feed)):
+                self.logger.log('init_ramdisk_dir() - creating \'%s\' folder' % feed, 'DEBUG') 
+                os.makedirs(os.path.join(self.ramdisk_dir, feed))
                 
     def set_uid_gid_mutex(self, uid, gid):
         """
@@ -195,30 +196,12 @@ class InitCore:
         return  : none
         """
     
-        # use BASH rather than os.mkfifo(), FIFO bug workaround :)
-        fifo_func = '%s/www/fifo_func' % self.kmotion_dir
-        if not os.path.exists(fifo_func):
-            call(['mkfifo', fifo_func])
-        os.chown(fifo_func, uid, gid)
-        os.chmod(fifo_func, 0660)
-    
         fifo_settings = '%s/www/fifo_settings_wr' % self.kmotion_dir
         if not os.path.exists(fifo_settings):
             call(['mkfifo', fifo_settings])
         os.chown(fifo_settings, uid, gid)
         os.chmod(fifo_settings, 0660)
-    
-        fifo_ptz = '%s/www/fifo_ptz' % self.kmotion_dir
-        if not os.path.exists(fifo_ptz):
-            call(['mkfifo', fifo_ptz])
-        os.chown(fifo_ptz, uid, gid)
-        os.chmod(fifo_ptz, 0660)
 
-        fifo_ptz_preset = '%s/www/fifo_ptz_preset' % self.kmotion_dir
-        if not os.path.exists(fifo_ptz_preset):
-            call(['mkfifo', fifo_ptz_preset])
-        os.chown(fifo_ptz_preset, uid, gid)
-        os.chmod(fifo_ptz_preset, 0660)
     
     
     def set_uid_gid_servo_state(self, uid, gid):
