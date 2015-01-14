@@ -5,7 +5,6 @@
 # This file is part of kmotion.
 
 # kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
@@ -22,7 +21,8 @@ Waits on the 'fifo_ptz' fifo until data received
 """
 
 import sys, threading, subprocess, time, os.path, urllib, time, signal, ConfigParser, traceback
-import logger, mutex
+import logger
+from mutex_parsers import *
 import ptz_drivers.axis_2130 as axis_2130
 import ptz_drivers.axis_213 as axis_213
 import ptz_drivers.panasonic as panasonic
@@ -42,32 +42,32 @@ mutex_feed = [threading.Lock() for i in range(17)]
 
 # time of last change to ptz. If zero PTZ has been parked
 # if non zero the clock to park is running :)
-ptz_last_change =  [1 for i in range(17)]
+ptz_last_change = [1 for i in range(17)]
 
 # calibrate before moving to abs position
-ptz_calib_first =  [False for i in range(17)]
+ptz_calib_first = [False for i in range(17)]
 
 # plugin data
-feed_enabled =     [False for i in range(17)]
-feed_url =         ['' for i in range(17)]
-feed_proxy =       ['' for i in range(17)]
-feed_lgn_name =    ['' for i in range(17)]
-feed_lgn_pw =      ['' for i in range(17)]
+feed_enabled = [False for i in range(17)]
+feed_url = ['' for i in range(17)]
+feed_proxy = ['' for i in range(17)]
+feed_lgn_name = ['' for i in range(17)]
+feed_lgn_pw = ['' for i in range(17)]
 
 # enables, track type, step and delay values
-ptz_enabled =      [False for i in range(17)]
+ptz_enabled = [False for i in range(17)]
 ptz_park_enabled = [False for i in range(17)]
-ptz_track_type =   [0 for i in range(17)]
+ptz_track_type = [0 for i in range(17)]
 ptz_servo_settle = [0 for i in range(17)]
-ptz_park_delay =   [0 for i in range(17)]
+ptz_park_delay = [0 for i in range(17)]
 
 # x y coordinates
-ptz_step =         [[0, 0] for i in range(17)]
-ptz_park =         [[0, 0] for i in range(17)]
-ptz_preset1 =      [[0, 0] for i in range(17)]
-ptz_preset2 =      [[0, 0] for i in range(17)]
-ptz_preset3 =      [[0, 0] for i in range(17)]
-ptz_preset4 =      [[0, 0] for i in range(17)]
+ptz_step = [[0, 0] for i in range(17)]
+ptz_park = [[0, 0] for i in range(17)]
+ptz_preset1 = [[0, 0] for i in range(17)]
+ptz_preset2 = [[0, 0] for i in range(17)]
+ptz_preset3 = [[0, 0] for i in range(17)]
+ptz_preset4 = [[0, 0] for i in range(17)]
 
 
 def read_config():
@@ -79,12 +79,9 @@ def read_config():
     return  : none
     """
 
-    try:
-        mutex.acquire(kmotion_dir, 'www_rc')   
-        parser = ConfigParser.SafeConfigParser()
-        parser.read('../www/www_rc') 
-    finally:
-        mutex.release(kmotion_dir, 'www_rc')
+     
+    parser = mutex_www_parser_rd(kmotion_dir)
+       
     
     for feed in range(1, 17):
 
@@ -129,7 +126,7 @@ def main():
     thread3.setDaemon(True)
     thread3.start()
 
-    while True: # sleep to keep daemons to live :)
+    while True:  # sleep to keep daemons to live :)
         time.sleep(60 * 60 * 24)
 
 
@@ -162,7 +159,7 @@ class Servo_Control:
 
         logger.log('set_ptz_rel() - feed:%s, x:%s, y:%s' % (feed, x, y), 'DEBUG')
         driver = ptz_track_type[feed]
-        if driver < 9: # use motion to move cameras
+        if driver < 9:  # use motion to move cameras
             try:
                 obj = urllib.urlopen('http://localhost:8080/%s/track/set?pan=%s&tilt=%s' % (feed, x, y))
                 obj.readlines()
@@ -170,16 +167,16 @@ class Servo_Control:
             except IOError:
                 pass
         
-        elif driver == 9: # use 'axis_213' driver
+        elif driver == 9:  # use 'axis_213' driver
             axis_213.rel_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 10: # use 'axis_2130' driver
+        elif driver == 10:  # use 'axis_2130' driver
             axis_2130.rel_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 11: # use 'panasonic' driver
+        elif driver == 11:  # use 'panasonic' driver
             panasonic.rel_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 12: # use 'foscam' driver
+        elif driver == 12:  # use 'foscam' driver
             foscam.rel_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
             
@@ -194,7 +191,7 @@ class Servo_Control:
         
         logger.log('set_ptz_abs() - feed:%s, x:%s, y:%s' % (feed, x, y), 'DEBUG')
         driver = ptz_track_type[feed]
-        if driver < 9: # use motion to move cameras
+        if driver < 9:  # use motion to move cameras
             try:
                 obj = urllib.urlopen('http://localhost:8080/%s/track/set?x=%s&y=%s' % (feed, x, y))
                 obj.readlines()
@@ -202,16 +199,16 @@ class Servo_Control:
             except IOError:
                 pass
             
-        elif driver == 9: # use 'axis_213' driver
+        elif driver == 9:  # use 'axis_213' driver
             axis_213.abs_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 10: # use 'axis_2130' driver
+        elif driver == 10:  # use 'axis_2130' driver
             axis_2130.abs_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 11: # use 'panasonic' driver
+        elif driver == 11:  # use 'panasonic' driver
             panasonic.abs_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 12: # use 'foscam' driver
+        elif driver == 12:  # use 'foscam' driver
             foscam.abs_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], x, y, ptz_step[feed][X], ptz_step[feed][Y])
             
 
@@ -227,7 +224,7 @@ class Servo_Control:
         logger.log('recalibrate_ptz() - recalibrate', 'DEBUG')
         driver = ptz_track_type[feed]
         
-        if driver < 9: # use motion to move cameras
+        if driver < 9:  # use motion to move cameras
             # ref ... http://www.lavrsen.dk/twiki/bin/view/Motion/LogitechSphereControl
             self.set_ptz_abs(feed, -69, 24)
             time.sleep(2)
@@ -235,23 +232,23 @@ class Servo_Control:
             time.sleep(2)
             self.set_ptz_abs(feed, 0, 0)
             
-        elif driver == 9: # use 'axis_213' driver
+        elif driver == 9:  # use 'axis_213' driver
             axis_213.cal_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], 0, 0, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 10: # use 'axis_2130' driver
+        elif driver == 10:  # use 'axis_2130' driver
             axis_2130.cal_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], 0, 0, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 11: # use 'panasonic' driver
+        elif driver == 11:  # use 'panasonic' driver
             panasonic.cal_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], 0, 0, ptz_step[feed][X], ptz_step[feed][Y])
             
-        elif driver == 12: # use 'foscam' driver
+        elif driver == 12:  # use 'foscam' driver
             foscam.cal_xy(feed, feed_url[feed], feed_proxy[feed], feed_lgn_name[feed], feed_lgn_pw[feed], 0, 0, ptz_step[feed][X], ptz_step[feed][Y])
             
                 
     def inc_servo_counter(self, kmotion_dir):
         """
         Increments the count of the file 'servo_state'. Used to indicate the
-	servos have completed a positional change.
+    servos have completed a positional change.
         """
 
         obj = open('%s/www/servo_state' % kmotion_dir, 'r+')
@@ -296,7 +293,7 @@ class Thread1_PTZ(Servo_Control, threading.Thread):
                 if len(data) < 8:
                     continue
         
-                if len(data) > 7 and data[-8:] == '99999999': # FIFO purge
+                if len(data) > 7 and data[-8:] == '99999999':  # FIFO purge
                     logger.log('FIFO purge', 'DEBUG')
                     continue
                 
@@ -307,7 +304,7 @@ class Thread1_PTZ(Servo_Control, threading.Thread):
                 # check for coded format 'caf<feed 2 digit + 5000>x<4 digits>y<4 digits + 5000>$' 
                 # camera absolute
                 if len(data) > 15 and data[-16:-13] == 'caf' and data[-11] == 'x' and data[-6] == 'y' and data[-1] == '$':
-                    feed, x, y = int(data[-13:-11]), int(data[-10: -6]) - 5000, int(data[-5: -1]) - 5000
+                    feed, x, y = int(data[-13:-11]), int(data[-10:-6]) - 5000, int(data[-5:-1]) - 5000
                     ptz_last_change[feed] = time.time()
                     mutex_feed[feed].acquire()
                     
@@ -337,7 +334,7 @@ class Thread1_PTZ(Servo_Control, threading.Thread):
                         ptz_history.append(3)
                         self.set_ptz_rel(feed, 0, -ptz_step[feed][Y])
     
-                    else: # ie == 4
+                    else:  # ie == 4
                         ptz_history.append(4)
                         self.set_ptz_rel(feed, ptz_step[feed][X], 0)
     
@@ -360,9 +357,9 @@ class Thread1_PTZ(Servo_Control, threading.Thread):
             logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread1_PTZ  crash - value: %s' 
                        % exc_value, 'CRIT')
             logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread1_PTZ  crash - traceback: %s' 
-                       %exc_loc1, 'CRIT')
+                       % exc_loc1, 'CRIT')
             logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread1_PTZ  crash - traceback: %s' 
-                       %exc_loc2, 'CRIT')
+                       % exc_loc2, 'CRIT')
             time.sleep(5)
 
 
@@ -386,7 +383,7 @@ class Thread2_PTZ_Park(Servo_Control, threading.Thread):
         if enabled_list == []: 
             return
         
-        for feed in enabled_list: # init timers so no parking at startup
+        for feed in enabled_list:  # init timers so no parking at startup
             ptz_last_change[feed] = time.time()
             
         while True:
@@ -419,7 +416,7 @@ class Thread2_PTZ_Park(Servo_Control, threading.Thread):
                     for feed in enabled_list:
                         wait = ptz_park_delay[feed] - (time.time() - ptz_last_change[feed]) 
                         sleep = min(sleep, wait)
-                    sleep = max(0, sleep) # catch any neg edge conditions
+                    sleep = max(0, sleep)  # catch any neg edge conditions
 
                 logger.log('thread2_PTZ_Park() - sleeping for %s secs' % (sleep), 'DEBUG')
                 time.sleep(sleep)
@@ -435,9 +432,9 @@ class Thread2_PTZ_Park(Servo_Control, threading.Thread):
                 logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread2_PTZ_park  crash - value: %s' 
                            % exc_value, 'CRIT')
                 logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread2_PTZ_park  crash - traceback: %s' 
-                           %exc_loc1, 'CRIT')
+                           % exc_loc1, 'CRIT')
                 logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread2_PTZ_park  crash - traceback: %s' 
-                           %exc_loc2, 'CRIT')
+                           % exc_loc2, 'CRIT')
                 time.sleep(5)
                 
 
@@ -469,7 +466,7 @@ class Thread3_PTZ_Preset(Servo_Control, threading.Thread):
                 if len(data) < 8:
                     continue
         
-                if len(data) > 7 and data[-8:] == '99999999': # FIFO purge
+                if len(data) > 7 and data[-8:] == '99999999':  # FIFO purge
                     logger.log('FIFO purge', 'DEBUG')
                     continue
 
@@ -478,7 +475,7 @@ class Thread3_PTZ_Preset(Servo_Control, threading.Thread):
                 if enabled_list == []: continue
 
                 if len(data) > 5 and data[-6] == 'f' and data[-3] == 'p' and data[-1] == '#':
-                    feed, preset = int(data[-5: -3]), int(data[-2])
+                    feed, preset = int(data[-5:-3]), int(data[-2])
                     data = ''
                     
                     if ptz_enabled[feed]: 
@@ -510,16 +507,15 @@ class Thread3_PTZ_Preset(Servo_Control, threading.Thread):
                 logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread3_PTZ_preset  crash - value: %s' 
                            % exc_value, 'CRIT')
                 logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread3_PTZ_preset  crash - traceback: %s' 
-                           %exc_loc1, 'CRIT')
+                           % exc_loc1, 'CRIT')
                 logger.log('** CRITICAL ERROR ** kmotion_ptzd Thread3_PTZ_preset  crash - traceback: %s' 
-                           %exc_loc2, 'CRIT')
+                           % exc_loc2, 'CRIT')
                 time.sleep(60)
 
 
                 
 if __name__ == '__main__':
     main()
-
 
 
 

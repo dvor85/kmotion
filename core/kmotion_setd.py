@@ -22,8 +22,12 @@ Waits on the 'fifo_settings_wr' fifo until data received then parse the data
 and modifiy 'www_rc', also updates 'feeds_cache'
 """
 
-import sys, os.path, subprocess, ConfigParser, logger, time, cPickle, traceback
-import sort_rc, daemon_whip, init_motion, mutex
+import sys, os.path, subprocess, logger, time, traceback
+import sort_rc
+from mutex_parsers import *
+from mutex import Mutex
+from daemon_whip import DaemonControl
+from init_motion import InitMotion
 
 log_level = 'WARNING'
 logger = logger.Logger('kmotion_setd', log_level)
@@ -127,245 +131,247 @@ def main():
     """
     
     logger.log('starting daemon ...', 'CRIT')
-    kmotion_dir = os.getcwd()[:-5]
+    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    daemon_whip = DaemonControl(kmotion_dir)
+    init_motion = InitMotion(kmotion_dir)
     
     reload_ptz_config = False
     reload_all_config = False
     
-    RELOAD_PTZ =  ['psx', 'psy', 'ptc', 'pts', 'ppe', 'ppd', 'ppx', 'ppy',
+    RELOAD_PTZ = ['psx', 'psy', 'ptc', 'pts', 'ppe', 'ppd', 'ppx', 'ppy',
                    'p1x', 'p1y', 'p2x', 'p2y', 'p3x', 'p3y', 'p4x', 'p4y']
     
-    RELOAD_ALL =  ['fma', 'fen', 'fpl', 'fde', 'fin', 'ful', 'fpr', 'fln', 
-                   'flp', 'fwd', 'fhe', 'fbo', 'ffp', 'fpe', 'fsn', 'ffe', 
+    RELOAD_ALL = ['fma', 'fen', 'fpl', 'fde', 'fin', 'ful', 'fpr', 'fln',
+                   'flp', 'fwd', 'fhe', 'fbo', 'ffp', 'fpe', 'fsn', 'ffe',
                    'fme', 'fup', 'ptt', 'pte', 'sex', 'st1', 'st2', 'st3',
                    'st4', 'st5', 'st6', 'st7', 'ed1', 'ed2', 'ed3', 'wd4',
                    'ed5', 'ed6', 'ed7', 'et1', 'et2', 'et3', 'et4', 'et5',
                    'et6', 'et7']
     
-    #update_feeds_cache(kmotion_dir)
-	
+    # update_feeds_cache(kmotion_dir)
+    
     
     user = ''
-    www_rc='%s/www/www_rc' % (kmotion_dir)
+    www_rc = 'www_rc'
     
-	
+    
     while True:
         
         logger.log('waiting on FIFO pipe data', 'DEBUG')
         data = subprocess.Popen(['cat', '%s/www/fifo_settings_wr' % kmotion_dir], stdout=subprocess.PIPE).communicate()[0]
-        data = data.rstrip()		
+        data = data.rstrip()        
         logger.log('kmotion FIFO pipe data: %s' % data, 'CRIT')
         
         if len(data) < 8:
             continue
         
-        if len(data) > 7 and data[-8:] == '99999999': # FIFO purge
+        if len(data) > 7 and data[-8:] == '99999999':  # FIFO purge
             logger.log('FIFO purge', 'DEBUG')
             continue
 
-        if int(data[-8:]) != len(data) - 13: # filter checksum
+        if int(data[-8:]) != len(data) - 13:  # filter checksum
             logger.log('data checksum error - rejecting data', 'CRIT')
             continue
         
 
-        masks_modified = [] # reset masks changed list
-		
-		
-	
-    	raws_data = data.split('$')
-    	for raw_data in raws_data:
-    	    if raw_data == '': continue # filter starting ''
-	    split_data = raw_data.split(':')
-	    if split_data[0][:3] == 'usr':
-		user = split_data[1]
-		break
-
-	must_reload = True
-	www_rc='%s/www/www_rc_%s' % (kmotion_dir, user)
-	if not os.path.isfile(www_rc):
-	    www_rc='%s/www/www_rc' % kmotion_dir
-	else:
-	    must_reload = False
-	    
-	    
-	logger.log('kmotion_setd user: %s' % user, 'CRIT')
-	parser = mutex_www_parser_rd(kmotion_dir, www_rc)
-		
+        masks_modified = []  # reset masks changed list
+        
+        
+    
+        raws_data = data.split('$')
         for raw_data in raws_data:
-            if raw_data == '': continue # filter starting ''
+            if raw_data == '': continue  # filter starting ''
+            split_data = raw_data.split(':')
+            if split_data[0][:3] == 'usr':
+                user = split_data[1]
+            break
+
+        must_reload = True
+        www_rc = 'www_rc_%s' % user
+        if not os.path.isfile(www_rc):
+            www_rc = 'www_rc'
+        else:
+            must_reload = False
+        
+        
+        logger.log('kmotion_setd user: %s' % user, 'CRIT')
+        parser = mutex_www_parser_rd(kmotion_dir, www_rc)
+        
+        for raw_data in raws_data:
+            if raw_data == '': continue  # filter starting ''
             split_data = raw_data.split(':')
 
             if len(split_data[0]) > 3:
                 key = split_data[0][:3]
                 index = int(split_data[0][3:])
             else:
-                key = split_data[0] # the 3 digit key ie 'fen' or 'fha'
-                index = 0           # optional list pointer for the id
+                key = split_data[0]  # the 3 digit key ie 'fen' or 'fha'
+                index = 0  # optional list pointer for the id
             value = split_data[1]
-			
-            if key == 'ine': # interleave
+            
+            if key == 'ine':  # interleave
                 parser.set('misc', 'misc1_interleave', num_bool(value))
-            elif key == 'fse': # full screen
+            elif key == 'fse':  # full screen
                 parser.set('misc', 'misc1_full_screen', num_bool(value))
-            elif key == 'lbe': # low bandwidth
+            elif key == 'lbe':  # low bandwidth
                 parser.set('misc', 'misc1_low_bandwidth', num_bool(value))
-            elif key == 'lce': # low cpu
+            elif key == 'lce':  # low cpu
                 parser.set('misc', 'misc1_low_cpu', num_bool(value))
-            elif key == 'skf': # skip archive frames enabled
+            elif key == 'skf':  # skip archive frames enabled
                 parser.set('misc', 'misc1_skip_frames', num_bool(value))
-            elif key == 'are': # archive button enabled
+            elif key == 'are':  # archive button enabled
                 parser.set('misc', 'misc2_archive_button_enabled', num_bool(value))
-            elif key == 'lge': # logs button enabled
+            elif key == 'lge':  # logs button enabled
                 parser.set('misc', 'misc2_logs_button_enabled', num_bool(value))
-            elif key == 'coe': # config button enabled
+            elif key == 'coe':  # config button enabled
                 parser.set('misc', 'misc2_config_button_enabled', num_bool(value))
-            elif key == 'fue': # function button enabled
+            elif key == 'fue':  # function button enabled
                 parser.set('misc', 'misc2_func_button_enabled', num_bool(value))
-            elif key == 'spa': # update button enabled
+            elif key == 'spa':  # update button enabled
                 parser.set('misc', 'misc2_msg_button_enabled', num_bool(value))
-            elif key == 'abe': # about button enabled
+            elif key == 'abe':  # about button enabled
                 parser.set('misc', 'misc2_about_button_enabled', num_bool(value))
-            elif key == 'loe': # logout button enabled
+            elif key == 'loe':  # logout button enabled
                 parser.set('misc', 'misc2_logout_button_enabled', num_bool(value))
-            elif key == 'hbb': # hide_button_bar
+            elif key == 'hbb':  # hide_button_bar
                 parser.set('misc', 'hide_button_bar', num_bool(value))
 
-            elif key == 'sec': # secure config
+            elif key == 'sec':  # secure config
                 parser.set('misc', 'misc3_secure', num_bool(value))
-            elif key == 'coh': # config hash
+            elif key == 'coh':  # config hash
                 parser.set('misc', 'misc3_config_hash', value)
         
-            elif key == 'fma': # feed mask
+            elif key == 'fma':  # feed mask
                 parser.set('motion_feed%02i' % index, 'feed_mask', value)
                 masks_modified.append((index, value))
         
-            elif key == 'fen': # feed enabled
+            elif key == 'fen':  # feed enabled
                 parser.set('motion_feed%02i' % index, 'feed_enabled', num_bool(value))
-            elif key == 'fpl': # feed pal 
+            elif key == 'fpl':  # feed pal 
                 parser.set('motion_feed%02i' % index, 'feed_pal', num_bool(value))
-            elif key == 'fde': # feed device
+            elif key == 'fde':  # feed device
                 parser.set('motion_feed%02i' % index, 'feed_device', value)
-            elif key == 'fin': # feed input
+            elif key == 'fin':  # feed input
                 parser.set('motion_feed%02i' % index, 'feed_input', value)
-            elif key == 'ful': # feed url
+            elif key == 'ful':  # feed url
                 parser.set('motion_feed%02i' % index, 'feed_url', '"%s"' % de_sanitise(value))
-            elif key == 'fpr': # feed proxy
+            elif key == 'fpr':  # feed proxy
                 parser.set('motion_feed%02i' % index, 'feed_proxy', '"%s"' % de_sanitise(value))
-            elif key == 'fln': # feed loggin name
+            elif key == 'fln':  # feed loggin name
                 parser.set('motion_feed%02i' % index, 'feed_lgn_name', de_sanitise(value))
-            elif key == 'flp': # feed loggin password
+            elif key == 'flp':  # feed loggin password
                 # check to see if default *'d password is returned
                 if de_sanitise(value) != '*' * len(parser.get('motion_feed%02i' % index, 'feed_lgn_pw')):
                     parser.set('motion_feed%02i' % index, 'feed_lgn_pw', de_sanitise(value))
-            elif key == 'fwd': # feed width
+            elif key == 'fwd':  # feed width
                 parser.set('motion_feed%02i' % index, 'feed_width', value)
-            elif key == 'fhe': # feed height
+            elif key == 'fhe':  # feed height
                 parser.set('motion_feed%02i' % index, 'feed_height', value)
-            elif key == 'fna': # feed name
+            elif key == 'fna':  # feed name
                 parser.set('motion_feed%02i' % index, 'feed_name', de_sanitise(value))
-            elif key == 'fbo': # feed show box
+            elif key == 'fbo':  # feed show box
                 parser.set('motion_feed%02i' % index, 'feed_show_box', num_bool(value))
-            elif key == 'ffp': # feed fps
+            elif key == 'ffp':  # feed fps
                 parser.set('motion_feed%02i' % index, 'feed_fps', value)
-            elif key == 'fpe': # feed snap enabled
+            elif key == 'fpe':  # feed snap enabled
                 parser.set('motion_feed%02i' % index, 'feed_snap_enabled', num_bool(value))
-            elif key == 'fsn': # feed snap interval
+            elif key == 'fsn':  # feed snap interval
                 parser.set('motion_feed%02i' % index, 'feed_snap_interval', value)
-            elif key == 'ffe': # feed smovie enabled
+            elif key == 'ffe':  # feed smovie enabled
                 parser.set('motion_feed%02i' % index, 'feed_smovie_enabled', num_bool(value))
-            elif key == 'fme': # feed movie enabled
+            elif key == 'fme':  # feed movie enabled
                 parser.set('motion_feed%02i' % index, 'feed_movie_enabled', num_bool(value))
                 
-            elif key == 'psx': # ptz step x
+            elif key == 'psx':  # ptz step x
                 parser.set('motion_feed%02i' % index, 'ptz_step_x', value)                
-            elif key == 'psy': # ptz step y
+            elif key == 'psy':  # ptz step y
                 parser.set('motion_feed%02i' % index, 'ptz_step_y', value)
-            elif key == 'ptt': # ptz calib first
+            elif key == 'ptt':  # ptz calib first
                 parser.set('motion_feed%02i' % index, 'ptz_track_type', value)
         
-            elif key == 'pte': # ptz enabled
+            elif key == 'pte':  # ptz enabled
                 parser.set('motion_feed%02i' % index, 'ptz_enabled', num_bool(value))
-            elif key == 'ptc': # ptz calib first
+            elif key == 'ptc':  # ptz calib first
                 parser.set('motion_feed%02i' % index, 'ptz_calib_first', num_bool(value))
-            elif key == 'pts': # ptz servo settle
+            elif key == 'pts':  # ptz servo settle
                 parser.set('motion_feed%02i' % index, 'ptz_servo_settle', value)
-            elif key == 'ppe': # ptz park enable
+            elif key == 'ppe':  # ptz park enable
                 parser.set('motion_feed%02i' % index, 'ptz_park_enabled', num_bool(value))
-            elif key == 'ppd': # ptz park delay
+            elif key == 'ppd':  # ptz park delay
                 parser.set('motion_feed%02i' % index, 'ptz_park_delay', value)
-            elif key == 'ppx': # ptz park x
+            elif key == 'ppx':  # ptz park x
                 parser.set('motion_feed%02i' % index, 'ptz_park_x', value)
-            elif key == 'ppy': # ptz park y
+            elif key == 'ppy':  # ptz park y
                 parser.set('motion_feed%02i' % index, 'ptz_park_y', value)
-            elif key == 'p1x': # ptz preset 1 x
+            elif key == 'p1x':  # ptz preset 1 x
                 parser.set('motion_feed%02i' % index, 'ptz_preset1_x', value)                
-            elif key == 'p1y': # ptz preset 1 y
+            elif key == 'p1y':  # ptz preset 1 y
                 parser.set('motion_feed%02i' % index, 'ptz_preset1_y', value)
-            elif key == 'p2x': # ptz preset 2 x
+            elif key == 'p2x':  # ptz preset 2 x
                 parser.set('motion_feed%02i' % index, 'ptz_preset2_x', value)                
-            elif key == 'p2y': # ptz preset 2 y
+            elif key == 'p2y':  # ptz preset 2 y
                 parser.set('motion_feed%02i' % index, 'ptz_preset2_y', value)
-            elif key == 'p3x': # ptz preset 3 x
+            elif key == 'p3x':  # ptz preset 3 x
                 parser.set('motion_feed%02i' % index, 'ptz_preset3_x', value)                
-            elif key == 'p3y': # ptz preset 3 y
+            elif key == 'p3y':  # ptz preset 3 y
                 parser.set('motion_feed%02i' % index, 'ptz_preset3_y', value)
-            elif key == 'p4x': # ptz preset 4 x
+            elif key == 'p4x':  # ptz preset 4 x
                 parser.set('motion_feed%02i' % index, 'ptz_preset4_x', value)                
-            elif key == 'p4y': # ptz preset 4 y
+            elif key == 'p4y':  # ptz preset 4 y
                 parser.set('motion_feed%02i' % index, 'ptz_preset4_y', value)
         
-            elif key == 'sex': # schedule exception
+            elif key == 'sex':  # schedule exception
                 parser.set('schedule%i' % index, 'schedule_except', value)
-            elif key == 'st1': # schedule time line 1
+            elif key == 'st1':  # schedule time line 1
                 parser.set('schedule%i' % index, 'tline1', value)
-            elif key == 'st2': # schedule time line 2
+            elif key == 'st2':  # schedule time line 2
                 parser.set('schedule%i' % index, 'tline2', value)
-            elif key == 'st3': # schedule time line 3
+            elif key == 'st3':  # schedule time line 3
                 parser.set('schedule%i' % index, 'tline3', value)
-            elif key == 'st4': # schedule time line 4
+            elif key == 'st4':  # schedule time line 4
                 parser.set('schedule%i' % index, 'tline4', value)
-            elif key == 'st5': # schedule time line 5
+            elif key == 'st5':  # schedule time line 5
                 parser.set('schedule%i' % index, 'tline5', value)
-            elif key == 'st6': # schedule time line 6
+            elif key == 'st6':  # schedule time line 6
                 parser.set('schedule%i' % index, 'tline6', value)
-            elif key == 'st7': # schedule time line 7
+            elif key == 'st7':  # schedule time line 7
                 parser.set('schedule%i' % index, 'tline7', value)
                 
-            elif key == 'ed1': # exception time line 1 dates
+            elif key == 'ed1':  # exception time line 1 dates
                 parser.set('schedule_except%i' % index, 'tline1_dates', value)
-            elif key == 'ed2': # exception time line 2 dates
+            elif key == 'ed2':  # exception time line 2 dates
                 parser.set('schedule_except%i' % index, 'tline2_dates', value)
-            elif key == 'ed3': # exception time line 3 dates
+            elif key == 'ed3':  # exception time line 3 dates
                 parser.set('schedule_except%i' % index, 'tline3_dates', value)
-            elif key == 'ed4': # exception time line 4 dates
+            elif key == 'ed4':  # exception time line 4 dates
                 parser.set('schedule_except%i' % index, 'tline4_dates', value)
-            elif key == 'ed5': # exception time line 5 dates
+            elif key == 'ed5':  # exception time line 5 dates
                 parser.set('schedule_except%i' % index, 'tline5_dates', value)
-            elif key == 'ed6': # exception time line 6 dates
+            elif key == 'ed6':  # exception time line 6 dates
                 parser.set('schedule_except%i' % index, 'tline6_dates', value)
-            elif key == 'ed7': # exception time line 7 dates
+            elif key == 'ed7':  # exception time line 7 dates
                 parser.set('schedule_except%i' % index, 'tline7_dates', value)
                 
-            elif key == 'et1': # exception time line 1
+            elif key == 'et1':  # exception time line 1
                 parser.set('schedule_except%i' % index, 'tline1', value)
-            elif key == 'et2': # exception time line 2
+            elif key == 'et2':  # exception time line 2
                 parser.set('schedule_except%i' % index, 'tline2', value)
-            elif key == 'et3': # exception time line 3
+            elif key == 'et3':  # exception time line 3
                 parser.set('schedule_except%i' % index, 'tline3', value)
-            elif key == 'et4': # exception time line 4
+            elif key == 'et4':  # exception time line 4
                 parser.set('schedule_except%i' % index, 'tline4', value)
-            elif key == 'et5': # exception time line 5
+            elif key == 'et5':  # exception time line 5
                 parser.set('schedule_except%i' % index, 'tline5', value)
-            elif key == 'et6': # exception time line 6
+            elif key == 'et6':  # exception time line 6
                 parser.set('schedule_except%i' % index, 'tline6', value)
-            elif key == 'et7': # exception time line 7
+            elif key == 'et7':  # exception time line 7
                 parser.set('schedule_except%i' % index, 'tline7', value)
                 
-            elif key == 'dif': # display feeds
+            elif key == 'dif':  # display feeds
                 parser.set('misc', 'misc4_display_feeds_%02i' % index, value)
-            elif key == 'col': # color select
+            elif key == 'col':  # color select
                 parser.set('misc', 'misc4_color_select', value)
-            elif key == 'dis': # display select
+            elif key == 'dis':  # display select
                 parser.set('misc', 'misc4_display_select', value)
                 
             # if key fits flag for reload everything including the ptz daemon, 
@@ -378,9 +384,12 @@ def main():
             if (key in RELOAD_PTZ)and(must_reload) : reload_ptz_config = True
             
         mutex_www_parser_wr(kmotion_dir, parser, www_rc)
-        mutex.acquire(kmotion_dir, 'www_rc')
-        sort_rc.sort_rc(www_rc)
-        mutex.release(kmotion_dir, 'www_rc')
+        try:
+            mutex = Mutex(kmotion_dir, 'www_rc')
+            mutex.acquire()
+            sort_rc.sort_rc('%s/www/%s' % (kmotion_dir, www_rc))
+        finally:
+            mutex.release()
         update_feeds_cache(kmotion_dir)
         
         # has to be here, image width, height have to be written to 'www_rc'
@@ -393,7 +402,7 @@ def main():
             daemon_whip.reload_all_configs()
             reload_all_config = False
             reload_ptz_config = False
-            continue # skip 'reload_ptz_config', already done
+            continue  # skip 'reload_ptz_config', already done
     
         if reload_ptz_config: 
             daemon_whip.reload_ptz_config()
@@ -442,8 +451,8 @@ def create_mask(kmotion_dir, feed, mask_hex_str, www_rc):
     
     logger.log('create_mask() - mask hex string: %s' % mask_hex_str, 'DEBUG')
     parser = mutex_www_parser_rd(kmotion_dir, www_rc)
-    image_width =  int(parser.get('motion_feed%02i' % feed, 'feed_width')) 
-    image_height = int(parser.get('motion_feed%02i' % feed, 'feed_height')) 
+    image_width = parser.getint('motion_feed%02i' % feed, 'feed_width') 
+    image_height = parser.getint('motion_feed%02i' % feed, 'feed_height')
     logger.log('create_mask() - width: %s height: %s' % (image_width, image_height), 'DEBUG')
     
     black_px = '\x00' 
@@ -478,12 +487,11 @@ def create_mask(kmotion_dir, feed, mask_hex_str, www_rc):
             
         mask += image_line * px_mult
         
-    f_obj = open('%s/core/masks/mask%0.2d.pgm' % (kmotion_dir, feed), mode='wb')
-    print >> f_obj, 'P5'
-    print >> f_obj, '%d %d' % (image_width, image_height)
-    print >> f_obj, '255'
-    print >> f_obj, mask
-    f_obj.close()
+    with open('%s/core/masks/mask%0.2d.pgm' % (kmotion_dir, feed), mode='wb') as f_obj:
+        print >> f_obj, 'P5'
+        print >> f_obj, '%d %d' % (image_width, image_height)
+        print >> f_obj, '255'
+        print >> f_obj, mask
     logger.log('create_mask() - mask written', 'DEBUG')
     
     
@@ -515,50 +523,13 @@ def update_feeds_cache(kmotion_dir):
     # f_obj.close()
             
     
-def mutex_www_parser_rd(kmotion_dir,www_rc):
-    """
-    Safely generate a parser instance and under mutex control read 'www_rc'
-    returning the parser instance.
-    
-    args    : kmotion_dir ... the 'root' directory of kmotion   
-    excepts : 
-    return  : parser ... a parser instance
-    """
-    
-    parser = ConfigParser.SafeConfigParser()
-    try:
-        mutex.acquire(kmotion_dir, 'www_rc')
-        parser.read(www_rc)
-    finally:
-        mutex.release(kmotion_dir, 'www_rc')
-    return parser
-
-
-def mutex_www_parser_wr(kmotion_dir, parser, www_rc):
-    """
-    Safely write a parser instance to 'www_rc' under mutex control.
-    
-    args    : kmotion_dir ... the 'root' directory of kmotion
-              parser      ... the parser instance 
-    excepts : 
-    return  : 
-    """
-	
-    try:
-        mutex.acquire(kmotion_dir, 'www_rc')
-        with open(www_rc, 'w') as f_obj:
-	    parser.write(f_obj)
-    finally:
-        mutex.release(kmotion_dir, 'www_rc')
-
-
 
 # it is CRUCIAL that this code is bombproof
 
 while True:
     try:    
         main()
-    except: # global exception catch
+    except:  # global exception catch
         exc_type, exc_value, exc_traceback = sys.exc_info()
         exc_trace = traceback.extract_tb(exc_traceback)[-1]
         exc_loc1 = '%s' % exc_trace[0]
@@ -569,9 +540,8 @@ while True:
         logger.log('** CRITICAL ERROR ** kmotion_setd crash - value: %s' 
                    % exc_value, 'CRIT')
         logger.log('** CRITICAL ERROR ** kmotion_setd crash - traceback: %s' 
-                   %exc_loc1, 'CRIT')
+                   % exc_loc1, 'CRIT')
         logger.log('** CRITICAL ERROR ** kmotion_setd crash - traceback: %s' 
-                   %exc_loc2, 'CRIT') 
+                   % exc_loc2, 'CRIT') 
         time.sleep(60)
-
 

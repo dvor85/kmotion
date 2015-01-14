@@ -24,3 +24,5 @@ event/*
 !event/stop.sh
 kmotion_rc
 tar.cmd
+.project
+.pydevproject

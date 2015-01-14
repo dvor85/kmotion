@@ -21,8 +21,8 @@
 Resets the config password to 'kmotion'
 """
 
-import os, ConfigParser
-import core.mutex as mutex
+import os
+from core.mutex_parsers import *
 
 class exit_(Exception): pass
 
@@ -100,44 +100,6 @@ def reset():
     print LINE_TEXT
 
      
-def mutex_www_parser_rd(kmotion_dir):
-    """
-    Safely generate a parser instance and under mutex control read 'www_rc'
-    returning the parser instance.
-    
-    args    : kmotion_dir ... the 'root' directory of kmotion   
-    excepts : 
-    return  : parser ... a parser instance
-    """
-    
-    parser = ConfigParser.SafeConfigParser()
-    try:
-        mutex.acquire(kmotion_dir, 'www_rc')
-        parser.read('%s/www/www_rc' % kmotion_dir)
-    finally:
-        mutex.release(kmotion_dir, 'www_rc')
-    return parser
- 
- 
-def mutex_www_parser_wr(kmotion_dir, parser):
-    """
-    Safely write a parser instance to 'www_rc' under mutex control.
-    
-    args    : kmotion_dir ... the 'root' directory of kmotion
-              parser      ... the parser instance 
-    excepts : 
-    return  : 
-    """
-
-    try:
-        mutex.acquire(kmotion_dir, 'www_rc')
-        f_obj = open('%s/www/www_rc' % kmotion_dir, 'w')
-        parser.write(f_obj)
-        f_obj.close()
-    finally:
-        mutex.release(kmotion_dir, 'www_rc')
-
-
 def checking(text_):
     """
     Print the text and calculate the number of '.'s

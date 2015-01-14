@@ -54,7 +54,7 @@ class Logger:
         self.min_priority = min_priority       
     
         
-    def set_prority(self,  min_priority):
+    def set_prority(self, min_priority):
         """
         Given the min priority string modify the classes min priority value. The
         priority string must be one of EMERG, ALERT, CRIT, ERR, WARNING, NOTICE,
@@ -95,10 +95,10 @@ class Logger:
             syslog.closelog()
         
         # The Python code that should implement the above ...
-        #syslog.openlog(self.ident , syslog.LOG_PID, (syslog.LOG_ALERT | syslog.LOG_USER)) 
-        #syslog.setlogmask(syslog.LOG_UPTO(self.case[self.min_priority]))
-        #syslog.syslog(msg)
-        #syslog.closelog()
+        # syslog.openlog(self.ident , syslog.LOG_PID, (syslog.LOG_ALERT | syslog.LOG_USER)) 
+        # syslog.setlogmask(syslog.LOG_UPTO(self.case[self.min_priority]))
+        # syslog.syslog(msg)
+        # syslog.closelog()
         
         
 

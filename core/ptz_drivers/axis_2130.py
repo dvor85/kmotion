@@ -22,7 +22,7 @@ PT(Z) driver for axis 2130 network camera
 """
 
 import os, urllib, cPickle, time
-import logger
+import core.logger as logger
 
 log_level = 'WARNING'
 logger = logger.Logger('axis_2130', log_level)

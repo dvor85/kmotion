@@ -37,7 +37,7 @@ fi
 
 KMOTION_DIR=/usr/local/kmotion3
 find $KMOTION_DIR/www/mutex/ -type f -exec rm -f {} \;
-cd $KMOTION_DIR/core && ./kmotion.py $1
+cd $KMOTION_DIR && ./kmotion.py $1
 cd $KMOTION_DIR/event && ./discrete.sh $1
 
 

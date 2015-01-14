@@ -43,7 +43,7 @@ So uncomment where stated to do it)
 """
 
 import os, urllib, cPickle, time
-import logger
+import core.logger as logger
 
 log_level = 'DEBUG'
 logger = logger.Logger('foscam', log_level)

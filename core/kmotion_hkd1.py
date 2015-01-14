@@ -24,10 +24,15 @@ configuration. Checks the current kmotion software version every 24 hours.
 """
 
 import os, sys, urllib, time, signal, shutil, ConfigParser, traceback
-import logger, daemon_whip, sort_rc, update_logs, mutex
+import logger, sort_rc
+from mutex_parsers import *
+from mutex import Mutex
+from daemon_whip import DaemonControl
+from www_logs import WWWLog
 
 log_level = 'WARNING'
 logger = logger.Logger('kmotion_hkd1', log_level)
+
 
 class SigTerm(Exception):
     pass
@@ -36,16 +41,46 @@ class SigTerm(Exception):
 class Kmotion_Hkd1:
     
     
-    def __init__(self):
+    def __init__(self, kmotion_dir):
         
-        self.images_dbase_dir = ''    # the 'root' directory of the images dbase
-        self.kmotion_dir = ''         # the 'root' directory of kmotion
-        self.max_size_gb = 0          # max size permitted for the images dbase
-        self.version = ''             # the current kmotion software version
+        self.images_dbase_dir = ''  # the 'root' directory of the images dbase
+        self.kmotion_dir = kmotion_dir
+        self.max_size_gb = 0  # max size permitted for the images dbase
+        self.version = ''  # the current kmotion software version
         
+        self.daemon_whip = DaemonControl(self.kmotion_dir)  
+        self.www_logs = WWWLog(self.kmotion_dir) 
         self.read_config()
         signal.signal(signal.SIGHUP, self.signal_hup)
-        signal.signal(signal.SIGTERM, self.signal_term)       
+        signal.signal(signal.SIGTERM, self.signal_term) 
+        
+    def read_config(self):
+        """ 
+        Read self.images_dbase_dir and self.max_size_gb from kmotion_rc and
+        self.version from kmotion_rc. If kmotion_rc is corrupt logs error and exits
+        
+        args    :
+        excepts : 
+        return  : none
+        """
+        
+               
+        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
+        
+        try:  # try - except because kmotion_rc is a user changeable file
+            self.version = parser.get('version', 'string')
+            self.max_feed = parser.getint('misc', 'max_feed')
+            self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
+            # 2**30 = 1GB
+            self.max_size_gb = int(parser.get('storage', 'images_dbase_limit_gb')) * 2 ** 30
+            
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
+                       sys.exc_info()[1], 'CRIT')
+            logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
+            self.daemon_whip.kill_daemons()
+        
+          
         
         
     def main(self):    
@@ -58,10 +93,10 @@ class Kmotion_Hkd1:
         """
         
         logger.log('starting daemon ...', 'CRIT') 
-        time.sleep(60) # delay to let stack settle else 'update_version' returns 
-                       # IOError on system boot  
+        time.sleep(60)  # delay to let stack settle else 'update_version' returns 
+                        # IOError on system boot  
         old_date = time.strftime('%Y%m%d', time.localtime(time.time()))
-        #self.update_version()
+        # self.update_version()
         
         while True:   
             
@@ -74,48 +109,31 @@ class Kmotion_Hkd1:
                 
                 dir_ = os.listdir(self.images_dbase_dir)
                 dir_.sort()
-                
-                if len(dir_) > 0 and dir_[0] == '.svn': 
-                    dir_.pop(0)  # skip '.svn' directory
                     
                 # if need to delete current recording, shut down kmotion 
                 if date == dir_[0]:
                     logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
                     logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
                     logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
-                    update_logs.add_no_space_event()
-                    daemon_whip.kill_daemons()
+                    self.www_logs.add_no_space_event()
+                    self.daemon_whip.kill_daemons()
                     sys.exit()
                 
-                update_logs.add_deletion_event(dir_[0])
+                self.www_logs.add_deletion_event(dir_[0])
                 logger.log('image storeage limit reached - deleteing %s/%s' % 
                            (self.images_dbase_dir, dir_[0]), 'CRIT')
                 shutil.rmtree('%s/%s' % (self.images_dbase_dir, dir_[0])) 
                 
             if date != old_date:
                 
-                time.sleep(5 * 60) # to ensure journals are written
+                time.sleep(5 * 60)  # to ensure journals are written
                 logger.log('midnight processes started ...', 'CRIT')
-                #self.ping_server_0000()
-                #self.update_version()
+                # self.ping_server_0000()
+                # self.update_version()
                 self.build_smovie_cache(date)
                 old_date = date
                 
                 
-    def update_version(self):
-        """        
-        Get the latest version string and update 'www_rc' if neccessary.
-        
-        args    : 
-        excepts : 
-        return  : none
-        """
-        
-        latest_version = self.get_version()
-        logger.log('parsed latest version : \'%s\'' % latest_version, 'CRIT')
-        self.set_version(latest_version)
-                
-                   
     def set_version(self, version):
         """        
         Sets the 'version_latest' in '../www/www_rc'
@@ -128,68 +146,13 @@ class Kmotion_Hkd1:
         parser = self.mutex_www_parser_rd(self.kmotion_dir)
         parser.set('system', 'version_latest', version)
         self.mutex_www_parser_wr(self.kmotion_dir, parser)
-        
-        mutex.acquire(self.kmotion_dir, 'www_rc') 
-        sort_rc.sort_rc('../www/www_rc')
-        mutex.release(self.kmotion_dir, 'www_rc')
+        try:
+            mutex = Mutex(self.kmotion_dir, 'www_rc')
+            mutex.acquire()            
+            sort_rc.sort_rc('%s/www/www_rc' % self.kmotion_dir)
+        finally:
+            mutex.release()
                 
-    
-    def get_version(self):
-        """        
-        Returns the latest kmotion software version by parsing the webpage
-        'http://code.google.com/p/kmotion-v2-code/downloads/list'
-        
-        args    : 
-        excepts : 
-        return  : str ... the version string or 'failed_parse'
-        """
-        
-        url = 'http://code.google.com/p/kmotion-v2-code/downloads/list'
-        opener = urllib.FancyURLopener()
-        try: # read the webpage
-            f_obj = opener.open(url)
-            html = f_obj.read()
-            f_obj.close()
-        except IOError:
-            logger.log('can\'t parse latest version from  \'%s\' IOError' % url, 'CRIT')
-            return 'failed_parse' 
-            
-        # parse the webpage for the current version, if not there must be an 
-        # 'unauthorised' version ie SVN
-        start = html.find('http://kmotion-v2-code.googlecode.com/files/kmotion_' + self.version.replace(' ', '_') + '.tar.gz')
-        if start == -1:
-            logger.log('running SVN version', 'DEBUG')
-            return 'SVN' 
-        
-        # parse the webpage for the latest version
-        start = html.find('http://kmotion-v2-code.googlecode.com/files/kmotion_') + 52
-        end = html.find('.tar.gz', start)
-        
-        if start == 44: # cant find = -1, plus 45 = 44
-            logger.log('can\'t parse latest version from  \'%s\' can\'t find string' % url, 'CRIT')
-            return 'failed_parse' 
-        
-        return html[start:end].replace('_', ' ')
-                
-    
-    def ping_server_0000(self):
-        """        
-        Loads the 'server_0000' file at midnight
-        
-        args    : 
-        excepts : 
-        return  : 
-        """
-        
-        url = 'http://kmotion2.googlecode.com/files/server_0000?rnd=' + str(time.time())
-        opener = urllib.FancyURLopener()
-        try: 
-            f_obj = opener.open(url)
-            f_obj.read()
-            f_obj.close()
-        except IOError:
-            pass
-    
     
     def build_smovie_cache(self, date):
         """   
@@ -201,7 +164,7 @@ class Kmotion_Hkd1:
         returns : 
         """
         
-        valid_feeds = ['%02i' % i for i in range(1, self.max_feed)] # 01 - 16
+        valid_feeds = ['%02i' % i for i in range(1, self.max_feed)]
         
         for date in [ i for i in os.listdir(self.images_dbase_dir) if i != date]: 
             for feed in [int(i) for i in os.listdir('%s/%s' % (self.images_dbase_dir, date)) if i in valid_feeds]:
@@ -213,9 +176,8 @@ class Kmotion_Hkd1:
                     
                     # smovie in need of a cache, build cache
                     coded_str = self.smovie_journal_data(date, feed)
-                    f_obj = open('%s/smovie_cache' % feed_dir, 'w')
-                    f_obj.writelines(coded_str.replace('$', '\n$')[1:])
-                    f_obj.close()
+                    with open('%s/smovie_cache' % feed_dir, 'w') as f_obj:
+                        f_obj.writelines(coded_str.replace('$', '\n$')[1:])
                         
             
     def smovie_journal_data(self, date, feed):
@@ -241,7 +203,7 @@ class Kmotion_Hkd1:
             coded_str += '$%s' % start[i]
             coded_str += '#%s' % len(os.listdir('%s/%s/%02i/smovie/%s' % (self.images_dbase_dir, date, feed, start[i])))
         
-            fps_latest = 0 # scan for correct fps time slot
+            fps_latest = 0  # scan for correct fps time slot
             for j in range(len(fps_time)):
                 if  start[i] < fps_time[j]: break
                 fps_latest = fps[j]
@@ -305,11 +267,10 @@ class Kmotion_Hkd1:
         time_, fps = [], []
         journal_file = '%s/%s/%02i/fps_journal' % (self.images_dbase_dir, date, feed)
         
-        f_obj = open(journal_file)
-        journal = f_obj.readlines()
-        f_obj.close()
+        with open(journal_file) as f_obj:
+            journal = f_obj.readlines()
         
-        journal = [i.strip('\n$') for i in journal] # clean the journal
+        journal = [i.strip('\n$') for i in journal]  # clean the journal
         
         for line in journal:
             data = line.split('#')
@@ -343,10 +304,8 @@ class Kmotion_Hkd1:
         for date in os.listdir(self.images_dbase_dir):
             date_dir = '%s/%s' % (self.images_dbase_dir, date)
             if os.path.isfile('%s/dir_size' % date_dir):
-                
-                f_obj = open('%s/dir_size' % date_dir)
-                bytes_ += int(f_obj.readline())
-                f_obj.close()
+                with open('%s/dir_size' % date_dir) as f_obj:
+                    bytes_ += int(f_obj.readline())
     
         logger.log('images_dbase_size() - size : %s' % bytes_, 'DEBUG')
         return bytes_
@@ -390,9 +349,8 @@ class Kmotion_Hkd1:
         
             logger.log('update_dbase_sizes() - size : %s' % bytes_, 'DEBUG')
             
-            f_obj = open('%s/dir_size' % date_dir, 'w')
-            f_obj.write(str(bytes_))
-            f_obj.close()
+            with open('%s/dir_size' % date_dir, 'w') as f_obj:
+                f_obj.write(str(bytes_))
         
         
     def size_movie(self, feed_dir):
@@ -406,9 +364,8 @@ class Kmotion_Hkd1:
         """
         
         # don't use os.path.getsize as it does not report disk useage
-        f_obj = os.popen('nice -n 19 du -s %s/movie' % feed_dir)
-        line = f_obj.readline()
-        f_obj.close()
+        with os.popen('nice -n 19 du -s %s/movie' % feed_dir) as f_obj:
+            line = f_obj.readline()
         
         bytes_ = int(line.split()[0]) * 1000
         logger.log('size_movie() - %s size : %s' % (feed_dir, bytes_), 'DEBUG')
@@ -456,16 +413,15 @@ class Kmotion_Hkd1:
             if num_dirs == 0:
                 continue
 
-            sample = min(num_dirs, 30) # sample max 30 dirs
+            sample = min(num_dirs, 30)  # sample max 30 dirs
             total_bytes = 0
             
             for i in range(sample): 
                 dir_ = tzone_dirs[tzone][i]
                 
                 # don't use os.path.getsize as it does not report disk useage
-                f_obj = os.popen('nice -n 19 du -s %s/smovie/%s' % (feed_dir, dir_))
-                line = f_obj.readline()
-                f_obj.close()
+                with os.popen('nice -n 19 du -s %s/smovie/%s' % (feed_dir, dir_)) as f_obj:
+                    line = f_obj.readline()
                 total_bytes += int(line.split()[0]) * 1000
 
             total_size += num_dirs * (total_bytes / sample)
@@ -515,16 +471,15 @@ class Kmotion_Hkd1:
             if num_jpegs == 0:
                 continue
 
-            sample = min(num_jpegs, 30) # sample max 30 jpegs
+            sample = min(num_jpegs, 30)  # sample max 30 jpegs
             total_bytes = 0
             
             for i in range(sample): 
                 jpeg = tzone_jpegs[tzone][i]
                 
                 # don't use os.path.getsize as it does not report disk useage
-                f_obj = os.popen('nice -n 19 du -s %s/snap/%s' % (feed_dir, jpeg))
-                line = f_obj.readline()
-                f_obj.close()
+                with os.popen('nice -n 19 du -s %s/snap/%s' % (feed_dir, jpeg)) as f_obj:
+                    line = f_obj.readline()
                 total_bytes += int(line.split()[0]) * 1000
                 
             total_size += num_jpegs * (total_bytes / sample)
@@ -533,92 +488,6 @@ class Kmotion_Hkd1:
         return total_size
         
     
-    def read_config(self):
-        """ 
-        Read self.images_dbase_dir and self.max_size_gb from kmotion_rc and
-        self.version from kmotion_rc. If kmotion_rc is corrupt logs error and exits
-        
-        args    :
-        excepts : 
-        return  : none
-        """
-        
-        self.kmotion_dir = os.getcwd()[:-5]
-        
-        parser = self.mutex_kmotion_parser_rd(self.kmotion_dir)
-        
-        try: # try - except because kmotion_rc is a user changeable file
-            self.version = parser.get('version', 'string')
-    	    self.max_feed = parser.getint('misc', 'max_feed')
-            self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
-            # 2**30 = 1GB
-            self.max_size_gb = int(parser.get('storage', 'images_dbase_limit_gb')) * 2**30
-            
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
-                       sys.exc_info()[1], 'CRIT')
-            logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
-            daemon_whip.kill_daemons()
-            
-            
-    def mutex_www_parser_rd(self, kmotion_dir):
-        """
-        Safely generate a parser instance and under mutex control read 'www_rc'
-        returning the parser instance.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion   
-        excepts : 
-        return  : parser ... a parser instance
-        """
-        
-        parser = ConfigParser.SafeConfigParser()
-        try:
-            mutex.acquire(kmotion_dir, 'www_rc')
-            parser.read('%s/www/www_rc' % kmotion_dir)
-        finally:
-            mutex.release(kmotion_dir, 'www_rc')
-        return parser
-     
-     
-    def mutex_www_parser_wr(self, kmotion_dir, parser):
-        """
-        Safely write a parser instance to 'www_rc' under mutex control.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion
-                  parser      ... the parser instance 
-        excepts : 
-        return  : 
-        """
-    
-        try:
-            mutex.acquire(kmotion_dir, 'www_rc')
-            f_obj = open('%s/www/www_rc' % kmotion_dir, 'w')
-            parser.write(f_obj)
-            f_obj.close()
-        finally:
-            mutex.release(kmotion_dir, 'www_rc')
-            
-            
-    def mutex_kmotion_parser_rd(self, kmotion_dir):
-        """
-        Safely generate a parser instance and under mutex control read 'www_rc'
-        returning the parser instance.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion   
-        excepts : 
-        return  : parser ... a parser instance
-        """
-        
-        parser = ConfigParser.SafeConfigParser()
-        try:
-            mutex.acquire(kmotion_dir, 'kmotion_rc')
-            parser.read('%s/kmotion_rc' % kmotion_dir)
-        finally:
-            mutex.release(kmotion_dir, 'kmotion_rc')
-        return parser
-
-        
-            
     def signal_hup(self, signum, frame):
         """
         On SIGHUP re-read the config file 
@@ -646,17 +515,22 @@ class Kmotion_Hkd1:
 
 
 # it is CRUCIAL that this code is bombproof
+
+kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+hkd1 = Kmotion_Hkd1(kmotion_dir)
+
 while True:
-    update_logs.add_startup_event()
+    hkd1.www_logs.add_startup_event()
     try:    
-	#print Kmotion_Hkd1().images_dbase_size()
-	#print Kmotion_Hkd1().max_size_gb
-        Kmotion_Hkd1().main()
+    # print Kmotion_Hkd1().images_dbase_size()
+    # print Kmotion_Hkd1().max_size_gb
         
-    except SigTerm: # special case for propogated SIGTERM
-        update_logs.add_shutdown_event()
+        hkd1.main()
+        
+    except SigTerm:  # special case for propogated SIGTERM
+        hkd1.www_logs.add_shutdown_event()
         sys.exit()
-    except: # global exception catch        
+    except:  # global exception catch        
         exc_type, exc_value, exc_traceback = sys.exc_info()
         exc_trace = traceback.extract_tb(exc_traceback)[-1]
         exc_loc1 = '%s' % exc_trace[0]
@@ -667,9 +541,9 @@ while True:
         logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - value: %s' 
                    % exc_value, 'CRIT')
         logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
-                   %exc_loc1, 'CRIT')
+                   % exc_loc1, 'CRIT')
         logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
-                   %exc_loc2, 'CRIT')
+                   % exc_loc2, 'CRIT')
         time.sleep(60)
         
         

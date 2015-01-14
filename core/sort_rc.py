@@ -36,28 +36,26 @@ def sort_rc(file_rc):
     section = ''
     sections = {}
 
-    f_obj = open(file_rc, 'r+')
-    
-    for line in [line.rstrip() for line in f_obj]:
-        if line == '': continue
-        if len(line) > 2 and line[0] == '[' and line[-1] == ']' and line != section:
-            section = line
-            sections[section] = []
-            continue
-        sections[section].append(line)
+    with open(file_rc, 'r+') as f_obj:
+        for line in [line.rstrip() for line in f_obj]:
+            if line == '': continue
+            if len(line) > 2 and line[0] == '[' and line[-1] == ']' and line != section:
+                section = line
+                sections[section] = []
+                continue
+            sections[section].append(line)
+            
+        keys = sections.keys()
+        keys.sort()
+        f_obj.seek(0)
         
-    keys = sections.keys()
-    keys.sort()
-    f_obj.seek(0)
-    
-    for section in keys:
-        print >> f_obj, section
-        sections[section].sort()
-        for option in sections[section]:
-            print >> f_obj, option
-        print >> f_obj, ''
-    f_obj.truncate() 
-    f_obj.close()
+        for section in keys:
+            print >> f_obj, section
+            sections[section].sort()
+            for option in sections[section]:
+                print >> f_obj, option
+            print >> f_obj, ''
+        f_obj.truncate() 
             
     
     

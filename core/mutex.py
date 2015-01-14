@@ -25,87 +25,84 @@ Export mutex lock functions for the '../www/mutex/' files
 import os, random, time
 import logger
 
-log_level = 'WARNING'
-logger = logger.Logger('mutex', log_level)
-
-
-def init_mutex(kmotion_dir, mutex):
-    """ 
-    Reset the 'mutex' mutex by deleteing all locks
+class Mutex:
     
-    args    : 
-    excepts : 
-    return  : none
-    """
-    
-    logger.log('init_mutex() - init mutex : %s' % mutex, 'DEBUG')
-    files = os.listdir('%s/www/mutex/%s' % (kmotion_dir, mutex))
-    files.sort()
-    if len(files) > 0 and files[0] == '.svn': # strip the .svn dir
-        files = files[1:]
-    for del_file in files:
-        os.remove('%s/www/mutex/%s/%s' % (kmotion_dir, mutex, del_file))
-     
+    log_level = 'WARNING'
+    def __init__(self, kmotion_dir, mutex):        
+        self.logger = logger.Logger('mutex', Mutex.log_level)
+        self.kmotion_dir = kmotion_dir 
+        self.mutex = mutex       
+        self.logger.log('init_mutex() - init mutex : %s' % self.mutex, 'DEBUG')
+        self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
+        if not os.path.isdir(self.mutex_dir):
+            os.makedirs(self.mutex_dir, 0755)
+        files = os.listdir(self.mutex_dir)
+        files.sort()
         
-def acquire(kmotion_dir, mutex):
-    """ 
-    Aquire the 'mutex' mutex lock, very carefully
+        for del_file in files:
+            os.remove('%s/%s' % (self.mutex_dir, del_file))
+
+
+    def acquire(self):
+        """ 
+        Aquire the 'mutex' mutex lock, very carefully
     
-    args    : kmotion_dir ... the 'root' directory of kmotion 
+        args    : kmotion_dir ... the 'root' directory of kmotion 
               mutex ...       the actual mutex
-    excepts : 
-    return  : none
-    """
+        excepts : 
+        return  : none
+        """
     
-    while True:
-        # wait for any other locks to go
         while True:
-            if check_lock(kmotion_dir, mutex) == 0:
+            # wait for any other locks to go
+            while True:
+                if self.check_lock() == 0:
+                    break
+                time.sleep(0.01)
+        
+            # add our lock
+            with open('%s/%s' % (self.mutex_dir, os.getpid()), 'w'):
+                pass
+            
+            # wait ... see if another lock has appeared, if so remove our lock
+            # and loop
+            time.sleep(0.1)
+            if self.check_lock() == 1:
                 break
-            time.sleep(0.01)
-        
-        # add our lock
-        f_obj = open('%s/www/mutex/%s/%s' % (kmotion_dir, mutex, os.getpid()), 'w')
-        f_obj.close()
-            
-        # wait ... see if another lock has appeared, if so remove our lock
-        # and loop
-        time.sleep(0.1)
-        if check_lock(kmotion_dir, mutex) == 1:
-            break
-        os.remove('%s/www/mutex/%s/%s' % (kmotion_dir, mutex, os.getpid()))
-        # random to avoid mexican stand-offs
-        time.sleep(float(random.randint(01, 40)) / 1000)
+            os.remove('%s/%s' % (self.mutex_dir, os.getpid()))
+            # random to avoid mexican stand-offs
+            time.sleep(float(random.randint(01, 40)) / 1000)
             
         
-def release(kmotion_dir, mutex):
-    """ 
-    Release the 'mutex' mutex lock
+    def release(self):
+        """ 
+        Release the 'mutex' mutex lock
     
-    args    : kmotion_dir ... the 'root' directory of kmotion 
+        args    : kmotion_dir ... the 'root' directory of kmotion 
               mutex ...       the actual mutex 
-    excepts : 
-    return  : none
-    """
-    
-    if os.path.isfile('%s/www/mutex/%s/%s' % (kmotion_dir, mutex, os.getpid())):
-        os.remove('%s/www/mutex/%s/%s' % (kmotion_dir, mutex, os.getpid()))
+        excepts : 
+        return  : none
+        """
+
+        if os.path.isfile('%s/%s' % (self.mutex_dir, os.getpid())):
+            os.remove('%s/%s' % (self.mutex_dir, os.getpid()))
        
         
-def check_lock(kmotion_dir, mutex):
-    """
-    Return the number of active locks on the 'mutex' mutex, filters out .svn
+    def check_lock(self):
+        """
+        Return the number of active locks on the 'mutex' mutex, filters out .svn
     
-    args    : kmotion_dir ... the 'root' directory of kmotion 
+        args    : kmotion_dir ... the 'root' directory of kmotion 
               mutex ...       the actual mutexkmotion_dir 
-    excepts : 
-    return  : num locks ... the number of active locks
-    """
+        excepts : 
+        return  : num locks ... the number of active locks
+        """
     
-    files = os.listdir('%s/www/mutex/%s' % (kmotion_dir, mutex))
-    files.sort()
-    if len(files) > 0 and files[0] == '.svn': # strip the .svn dir
-        files.pop(0)
-    return len(files)
+        files = os.listdir(self.mutex_dir)
+        files.sort()
+        
+        return len(files)
+    
+    
         
         

@@ -26,7 +26,7 @@ movements, no absolutes, no step values. Its been interesting :)
 """
 
 import os, urllib, cPickle, time
-import logger
+import core.logger as logger
 
 log_level = 'DEBUG'
 logger = logger.Logger('panasonic', log_level)
