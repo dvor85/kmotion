@@ -150,7 +150,7 @@ pre_capture 1
 post_capture 16
 quality 85
 webcam_localhost on
-ffmpeg_bps 400000'''
+#ffmpeg_bps 400000'''
         
         # pal or ntsc,
         if parser.getboolean('motion_feed%02i' % feed, 'feed_pal'):
@@ -232,17 +232,19 @@ snapshot_interval 1
 
         # movie mode
         if parser.getboolean('motion_feed%02i' % feed, 'feed_movie_enabled'): 
-            print >> f_obj1, 'ffmpeg_cap_new on'
+            #print >> f_obj1, 'ffmpeg_cap_new on'
+            pass
         else:
-            print >> f_obj1, 'ffmpeg_cap_new off'
+            #print >> f_obj1, 'ffmpeg_cap_new off'
+            pass
             
         print >> f_obj1, '' 
         
-        print >> f_obj1, 'movie_filename %s%s/%%Y%%m%%d/%0.2d/movie/%%H%%M%%S' % (rel_prefix, images_dbase_dir, feed)
+        #print >> f_obj1, 'movie_filename %s%s/%%Y%%m%%d/%0.2d/movie/%%H%%M%%S' % (rel_prefix, images_dbase_dir, feed)
         print >> f_obj1, 'snapshot_filename %0.2d/%%Y%%m%%d%%H%%M%%S' % feed
         # 'on_movie_start' not recorded, uses 'movie_filename' for more accuracy
         #print >> f_obj1, 'on_movie_start echo \'$%%H%%M%%S\' >> %s/%%Y%%m%%d/%0.2d/movie_journal' % (images_dbase_dir, feed)
-        print >> f_obj1, 'on_movie_end echo \'$%%H%%M%%S\' >> %s/%%Y%%m%%d/%0.2d/movie_journal' % (images_dbase_dir, feed)
+        #print >> f_obj1, 'on_movie_end echo \'$%%H%%M%%S\' >> %s/%%Y%%m%%d/%0.2d/movie_journal' % (images_dbase_dir, feed)
         print >> f_obj1, 'on_event_start %s/core/event_start.sh %%t' % (kmotion_dir)
         print >> f_obj1, 'on_event_end %s/core/event_end.sh %%t' % (kmotion_dir)
         print >> f_obj1, 'on_camera_lost %s/core/camera_lost.sh %%t' % (kmotion_dir)
