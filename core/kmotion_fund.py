@@ -40,7 +40,7 @@ def main():
     """
 
     logger.log('starting daemon ...', 'CRIT')
-    kmotion_dir = os.getcwd()[:-5]
+    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     
     while True:
         

@@ -38,18 +38,14 @@ class WWWLog:
         self.log_file = '%s/www/logs' % self.kmotion_dir
         kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.logger = logger.Logger('init_motion', WWWLog.log_level)
-        self.kmotion_dir = kmotion_parser.get('dirs', 'kmotion_dir')        
         self.ramdisk_dir = kmotion_parser.get('dirs', 'ramdisk_dir')
         self.max_feed = kmotion_parser.getint('misc', 'max_feed')
                 
         if not os.path.isfile(self.log_file):
             with open(self.log_file, 'w') as f_obj:
-                f_obj.write(time.strftime('$%d/%m/%Y#%H:%M:%S#Initial kmotion startup'))
+                f_obj.write(time.strftime('%d/%m/%Y#%H:%M:%S#Initial kmotion startup'))
         
-        with open(self.log_file, 'r+') as f_obj:
-            dblob = f_obj.read()
-            
-        self.events = dblob.split('$')
+        
 
 
     def add_startup_event(self):
@@ -73,13 +69,17 @@ class WWWLog:
         
         
         error_flag = False
-        for i in range(len(self.events) - 1, -1, -1):
+        
+        with open(self.log_file, 'r') as f_obj:
+            events = f_obj.read().split('$')
             
-            if self.events[i].find('shutting down') == -1:
+        for i in range(len(events) - 1, -1, -1):
+            
+            if events[i].find('shutting down') == -1:
                 error_flag = False
                 break
             
-            if self.events[i].find('Initial') == -1 or self.events[i].find('starting up') == -1:
+            if events[i].find('Initial') == -1 or events[i].find('starting up') == -1:
                 error_flag = True
                 break
           
@@ -109,11 +109,11 @@ class WWWLog:
                 hour = latest[8:10]
                 min_ = latest[10:12]
                 sec = latest[12:]
-                new_event = '$%s/%s/%s#%s:%s:%s#Incorrect shutdown / Mains failure' % (day, month, year, hour, min_, sec)
+                new_event = '%s/%s/%s#%s:%s:%s#Incorrect shutdown / Mains failure' % (day, month, year, hour, min_, sec)
                 self.add_event(new_event)
         
         # in all cases add a starting up message
-        self.add_event(time.strftime('$%d/%m/%Y#%H:%M:%S#kmotion starting up'))
+        self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion starting up'))
     
     
     def add_shutdown_event(self):
@@ -126,7 +126,7 @@ class WWWLog:
         """
         
         self.logger.log('add_shutdown_event() - adding shutdown event', 'DEBUG')
-        self.add_event(time.strftime('$%d/%m/%Y#%H:%M:%S#kmotion shutting down'))
+        self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion shutting down'))
               
     
     def add_deletion_event(self, date):
@@ -142,7 +142,7 @@ class WWWLog:
         year = date[:4]
         month = date[4:6]
         day = date[6:8]
-        self.add_event('$%s#Deleting archive data for %s/%s/%s' % (time.strftime('%d/%m/%Y#%H:%M:%S'), day, month, year))
+        self.add_event('%s#Deleting archive data for %s/%s/%s' % (time.strftime('%d/%m/%Y#%H:%M:%S'), day, month, year))
         
     
     def add_no_space_event(self):
@@ -155,7 +155,7 @@ class WWWLog:
         """
         
         self.logger.log('add_no_space_event() - adding deletion event', 'DEBUG')
-        self.add_event('$%s#Deleting todays data, \'images_dbase\' is too small' % time.strftime('%d/%m/%Y#%H:%M:%S'))
+        self.add_event('%s#Deleting todays data, \'images_dbase\' is too small' % time.strftime('%d/%m/%Y#%H:%M:%S'))
     
     
     def add_event(self, new_event):
@@ -169,14 +169,14 @@ class WWWLog:
         try:
             mutex = Mutex(self.kmotion_dir, 'logs')
             mutex.acquire()
-            if len(self.events) > 500:  # truncate logs
-                self.events.pop()
-                self.events = '$'.join(self.events)
-                with open(self.log_file, 'w') as f_obj:
-                    f_obj.writelines(self.events)
-                
-            with open(self.log_file, 'a') as f_obj:
-                f_obj.write(new_event)
+            with open(self.log_file, 'r+') as f_obj:
+                events = f_obj.read().split('$')
+                if len(events) > 500:  # truncate logs
+                    events.pop()
+                events = '$' + new_event + '$'.join(events)
+                f_obj.seek(0)
+                f_obj.write(events)
+                f_obj.truncate()
         finally:
             mutex.release()
     

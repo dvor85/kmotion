@@ -44,7 +44,7 @@ class InitMotion:
         
         self.feed_list = []
         for feed in range(1, self.max_feed):
-            if not self.www_parser.has_section('motion_feed%02i' % feed) and self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
+            if self.www_parser.has_section('motion_feed%02i' % feed) and self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
                 self.feed_list.append(feed)
                 
     def gen_motion_configs(self):
@@ -254,5 +254,6 @@ snapshot_interval 1
 if __name__ == '__main__':
     
     print '\nModule self test ... generating motion.conf and threads\n'
-    # gen_motion_configs('%s/..' % os.getcwd())
+    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    InitMotion(kmotion_dir).gen_motion_configs()
     

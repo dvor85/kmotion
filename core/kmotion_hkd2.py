@@ -343,7 +343,7 @@ class Kmotion_Hkd2:
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         self.max_feed = parser.getint('misc', 'max_feed')
         for feed in range(1, self.max_feed):
-            self.instance_list.append(Hkd2_Feed(feed), self.kmotion_dir)
+            self.instance_list.append(Hkd2_Feed(feed, self.kmotion_dir))
         
         
     def main(self):

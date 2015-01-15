@@ -111,7 +111,7 @@ class Kmotion:
               
         time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
         purge_str = '#' * 1000 + '99999999'
-        for fifo in ['fifo_func', 'fifo_ptz', 'fifo_ptz_preset', 'fifo_settings_wr']:
+        for fifo in ['fifo_func', 'fifo_settings_wr']:
             pipeout = os.open('%s/www/%s' % (self.kmotion_dir, fifo), os.O_WRONLY)
             os.write(pipeout, purge_str)
             os.close(pipeout)
@@ -120,6 +120,6 @@ class Kmotion:
 
 
 if __name__ == '__main__':
-    kmotion_dir = os.path.dirname(__file__)
+    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
     Kmotion(kmotion_dir).main(sys.argv[1])
 

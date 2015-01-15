@@ -5,7 +5,7 @@ Created on 18.12.2014
 '''
 import ConfigParser
 
-from core.mutex import Mutex
+from mutex import Mutex
 
 
 def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):
