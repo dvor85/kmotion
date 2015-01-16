@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Copyright 2008 David Selby dave6502@googlemail.com
 
 # This file is part of kmotion.
@@ -27,32 +26,28 @@ import os, sys, urllib, time, signal, shutil, ConfigParser, traceback
 import logger, sort_rc
 from mutex_parsers import *
 from mutex import Mutex
-from daemon_whip import DaemonControl
 from www_logs import WWWLog
+from threading import Thread
 
-log_level = 'WARNING'
-logger = logger.Logger('kmotion_hkd1', log_level)
-
-
-class SigTerm(Exception):
-    pass
-
-
-class Kmotion_Hkd1:
+class Kmotion_Hkd1(Thread):
     
+    log_level = 'WARNING'
     
     def __init__(self, kmotion_dir):
-        
+        Thread.__init__(self)
+        self.setName('kmotion_hkd1')
+        self.setDaemon(True)
+        self.logger = logger.Logger('kmotion_hkd1', Kmotion_Hkd1.log_level)
         self.images_dbase_dir = ''  # the 'root' directory of the images dbase
         self.kmotion_dir = kmotion_dir
         self.max_size_gb = 0  # max size permitted for the images dbase
         self.version = ''  # the current kmotion software version
         
-        self.daemon_whip = DaemonControl(self.kmotion_dir)  
         self.www_logs = WWWLog(self.kmotion_dir) 
-        self.read_config()
-        signal.signal(signal.SIGHUP, self.signal_hup)
-        signal.signal(signal.SIGTERM, self.signal_term) 
+#        self.read_config()
+
+    def stop(self):
+        os.kill(os.getpid(), signal.SIGTERM)
         
     def read_config(self):
         """ 
@@ -72,18 +67,17 @@ class Kmotion_Hkd1:
             self.max_feed = parser.getint('misc', 'max_feed')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             # 2**30 = 1GB
-            self.max_size_gb = int(parser.get('storage', 'images_dbase_limit_gb')) * 2 ** 30
+            self.max_size_gb = parser.getint('storage', 'images_dbase_limit_gb') * 2 ** 30
             
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
+            self.logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
                        sys.exc_info()[1], 'CRIT')
-            logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
-            self.daemon_whip.kill_daemons()
-        
+            self.logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
+            self.stop()
           
         
         
-    def main(self):    
+    def run(self):    
         """
         Start the hkd1 daemon. This daemon wakes up every 15 minutes
         
@@ -91,47 +85,64 @@ class Kmotion_Hkd1:
         excepts : 
         return  : none
         """
-        
-        logger.log('starting daemon ...', 'CRIT') 
-        time.sleep(60)  # delay to let stack settle else 'update_version' returns 
-                        # IOError on system boot  
-        old_date = time.strftime('%Y%m%d', time.localtime(time.time()))
-        # self.update_version()
-        
-        while True:   
-            
-            # sleep here to allow system to settle 
-            time.sleep(15 * 60)
-            date = time.strftime('%Y%m%d', time.localtime(time.time()))
-
-            # if > 90% of max_size_gb, delete oldest
-            if  self.images_dbase_size() > self.max_size_gb * 0.9:
-                
-                dir_ = os.listdir(self.images_dbase_dir)
-                dir_.sort()
-                    
-                # if need to delete current recording, shut down kmotion 
-                if date == dir_[0]:
-                    logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
-                    logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
-                    logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
-                    self.www_logs.add_no_space_event()
-                    self.daemon_whip.kill_daemons()
-                    sys.exit()
-                
-                self.www_logs.add_deletion_event(dir_[0])
-                logger.log('image storeage limit reached - deleteing %s/%s' % 
-                           (self.images_dbase_dir, dir_[0]), 'CRIT')
-                shutil.rmtree('%s/%s' % (self.images_dbase_dir, dir_[0])) 
-                
-            if date != old_date:
-                
-                time.sleep(5 * 60)  # to ensure journals are written
-                logger.log('midnight processes started ...', 'CRIT')
-                # self.ping_server_0000()
+        while True:
+            try:
+                self.logger.log('starting daemon ...', 'CRIT') 
+                self.www_logs.add_startup_event()
+                self.read_config()
+        #        time.sleep(60)  # delay to let stack settle else 'update_version' returns 
+                                # IOError on system boot  
+                old_date = time.strftime('%Y%m%d', time.localtime(time.time()))
                 # self.update_version()
-                self.build_smovie_cache(date)
-                old_date = date
+                
+                while True:   
+                    
+                    # sleep here to allow system to settle 
+                    time.sleep(15 * 60)
+                    date = time.strftime('%Y%m%d', time.localtime(time.time()))
+        
+                    # if > 90% of max_size_gb, delete oldest
+                    if  self.images_dbase_size() > self.max_size_gb * 0.9:
+                        
+                        dir_ = os.listdir(self.images_dbase_dir)
+                        dir_.sort()
+                            
+                        # if need to delete current recording, shut down kmotion 
+                        if date == dir_[0]:
+                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
+                            self.www_logs.add_no_space_event()
+                            self.stop()
+                        
+                        self.www_logs.add_deletion_event(dir_[0])
+                        self.logger.log('image storeage limit reached - deleteing %s/%s' % 
+                                   (self.images_dbase_dir, dir_[0]), 'CRIT')
+                        shutil.rmtree('%s/%s' % (self.images_dbase_dir, dir_[0])) 
+                        
+                    if date != old_date:
+                        
+                        time.sleep(5 * 60)  # to ensure journals are written
+                        self.logger.log('midnight processes started ...', 'CRIT')
+                        # self.ping_server_0000()
+                        # self.update_version()
+                        self.build_smovie_cache(date)
+                        old_date = date
+            except:  # global exception catch        
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                exc_trace = traceback.extract_tb(exc_traceback)[-1]
+                exc_loc1 = '%s' % exc_trace[0]
+                exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
+                 
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - type: %s' 
+                           % exc_type, 'CRIT')
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - value: %s' 
+                           % exc_value, 'CRIT')
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
+                           % exc_loc1, 'CRIT')
+                self.ogger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
+                           % exc_loc2, 'CRIT')
+                time.sleep(60)
                 
                 
     def set_version(self, version):
@@ -172,7 +183,7 @@ class Kmotion_Hkd1:
                 feed_dir = '%s/%s/%02i' % (self.images_dbase_dir, date, feed)
                 
                 if os.path.isdir('%s/smovie' % feed_dir) and not os.path.isfile('%s/smovie_cache' % feed_dir):
-                    logger.log('creating \'%s/smovie_cache\'' % feed_dir, 'CRIT')
+                    self.logger.log('creating \'%s/smovie_cache\'' % feed_dir, 'CRIT')
                     
                     # smovie in need of a cache, build cache
                     coded_str = self.smovie_journal_data(date, feed)
@@ -307,7 +318,7 @@ class Kmotion_Hkd1:
                 with open('%s/dir_size' % date_dir) as f_obj:
                     bytes_ += int(f_obj.readline())
     
-        logger.log('images_dbase_size() - size : %s' % bytes_, 'DEBUG')
+        self.logger.log('images_dbase_size() - size : %s' % bytes_, 'DEBUG')
         return bytes_
         
             
@@ -347,7 +358,7 @@ class Kmotion_Hkd1:
                 if os.path.isdir('%s/snap' % feed_dir):
                     bytes_ += self.size_snap(feed_dir) 
         
-            logger.log('update_dbase_sizes() - size : %s' % bytes_, 'DEBUG')
+            self.logger.log('update_dbase_sizes() - size : %s' % bytes_, 'DEBUG')
             
             with open('%s/dir_size' % date_dir, 'w') as f_obj:
                 f_obj.write(str(bytes_))
@@ -368,7 +379,7 @@ class Kmotion_Hkd1:
             line = f_obj.readline()
         
         bytes_ = int(line.split()[0]) * 1000
-        logger.log('size_movie() - %s size : %s' % (feed_dir, bytes_), 'DEBUG')
+        self.logger.log('size_movie() - %s size : %s' % (feed_dir, bytes_), 'DEBUG')
         return bytes_
 
     
@@ -426,7 +437,7 @@ class Kmotion_Hkd1:
 
             total_size += num_dirs * (total_bytes / sample)
 
-        logger.log('size_smovie() - %s size : %s' % (feed_dir, total_size), 'DEBUG')
+        self.logger.log('size_smovie() - %s size : %s' % (feed_dir, total_size), 'DEBUG')
         return total_size
         
     
@@ -484,68 +495,8 @@ class Kmotion_Hkd1:
                 
             total_size += num_jpegs * (total_bytes / sample)
         
-        logger.log('size_snap() - %s size : %s' % (feed_dir, total_size), 'DEBUG')
+        self.logger.log('size_snap() - %s size : %s' % (feed_dir, total_size), 'DEBUG')
         return total_size
         
     
-    def signal_hup(self, signum, frame):
-        """
-        On SIGHUP re-read the config file 
-        
-        args    : discarded
-        excepts : 
-        return  : none
-        """
-        
-        logger.log('signal SIGHUP detected, re-reading config file', 'CRIT')
-        self.read_config()
-        
-    
-    def signal_term(self, signum, frame):
-        """
-        On SIGTERM raise 'SigTerm' as a special case
-        
-        args    : discarded
-        excepts : 
-        return  : none
-        """
-
-        raise SigTerm
-
-
-
-# it is CRUCIAL that this code is bombproof
-
-kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-hkd1 = Kmotion_Hkd1(kmotion_dir)
-
-while True:
-    hkd1.www_logs.add_startup_event()
-    try:    
-    # print Kmotion_Hkd1().images_dbase_size()
-    # print Kmotion_Hkd1().max_size_gb
-        
-        hkd1.main()
-        
-    except SigTerm:  # special case for propogated SIGTERM
-        hkd1.www_logs.add_shutdown_event()
-        sys.exit()
-    except:  # global exception catch        
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        exc_trace = traceback.extract_tb(exc_traceback)[-1]
-        exc_loc1 = '%s' % exc_trace[0]
-        exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-        
-        logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - type: %s' 
-                   % exc_type, 'CRIT')
-        logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - value: %s' 
-                   % exc_value, 'CRIT')
-        logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
-                   % exc_loc1, 'CRIT')
-        logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
-                   % exc_loc2, 'CRIT')
-        time.sleep(60)
-        
-        
-
     

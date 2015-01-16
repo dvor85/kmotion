@@ -27,14 +27,13 @@ import os, sys, time, signal, shutil, ConfigParser, traceback
 import logger
 from mutex_parsers import *
 from mutex import Mutex
-from daemon_whip import DaemonControl
+from threading import Thread 
 
 log_level = 'WARNING'
 logger = logger.Logger('kmotion_hkd2', log_level)
 
 
 class Hkd2_Feed:
-    
     
     def __init__(self, feed, kmotion_dir):
         
@@ -49,8 +48,6 @@ class Hkd2_Feed:
         self.feed_name = ''  # feed name
         self.old_date = ''  # old date
         self.epoch_time = time.time()  # secs since epoch 
-        self.reload_flag = False  # true if reload required
-        self.daemon_whip = DaemonControl(self.kmotion_dir)
         
         self.read_config()
                 
@@ -95,33 +92,6 @@ class Hkd2_Feed:
         
         date, time_ = self.current_date_time()
          
-        if self.reload_flag:  # if 'self.reload_flag', reload the config
-            self.reload_flag = False
-            
-            old_feed_enabled = self.feed_enabled
-            old_snap_enabled = self.feed_snap_enabled
-            self.read_config()
-            
-            # if feed or snap just enabled, update 'epoch_time'
-            if (not old_feed_enabled and self.feed_enabled) or (not old_snap_enabled and self.feed_snap_enabled):
-                self.epoch_time = time.time()
-                date, time_ = self.current_date_time()
-                        
-            # if feed enabled or just disabled, update journals
-            if self.feed_enabled or (old_feed_enabled and not self.feed_enabled):
-                    
-                feed_dir = '%s/%s/%02i' % (self.images_dbase_dir, date, self.feed)
-                try:  # make sure 'feed_dir' exists, try in case motion creates dir
-                    os.makedirs(feed_dir)
-                except OSError:
-                    pass
-                
-                # update the snap and smovie fps journals
-                self.update_snap_journal(date, self.feed_enabled and self.feed_snap_enabled,
-                                         time_, self.feed_snap_interval)
-                self.update_fps_journal(date, time_, self.feed_fps)
-                self.update_title(date)
-                
         # if dates mismatch, its a new day 
         if self.feed_enabled and date != self.old_date: 
             
@@ -302,51 +272,23 @@ class Hkd2_Feed:
             
             
     
-    def call_signal_term(self):
-        """
-        Updates journals with #HHMMSS$0 signifying no more snaps
-        
-        args    : 
-        excepts : 
-        return  : none
-        """
-        
-        if self.feed_enabled:
-            date, time_ = self.current_date_time()
-            self.update_snap_journal(date, False, time_, 0)
-    
-            
-    def call_signal_hup(self):
-        """
-        Sets the 'self.reload_flag'
-        
-        args    : 
-        excepts : 
-        return  : none
-        """
-        
-        self.reload_flag = True
-          
-        
-class Kmotion_Hkd2:
+class Kmotion_Hkd2(Thread):
     
     
     def __init__(self, kmotion_dir):
-        
-        signal.signal(signal.SIGHUP, self.signal_hup)
-        signal.signal(signal.SIGTERM, self.signal_term)
+        Thread.__init__(self)
+        self.setName('kmotion_hkd2')
+        self.setDaemon(True)
         self.kmotion_dir = kmotion_dir
-        self.instance_list = []  # list of 16 Hkd2_Feed instances
-        self.keep_running = True  # exit control
         
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         self.max_feed = parser.getint('misc', 'max_feed')
-        for feed in range(1, self.max_feed):
-            self.instance_list.append(Hkd2_Feed(feed, self.kmotion_dir))
         
+    def stop(self):
+        os.kill(os.getpid(), signal.SIGTERM)    
         
-    def main(self):
+    def run(self):
         """
         Start the hkd2 daemon. This daemon wakes up every 2 seconds
         
@@ -355,77 +297,43 @@ class Kmotion_Hkd2:
         return  : none
         """
         
-        logger.log('starting daemon ...', 'CRIT')
-        
-       
+        while True:
+            try:
+                logger.log('starting daemon ...', 'CRIT')
+                self.instance_list = []  # list of Hkd2_Feed instances
+                for feed in range(1, self.max_feed):
+                    self.instance_list.append(Hkd2_Feed(feed, self.kmotion_dir))
+               
+                    
+                # self.keep_running, a workaround for exit without exception
+                while True:
+                    for inst in self.instance_list:
+                        inst.service_snap()
+                        
+                    tmp_list = os.listdir('%s/tmp' % self.ramdisk_dir)
+                    tmp_list.sort()
+                    tmp_len = len(tmp_list)
+                    max_len = 25 * (self.max_feed - 1)
+                    if tmp_len > max_len:  # 5 * 5 * (max_feed-1) on all channels
+                        for i in range (0, tmp_len - max_len):
+                            os.remove('%s/tmp/%s' % (self.ramdisk_dir, tmp_list[i]))
             
-        # self.keep_running, a workaround for exit without exception
-        while self.keep_running:
-            for inst in self.instance_list:
-                inst.service_snap()
-                
-            tmp_list = os.listdir('%s/tmp' % self.ramdisk_dir)
-            tmp_list.sort()
-            tmp_len = len(tmp_list)
-            max_len = 25 * (self.max_feed - 1)
-            if tmp_len > max_len:  # 5 * 5 * (max_feed-1) on all channels
-                for i in range (0, tmp_len - max_len):
-                    os.remove('%s/tmp/%s' % (self.ramdisk_dir, tmp_list[i]))
-    
-            time.sleep(2)
+                    time.sleep(2)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                exc_trace = traceback.extract_tb(exc_traceback)[-1]
+                exc_loc1 = '%s' % exc_trace[0]
+                exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
+                 
+                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - type: %s' 
+                           % exc_type, 'CRIT')
+                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - value: %s' 
+                           % exc_value, 'CRIT')
+                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - traceback: %s' 
+                           % exc_loc1, 'CRIT')
+                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - traceback: %s' 
+                           % exc_loc2, 'CRIT')
+                time.sleep(60)
 
 
-    def signal_hup(self, signum, frame):
-        """ 
-        SIGHUP
-        
-        args    : discarded
-        excepts : 
-        return  : none
-        """
-        logger.log('signal SIGHUP detected, re-reading config file', 'CRIT')
-        for inst in self.instance_list:
-            inst.call_signal_hup()
- 
- 
-    def signal_term(self, signum, frame):
-        """ 
-        SIGTERM
-        
-        args    : discarded
-        excepts : 
-        return  : none
-        """
-        
-        logger.log('signal_term() - signal SIGTERM detected, updating journals', 'DEBUG')
-        for inst in self.instance_list:
-            inst.call_signal_term()
-        self.keep_running = False
- 
-    
-    
-# it is CRUCIAL that this code is bombproof
 
-kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-hkd2 = Kmotion_Hkd2(kmotion_dir)
-
-while True:
-    try:    
-        hkd2.main()
-        break  # if normal exit, exit the loop
-    except:  # global exception catch
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        exc_trace = traceback.extract_tb(exc_traceback)[-1]
-        exc_loc1 = '%s' % exc_trace[0]
-        exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-        
-        logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - type: %s' 
-                   % exc_type, 'CRIT')
-        logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - value: %s' 
-                   % exc_value, 'CRIT')
-        logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - traceback: %s' 
-                   % exc_loc1, 'CRIT')
-        logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - traceback: %s' 
-                   % exc_loc2, 'CRIT')
-        time.sleep(60)
-                   

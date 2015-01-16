@@ -32,6 +32,9 @@ from core.init_motion import InitMotion
 import core.logger as logger
 from core.mutex_parsers import *
 from core.daemon_whip import DaemonControl
+import signal
+from core.www_logs import WWWLog
+import threading
 
 
 log_level = 'WARNING' 
@@ -42,6 +45,9 @@ class exit_(Exception): pass
 class Kmotion:
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
+        signal.signal(signal.SIGTERM, self.signal_term)
+        self.www_log = WWWLog(self.kmotion_dir)
+        
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
          
@@ -73,10 +79,8 @@ class Kmotion:
         elif option == 'restart':
             logger.log('restarting kmotion ...', 'CRIT')
         # check for any invalid motion processes
-        p_objs = Popen('ps ax | grep -e [[:space:]]motion | grep -v \'\-c %s/core/motion_conf/motion.conf\'' % self.kmotion_dir, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        line = p_objs.stdout.readline()
         
-        if line != '':
+        if self.daemon_whip.is_motion_running():
             logger.log('** CRITICAL ERROR ** kmotion failed to start ...', 'CRIT')
             logger.log('** CRITICAL ERROR ** Another instance of motion daemon has been detected', 'CRIT')
             raise exit_("""An instance of the motion daemon has been detected which is not under control 
@@ -103,23 +107,35 @@ class Kmotion:
         self.init_motion.gen_motion_configs()
         
         # speed kmotion startup
-        if not self.daemon_whip.is_daemons_running():
-            self.daemon_whip.start_daemons()
-        else:
-            self.daemon_whip.start_daemons()
-            self.daemon_whip.reload_all_configs()
+#         if not self.daemon_whip.is_daemons_running():
+#             self.daemon_whip.start_daemons()
+#         else:
+        self.daemon_whip.kill_daemons()
+        self.daemon_whip.start_daemons()
+#            self.daemon_whip.reload_all_configs()
               
         time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
         purge_str = '#' * 1000 + '99999999'
-        for fifo in ['fifo_func', 'fifo_settings_wr']:
+        for fifo in ['fifo_settings_wr']:
             pipeout = os.open('%s/www/%s' % (self.kmotion_dir, fifo), os.O_WRONLY)
             os.write(pipeout, purge_str)
             os.close(pipeout)
+            
+    def signal_term(self, signum, frame):
+        self.www_log.add_shutdown_event()
+        self.daemon_whip.kill_daemons()
+        sys.exit()
+    
+    def wait_termination(self):
+        while True:            
+            time.sleep(60 * 60 * 24)
             
 
 
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.dirname(__file__))
-    Kmotion(kmotion_dir).main(sys.argv[1])
+    kmotion = Kmotion(kmotion_dir)
+    kmotion.main(sys.argv[1])
+    kmotion.wait_termination()
 

@@ -27,6 +27,9 @@ from subprocess import *  # breaking habit of a lifetime !
 import logger
 from mutex_parsers import *
 from init_core import InitCore
+from kmotion_hkd1 import Kmotion_Hkd1
+from kmotion_hkd2 import Kmotion_Hkd2
+from kmotion_setd import Kmotion_setd
 
 class DaemonControl:
     
@@ -56,7 +59,7 @@ class DaemonControl:
             
     def stop_motion(self):
         trys = 0
-        while True:
+        while self.is_motion_running():
             trys += 1
             if trys < 20:
                 Popen('pkill -f \'.*motion.+-c.*\'', shell=True)  # if motion hangs get nasty !
@@ -66,13 +69,15 @@ class DaemonControl:
                 # Popen('killall -9 -q motion', shell=True) # if motion hangs get nasty !
                 Popen('pkill -9 -f \'.*motion.+-c.*\'', shell=True)  # if motion hangs get nasty !
             
-            if not self.is_motion_running(): break
-            
             time.sleep(1)
             self.logger.log('reload_motion_config() - motion not killed - retrying ...', 'DEBUG')
             
         self.logger.log('stop_motion() - motion killed', 'DEBUG') 
-
+        
+    def get_kmotion_pids(self):
+        p_objs = Popen('pgrep -f \'.*kmotion.py$\'', shell=True, stdout=PIPE, close_fds=True)
+        return [pid for pid in p_objs.stdout.readlines() if int(pid) != os.getpid()]
+        
 
     def start_daemons(self):
         """ 
@@ -85,25 +90,29 @@ class DaemonControl:
         
         self.logger.log('start_daemons() - starting daemons ...', 'DEBUG')
         
-        p_objs = Popen('ps ax | grep kmotion_hkd1.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        if p_objs.stdout.readline() == '':   
-            Popen('nohup %s/core/kmotion_hkd1.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True) 
-            self.logger.log('start_daemons() - starting kmotion_hkd1', 'DEBUG')
+        Kmotion_Hkd1(self.kmotion_dir).start()
+        Kmotion_Hkd2(self.kmotion_dir).start()
+        Kmotion_setd(self.kmotion_dir).start()
+        
+#         p_objs = Popen('ps ax | grep kmotion_hkd1.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         if p_objs.stdout.readline() == '':   
+#             Popen('nohup %s/core/kmotion_hkd1.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True) 
+#             self.logger.log('start_daemons() - starting kmotion_hkd1', 'DEBUG')
+#     
+#         p_objs = Popen('ps ax | grep kmotion_hkd2.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         if p_objs.stdout.readline() == '':   
+#             Popen('nohup %s/core/kmotion_hkd2.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
+#             self.logger.log('start_daemons() - starting kmotion_hkd2', 'DEBUG')
     
-        p_objs = Popen('ps ax | grep kmotion_hkd2.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        if p_objs.stdout.readline() == '':   
-            Popen('nohup %s/core/kmotion_hkd2.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
-            self.logger.log('start_daemons() - starting kmotion_hkd2', 'DEBUG')
-    
-        p_objs = Popen('ps ax | grep kmotion_fund.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        if p_objs.stdout.readline() == '':   
-            Popen('nohup %s/core/kmotion_fund.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
-            self.logger.log('start_daemons() - starting kmotion_fund', 'DEBUG')
+#         p_objs = Popen('ps ax | grep kmotion_fund.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         if p_objs.stdout.readline() == '':   
+#             Popen('nohup %s/core/kmotion_fund.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
+#             self.logger.log('start_daemons() - starting kmotion_fund', 'DEBUG')
             
-        p_objs = Popen('ps ax | grep kmotion_setd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        if p_objs.stdout.readline() == '':  
-            Popen('nohup %s/core/kmotion_setd.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
-            self.logger.log('start_daemons() - starting kmotion_setd', 'DEBUG')
+#         p_objs = Popen('ps ax | grep kmotion_setd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         if p_objs.stdout.readline() == '':  
+#             Popen('nohup %s/core/kmotion_setd.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
+#             self.logger.log('start_daemons() - starting kmotion_setd', 'DEBUG')
             
 #         p_objs = Popen('ps ax | grep kmotion_ptzd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
 #         if p_objs.stdout.readline() == '': 
@@ -123,98 +132,100 @@ class DaemonControl:
         """
         
         self.logger.log('kill_daemons() - killing daemons ...', 'DEBUG')
+        
         # Popen('killall -q motion', shell=True)
         self.stop_motion()
-        Popen('pkill -f \'python.+kmotion_hkd2.py\'', shell=True)
-        Popen('pkill -f \'python.+kmotion_fund.py\'', shell=True)
-        Popen('pkill -f \'python.+kmotion_setd.py\'', shell=True)
-        Popen('pkill -f \'python.+kmotion_ptzd.py\'', shell=True)
-        # orderd thus because kmotion_hkd1.py needs to call this function  
-        Popen('pkill -f \'python.+kmotion_hkd1.py\'', shell=True)
-        
-        time.sleep(1) 
-        while self.is_daemons_running():
-            self.logger.log('kill_daemons() - resorting to kill -9 ... ouch !', 'DEBUG')
-            self.stop_motion()
-            Popen('pkill -9 -f \'python.+kmotion_hkd2.py\'', shell=True)
-            Popen('pkill -9 -f \'python.+kmotion_fund.py\'', shell=True)
-            Popen('pkill -9 -f \'python.+kmotion_setd.py\'', shell=True)
-            Popen('pkill -9 -f \'python.+kmotion_ptzd.py\'', shell=True)
-            # orderd thus because kmotion_hkd1.py needs to call this function  
-            Popen('pkill -9 -f \'python.+kmotion_hkd1.py\'', shell=True)
+        Popen('kill %s' % ' '.join(self.get_kmotion_pids()), shell=True).wait()
+#         Popen('pkill -f \'python.+kmotion_hkd2.py\'', shell=True)
+#         Popen('pkill -f \'python.+kmotion_fund.py\'', shell=True)
+#         Popen('pkill -f \'python.+kmotion_setd.py\'', shell=True)
+#         Popen('pkill -f \'python.+kmotion_ptzd.py\'', shell=True)
+#         # orderd thus because kmotion_hkd1.py needs to call this function  
+#         Popen('pkill -f \'python.+kmotion_hkd1.py\'', shell=True)
+#         
+#         time.sleep(1) 
+#         while self.is_daemons_running():
+#             self.logger.log('kill_daemons() - resorting to kill -9 ... ouch !', 'DEBUG')
+#             self.stop_motion()
+#             Popen('pkill -9 -f \'python.+kmotion_hkd2.py\'', shell=True)
+#             Popen('pkill -9 -f \'python.+kmotion_fund.py\'', shell=True)
+#             Popen('pkill -9 -f \'python.+kmotion_setd.py\'', shell=True)
+#             Popen('pkill -9 -f \'python.+kmotion_ptzd.py\'', shell=True)
+#             # orderd thus because kmotion_hkd1.py needs to call this function  
+#             Popen('pkill -9 -f \'python.+kmotion_hkd1.py\'', shell=True)
         
         # to kill off any 'cat' zombies ...
-        Popen('pkill -f \'cat.+/www/fifo_ptz\'', shell=True) 
-        Popen('pkill -f \'cat.+/www/fifo_ptz_preset\'', shell=True) 
-        Popen('pkill -f \'cat.+/www/fifo_settings_wr\'', shell=True) 
-        Popen('pkill -f \'cat.+/www/fifo_func\'', shell=True) 
+#         Popen('pkill -f \'cat.+/www/fifo_ptz\'', shell=True) 
+#         Popen('pkill -f \'cat.+/www/fifo_ptz_preset\'', shell=True) 
+#         Popen('pkill -f \'cat.+/www/fifo_func\'', shell=True) 
+        Popen('pkill -f \'cat.+/www/fifo_settings_wr\'', shell=True)
             
         self.logger.log('kill_daemons() - daemons killed ...', 'DEBUG')
 
 
-    def is_daemons_running(self):
-        """ 
-        Check to see if all kmotion daemons are running
-    
-        args    : 
-        excepts : 
-        return  : bool ... true if all daemons are running
-        """
-        
-        p_objs = Popen('ps ax | grep kmotion_hkd1.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        stdout1 = p_objs.stdout.readline()
-        
-        p_objs = Popen('ps ax | grep kmotion_hkd2.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        stdout2 = p_objs.stdout.readline()
-            
-        p_objs = Popen('ps ax | grep kmotion_fund.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        stdout3 = p_objs.stdout.readline()
-        
-        p_objs = Popen('ps ax | grep kmotion_setd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        stdout4 = p_objs.stdout.readline()
-        
-#         p_objs = Popen('ps ax | grep kmotion_ptzd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-#         stdout5 = p_objs.stdout.readline()
-        
-        return (stdout1 != '' and stdout2 != '' and stdout3 != '' and stdout4 != '' and self.is_motion_running())
+#     def is_daemons_running(self):
+#         """ 
+#         Check to see if all kmotion daemons are running
+#     
+#         args    : 
+#         excepts : 
+#         return  : bool ... true if all daemons are running
+#         """
+#         
+#         p_objs = Popen('ps ax | grep kmotion_hkd1.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         stdout1 = p_objs.stdout.readline()
+#         
+#         p_objs = Popen('ps ax | grep kmotion_hkd2.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         stdout2 = p_objs.stdout.readline()
+#             
+# #         p_objs = Popen('ps ax | grep kmotion_fund.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+# #         stdout3 = p_objs.stdout.readline()
+#         
+#         p_objs = Popen('ps ax | grep kmotion_setd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#         stdout4 = p_objs.stdout.readline()
+#         
+# #         p_objs = Popen('ps ax | grep kmotion_ptzd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+# #         stdout5 = p_objs.stdout.readline()
+#         
+#         return (stdout1 != '' and stdout2 != '' and stdout4 != '' and self.is_motion_running())
 
 
-    def reload_all_configs(self):
-        """ 
-        Force daemons to reload all configs 
-    
-        args    : 
-        excepts : 
-        return  : none
-        """
-        
-#         self.reload_ptz_config()
-        self.reload_motion_config()
-        # kmotion_fund and kmotion_setd have no SIGHUP handlers
-        Popen('pkill -SIGHUP -f python.+kmotion_hkd1.py', shell=True) 
-        Popen('pkill -SIGHUP -f python.+kmotion_hkd2.py', shell=True)
-       
-    
-    def reload_ptz_config(self):
-        """ 
-        Force ptz to reload configs 
-    
-        args    : 
-        excepts : 
-        return  : none
-        """
-        
-        # a workaround. because 'kmotion_ptzd' is threaded the only way
-        # to get the threads to reliably reload their config is to kill and 
-        # restart else they languish in a sleep state for ? secs. so sending 
-        # a SIGHUP to 'kmotion_ptzd' kills the script
-        Popen('pkill -SIGHUP -f python.+kmotion_ptzd.py', shell=True)  
-        while True:
-            p_objs = Popen('ps ax | grep kmotion_ptzd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-            stdout = p_objs.stdout.readline()
-            if stdout == '': break
-            time.sleep(0.1)
-        Popen('nohup %s/core/kmotion_ptzd.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
+#     def reload_all_configs(self):
+#         """ 
+#         Force daemons to reload all configs 
+#     
+#         args    : 
+#         excepts : 
+#         return  : none
+#         """
+#         
+# #         self.reload_ptz_config()
+#         self.reload_motion_config()
+#         # kmotion_fund and kmotion_setd have no SIGHUP handlers
+#         Popen('pkill -SIGHUP -f python.+kmotion_hkd1.py', shell=True) 
+#         Popen('pkill -SIGHUP -f python.+kmotion_hkd2.py', shell=True)
+#        
+#     
+#     def reload_ptz_config(self):
+#         """ 
+#         Force ptz to reload configs 
+#     
+#         args    : 
+#         excepts : 
+#         return  : none
+#         """
+#         
+#         # a workaround. because 'kmotion_ptzd' is threaded the only way
+#         # to get the threads to reliably reload their config is to kill and 
+#         # restart else they languish in a sleep state for ? secs. so sending 
+#         # a SIGHUP to 'kmotion_ptzd' kills the script
+#         Popen('pkill -SIGHUP -f python.+kmotion_ptzd.py', shell=True)  
+#         while True:
+#             p_objs = Popen('ps ax | grep kmotion_ptzd.py$', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+#             stdout = p_objs.stdout.readline()
+#             if stdout == '': break
+#             time.sleep(0.1)
+#         Popen('nohup %s/core/kmotion_ptzd.py >/dev/null 2>&1 &' % self.kmotion_dir, shell=True)
         
     
 
