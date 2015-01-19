@@ -37,14 +37,15 @@ from core.www_logs import WWWLog
 import threading
 
 
-log_level = 'WARNING' 
-logger = logger.Logger('kmotion', log_level)
-
 class exit_(Exception): pass
 
 class Kmotion:
+    
+    log_level = 'WARNING'
+    
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
+        self.logger = logger.Logger('kmotion', Kmotion.log_level)
         signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         
@@ -70,23 +71,23 @@ class Kmotion:
         
         # if 'stop' shutdown and exit here
         if option == 'stop':
-            logger.log('stopping kmotion ...', 'CRIT')
+            self.logger.log('stopping kmotion ...', 'CRIT')
             self.daemon_whip.kill_daemons()
-            return
+            sys.exit()
         
         elif option == 'start':
-            logger.log('starting kmotion ...', 'CRIT')
+            self.logger.log('starting kmotion ...', 'CRIT')
         elif option == 'restart':
-            logger.log('restarting kmotion ...', 'CRIT')
+            self.logger.log('restarting kmotion ...', 'CRIT')
         # check for any invalid motion processes
         
-        if self.daemon_whip.is_motion_running():
-            logger.log('** CRITICAL ERROR ** kmotion failed to start ...', 'CRIT')
-            logger.log('** CRITICAL ERROR ** Another instance of motion daemon has been detected', 'CRIT')
-            raise exit_("""An instance of the motion daemon has been detected which is not under control 
-    of kmotion. Please kill this instance and ensure that motion is not started
-    automatically on system bootup. This a known problem with Ubuntu 8.04 
-    Reference Bug #235599.""")
+#         if self.daemon_whip.is_motion_running():
+#             logger.log('** CRITICAL ERROR ** kmotion failed to start ...', 'CRIT')
+#             logger.log('** CRITICAL ERROR ** Another instance of motion daemon has been detected', 'CRIT')
+#             raise exit_("""An instance of the motion daemon has been detected which is not under control 
+#     of kmotion. Please kill this instance and ensure that motion is not started
+#     automatically on system bootup. This a known problem with Ubuntu 8.04 
+#     Reference Bug #235599.""")
     
         # init the ramdisk dir
         self.init_core.init_ramdisk_dir()
@@ -106,13 +107,8 @@ class Kmotion:
         # init motion_conf directory with motion.conf, thread1.conf ...
         self.init_motion.gen_motion_configs()
         
-        # speed kmotion startup
-#         if not self.daemon_whip.is_daemons_running():
-#             self.daemon_whip.start_daemons()
-#         else:
         self.daemon_whip.kill_daemons()
         self.daemon_whip.start_daemons()
-#            self.daemon_whip.reload_all_configs()
               
         time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
         purge_str = '#' * 1000 + '99999999'
@@ -123,14 +119,12 @@ class Kmotion:
             
     def signal_term(self, signum, frame):
         self.www_log.add_shutdown_event()
-        self.daemon_whip.kill_daemons()
+        self.daemon_whip.stop_motion()
         sys.exit()
     
     def wait_termination(self):
         while True:            
             time.sleep(60 * 60 * 24)
-            
-
 
 
 if __name__ == '__main__':

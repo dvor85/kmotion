@@ -36,13 +36,8 @@ class Mutex:
         self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
         if not os.path.isdir(self.mutex_dir):
             os.makedirs(self.mutex_dir, 0755)
-        files = os.listdir(self.mutex_dir)
-        files.sort()
         
-        for del_file in files:
-            os.remove('%s/%s' % (self.mutex_dir, del_file))
-
-
+        
     def acquire(self):
         """ 
         Aquire the 'mutex' mutex lock, very carefully
@@ -53,25 +48,16 @@ class Mutex:
         return  : none
         """
     
-        while True:
-            # wait for any other locks to go
-            while True:
-                if self.check_lock() == 0:
-                    break
-                time.sleep(0.01)
         
-            # add our lock
-            with open('%s/%s' % (self.mutex_dir, os.getpid()), 'w'):
-                pass
+        # wait for any other locks to go
+        while True:
+            if not self.is_lock(): break
+            time.sleep(0.01)
+    
+        # add our lock
+        with open(os.path.join(self.mutex_dir, str(os.getpid())), 'w'):
+            pass
             
-            # wait ... see if another lock has appeared, if so remove our lock
-            # and loop
-            time.sleep(0.1)
-            if self.check_lock() == 1:
-                break
-            os.remove('%s/%s' % (self.mutex_dir, os.getpid()))
-            # random to avoid mexican stand-offs
-            time.sleep(float(random.randint(01, 40)) / 1000)
             
         
     def release(self):
@@ -84,11 +70,11 @@ class Mutex:
         return  : none
         """
 
-        if os.path.isfile('%s/%s' % (self.mutex_dir, os.getpid())):
-            os.remove('%s/%s' % (self.mutex_dir, os.getpid()))
+        if os.path.isfile(os.path.join(self.mutex_dir, str(os.getpid()))):
+            os.remove(os.path.join(self.mutex_dir, str(os.getpid())))
        
         
-    def check_lock(self):
+    def is_lock(self):
         """
         Return the number of active locks on the 'mutex' mutex, filters out .svn
     
@@ -100,8 +86,14 @@ class Mutex:
     
         files = os.listdir(self.mutex_dir)
         files.sort()
-        
-        return len(files)
+        lock = False
+        for m in files:
+            if not os.path.isdir(os.path.join('/proc', m)):
+                os.unlink(os.path.join(self.mutex_dir, m))
+            else:
+                lock = True
+                        
+        return lock
     
     
         

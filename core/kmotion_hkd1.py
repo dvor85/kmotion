@@ -140,7 +140,7 @@ class Kmotion_Hkd1(Thread):
                            % exc_value, 'CRIT')
                 self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
                            % exc_loc1, 'CRIT')
-                self.ogger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
                            % exc_loc2, 'CRIT')
                 time.sleep(60)
                 

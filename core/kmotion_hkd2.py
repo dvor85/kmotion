@@ -29,7 +29,7 @@ from mutex_parsers import *
 from mutex import Mutex
 from threading import Thread 
 
-log_level = 'WARNING'
+log_level = 'DEBUG'
 logger = logger.Logger('kmotion_hkd2', log_level)
 
 

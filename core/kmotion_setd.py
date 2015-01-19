@@ -31,7 +31,7 @@ from threading import Thread
 
 
 class Kmotion_setd(Thread):
-    log_level = 'WARNING'
+    log_level = 'DEBUG'
     
     
     def __init__(self, kmotion_dir):
@@ -141,7 +141,7 @@ class Kmotion_setd(Thread):
         return  : none
         """
         
-        self.logger.log('starting daemon ...', 'CRIT')
+        self.logger.log('starting daemon ...', 'WARNING')
         init_motion = InitMotion(self.kmotion_dir)
         
         reload_ptz_config = False
@@ -167,9 +167,15 @@ class Kmotion_setd(Thread):
         while True:
             
             self.logger.log('waiting on FIFO pipe data', 'DEBUG')
-            data = subprocess.Popen(['cat', '%s/www/fifo_settings_wr' % self.kmotion_dir], stdout=subprocess.PIPE).communicate()[0]
+            
+            #data = subprocess.Popen(['cat', '%s/www/fifo_settings_wr' % self.kmotion_dir], stdout=subprocess.PIPE).communicate()[0]
+            try:
+                pipein = open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r')
+                data = pipein.read()
+            finally:
+                pipein.close()
             data = data.rstrip()        
-            self.logger.log('kmotion FIFO pipe data: %s' % data, 'CRIT')
+            self.logger.log('kmotion FIFO pipe data: %s' % data, 'DEBUG')
             
             if len(data) < 8:
                 continue

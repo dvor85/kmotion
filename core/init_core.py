@@ -21,7 +21,7 @@
 Exports various methods used to initialize core configuration
 """
 
-import os
+import os, sys
 from subprocess import *  # breaking habit of a lifetime !
 import sort_rc, logger
 from mutex_parsers import *
@@ -157,23 +157,23 @@ class InitCore:
         """
         
         self.logger.log('init_ramdisk_dir() - creating \'states\' folder', 'DEBUG')
-        states_dir = os.path.join(self.ramdisk_dir,'states')
+        states_dir = os.path.join(self.ramdisk_dir, 'states')
         if not os.path.isdir(states_dir):
             os.makedirs(states_dir)
 
         for sfile in os.listdir(states_dir):
-            state_file=os.path.join(states_dir, sfile)
+            state_file = os.path.join(states_dir, sfile)
             if os.path.isfile(state_file):
                 self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), 'DEBUG')
                 os.remove(state_file)
                     
-        events_dir = os.path.join(self.ramdisk_dir,'events')
+        events_dir = os.path.join(self.ramdisk_dir, 'events')
         if not os.path.isdir(events_dir):
             self.logger.log('init_ramdisk_dir() - creating \'events\' folder', 'DEBUG') 
             os.makedirs(events_dir)
             
         for efile in os.listdir(events_dir):
-            event_file=os.path.join(events_dir, efile)
+            event_file = os.path.join(events_dir, efile)
             if os.path.isfile(event_file):
                 with open(event_file, 'r') as f_obj:
                     pid = f_obj.read()
@@ -309,8 +309,8 @@ class InitCore:
         args    : kmotion_dir ... the 'root' directory of kmotion
         excepts : exit        ... if kmotion_rc cannot be read
         return  : none
-        """
-        
+        """    
+
         self.logger.log('gen_vhost() - Generating vhost/kmotion file', 'DEBUG')
         
         self.logger.log('gen_vhost() - users_digest mode enabled', 'DEBUG')
@@ -319,18 +319,22 @@ class InitCore:
 AuthName "kmotion"
 AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
         
-        with open('%s/www/vhosts/kmotion' % self.kmotion_dir, 'w') as f_obj1:
-            with open('%s/www/templates/vhosts_template' % self.kmotion_dir) as f_obj2:
-                lines = f_obj2.readlines()
-        
-            for i in range(len(lines)):
-                lines[i] = lines[i].replace('%images_dbase_dir%', self.images_dbase_dir)
-                lines[i] = lines[i].replace('%ramdisk_dir%', self.ramdisk_dir)
-                lines[i] = lines[i].replace('%www_dir%', '%s/www/www' % self.kmotion_dir)
-                lines[i] = lines[i].replace('%logs_dir%', '%s/www/apache_logs' % self.kmotion_dir)
-                lines[i] = lines[i].replace('%port%', self.port)
-                lines[i] = lines[i].replace('%LDAP_block%', LDAP_block)
-                f_obj1.write(lines[i])
+        try:
+            with open('%s/www/vhosts/kmotion' % self.kmotion_dir, 'w') as f_obj1:
+                with open('%s/www/templates/vhosts_template' % self.kmotion_dir) as f_obj2:
+                    lines = f_obj2.readlines()
+            
+                for i in range(len(lines)):
+                    lines[i] = lines[i].replace('%images_dbase_dir%', self.images_dbase_dir)
+                    lines[i] = lines[i].replace('%ramdisk_dir%', self.ramdisk_dir)
+                    lines[i] = lines[i].replace('%www_dir%', '%s/www/www' % self.kmotion_dir)
+                    lines[i] = lines[i].replace('%logs_dir%', '%s/www/apache_logs' % self.kmotion_dir)
+                    lines[i] = lines[i].replace('%port%', self.port)
+                    lines[i] = lines[i].replace('%LDAP_block%', LDAP_block)
+                    f_obj1.write(lines[i])
+        except IOError:
+            self.logger.log('ERROR by generating vhost/kmotion file', 'CRIT')
+            self.logger.log(str(sys.exc_info()[1]), 'CRIT')
         
       
     def gen_kmotion(self, uid, gid):
@@ -433,6 +437,11 @@ cd %s/core
     
         os.chmod('%s/kmotion_ptz' % self.kmotion_dir, 0755)
         os.chown('%s/kmotion_ptz' % self.kmotion_dir, uid, gid)
+        
+if __name__ == '__main__':
+    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    print kmotion_dir
+    print InitCore(kmotion_dir).set_uid_gid_named_pipes(os.getuid(), os.getgid())
     
     
 

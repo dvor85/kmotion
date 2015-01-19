@@ -57,10 +57,12 @@ class InitMotion:
         return  : none
         """
         
+        motion_conf_dir = os.path.join(self.kmotion_dir, 'core/motion_conf')
+        if not os.path.isdir(motion_conf_dir):
+            os.makedirs(motion_conf_dir)
         # delete all files in motion_conf skipping .svn directories
-        for del_file in [del_file for del_file in os.listdir('%s/core/motion_conf' % self.kmotion_dir) 
-                      if os.path.isfile('%s/core/motion_conf/%s' % (self.kmotion_dir, del_file))]:
-            os.remove('%s/core/motion_conf/%s' % (self.kmotion_dir, del_file))
+        for del_file in [del_file for del_file in os.listdir(motion_conf_dir) if os.path.isfile(os.path.join(motion_conf_dir, del_file))]:
+            os.remove(os.path.join(motion_conf_dir, del_file))
         
         if len(self.feed_list) > 0:  # only populate 'motion_conf' if valid feeds
             self.gen_motion_conf()
@@ -218,7 +220,7 @@ snapshot_interval 1
                     print >> f_obj1, 'track_type %s' % self.www_parser.get('motion_feed%02i' % feed, 'ptz_track_type')
                     
                 # prefix to 'walk backwards' from the 'target_dir'
-                #rel_prefix = ('../' * len(self.ramdisk_dir.split('/')))[:-1]    
+                # rel_prefix = ('../' * len(self.ramdisk_dir.split('/')))[:-1]    
                 
                 # always on for feed updates
                 if (self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_smovie_enabled')):
