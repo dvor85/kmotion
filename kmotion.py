@@ -74,11 +74,15 @@ class Kmotion:
             self.logger.log('stopping kmotion ...', 'CRIT')
             self.daemon_whip.kill_daemons()
             sys.exit()
-        
-        elif option == 'start':
+        elif option=='status':
+            pids = self.daemon_whip.get_kmotion_pids()
+            if len(pids)>0:
+                print 'kmotion started with pids: ' + ' '.join(pids)
+            else:
+                print 'kmotion is not started'
+            sys.exit()
+        else:
             self.logger.log('starting kmotion ...', 'CRIT')
-        elif option == 'restart':
-            self.logger.log('restarting kmotion ...', 'CRIT')
         # check for any invalid motion processes
         
 #         if self.daemon_whip.is_motion_running():
@@ -113,18 +117,22 @@ class Kmotion:
         time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
         purge_str = '#' * 1000 + '99999999'
         for fifo in ['fifo_settings_wr']:
-            pipeout = os.open('%s/www/%s' % (self.kmotion_dir, fifo), os.O_WRONLY)
-            os.write(pipeout, purge_str)
-            os.close(pipeout)
-            
+            try:
+                pipeout = os.open('%s/www/%s' % (self.kmotion_dir, fifo), os.O_WRONLY)
+                os.write(pipeout, purge_str)
+            finally:
+                os.close(pipeout)
+                
     def signal_term(self, signum, frame):
         self.www_log.add_shutdown_event()
         self.daemon_whip.stop_motion()
         sys.exit()
     
     def wait_termination(self):
-        while True:            
-            time.sleep(60 * 60 * 24)
+        while True:      
+            for t in threading.enumerate():
+                self.logger.log('thread in running = ' + t.getName(), 'CRIT')      
+            time.sleep(30)
 
 
 if __name__ == '__main__':

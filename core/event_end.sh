@@ -27,7 +27,7 @@ function main
     ramdisk_dir=$(get_ini_section_param $kmotion_dir/kmotion_rc dirs ramdisk_dir);
     
     event_file="$ramdisk_dir/events/$thread";
-    state_file="$ramdisk_dir/states/$thread";
+    state_file="$ramdisk_dir/states/$event";
     exe_file="$kmotion_dir/event/stop.sh"
     
     if [[ -f $state_file ]]; then

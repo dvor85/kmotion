@@ -21,7 +21,7 @@ Waits on the 'fifo_settings_wr' fifo until data received then parse the data
 and modifiy 'www_rc', also updates 'feeds_cache'
 """
 
-import sys, os.path, subprocess, logger, time, traceback
+import sys, os.path, logger, time, traceback
 import sort_rc
 import signal
 from mutex_parsers import *
@@ -36,10 +36,11 @@ class Kmotion_setd(Thread):
     
     def __init__(self, kmotion_dir):
         Thread.__init__(self)
+        self.setName('kmotion_setd')
+        self.setDaemon(True)
         self.kmotion_dir = kmotion_dir
         self.logger = logger.Logger('kmotion_setd', Kmotion_setd.log_level)
-        self.setName('kmotion_hkd2')
-        self.setDaemon(True)
+        
         
     def stop(self):
         os.kill(os.getpid(), signal.SIGTERM)
@@ -168,7 +169,6 @@ class Kmotion_setd(Thread):
             
             self.logger.log('waiting on FIFO pipe data', 'DEBUG')
             
-            #data = subprocess.Popen(['cat', '%s/www/fifo_settings_wr' % self.kmotion_dir], stdout=subprocess.PIPE).communicate()[0]
             try:
                 pipein = open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r')
                 data = pipein.read()

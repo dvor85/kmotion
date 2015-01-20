@@ -30,6 +30,7 @@ from init_core import InitCore
 from kmotion_hkd1 import Kmotion_Hkd1
 from kmotion_hkd2 import Kmotion_Hkd2
 from kmotion_setd import Kmotion_setd
+from kmotion_split import Kmotion_split
 
 class DaemonControl:
     
@@ -91,8 +92,8 @@ class DaemonControl:
         
         Kmotion_Hkd1(self.kmotion_dir).start()
         Kmotion_Hkd2(self.kmotion_dir).start()
-        Kmotion_setd(self.kmotion_dir).start()
-        
+        Kmotion_setd(self.kmotion_dir).start()        
+        Kmotion_split(self.kmotion_dir).start()
         self.start_motion()
 
 
