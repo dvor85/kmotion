@@ -34,6 +34,7 @@ from core.mutex_parsers import *
 from core.daemon_whip import DaemonControl
 import signal
 from core.www_logs import WWWLog
+from core.motion_daemon import MotionDaemon
 import threading
 
 
@@ -41,7 +42,7 @@ class exit_(Exception): pass
 
 class Kmotion:
     
-    log_level = 'WARNING'
+    log_level = 'DEBUG'
     
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
@@ -54,7 +55,7 @@ class Kmotion:
          
         self.daemon_whip = DaemonControl(self.kmotion_dir)
         self.init_core = InitCore(self.kmotion_dir)
-        self.init_motion = InitMotion(self.kmotion_dir)
+        self.motion_daemon = MotionDaemon(self.kmotion_dir)
 
 
     def main(self, option):
@@ -74,9 +75,9 @@ class Kmotion:
             self.logger.log('stopping kmotion ...', 'CRIT')
             self.daemon_whip.kill_daemons()
             sys.exit()
-        elif option=='status':
+        elif option == 'status':
             pids = self.daemon_whip.get_kmotion_pids()
-            if len(pids)>0:
+            if len(pids) > 0:
                 print 'kmotion started with pids: ' + ' '.join(pids)
             else:
                 print 'kmotion is not started'
@@ -96,8 +97,6 @@ class Kmotion:
         # init the ramdisk dir
         self.init_core.init_ramdisk_dir()
         
-        
-        
         try:  # wrapping in a try - except because parsing data from kmotion_rc
             self.init_core.update_rcs()
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
@@ -109,30 +108,31 @@ class Kmotion:
             raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
     
         # init motion_conf directory with motion.conf, thread1.conf ...
-        self.init_motion.gen_motion_configs()
+#        self.init_motion.gen_motion_configs()
+        self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
         self.daemon_whip.kill_daemons()
-        self.daemon_whip.start_daemons()
+        self.daemon_whip.start_daemons()        
+        self.motion_daemon.start_motion()
               
         time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
+        
         purge_str = '#' * 1000 + '99999999'
         for fifo in ['fifo_settings_wr']:
-            try:
-                pipeout = os.open('%s/www/%s' % (self.kmotion_dir, fifo), os.O_WRONLY)
-                os.write(pipeout, purge_str)
-            finally:
-                os.close(pipeout)
+            with open(os.path.join(self.kmotion_dir, 'www', fifo), 'w') as pipeout:
+                pipeout.write(purge_str)
+                
+        for t in threading.enumerate():
+            self.logger.log('thread %s is started' % t.getName(), 'DEBUG')
                 
     def signal_term(self, signum, frame):
         self.www_log.add_shutdown_event()
-        self.daemon_whip.stop_motion()
+        self.motion_daemon.stop_motion()
         sys.exit()
     
     def wait_termination(self):
         while True:      
-            for t in threading.enumerate():
-                self.logger.log('thread in running = ' + t.getName(), 'CRIT')      
-            time.sleep(30)
+            time.sleep(60 * 60 * 24)
 
 
 if __name__ == '__main__':

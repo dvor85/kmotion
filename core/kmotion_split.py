@@ -13,7 +13,7 @@ class Kmotion_split(Thread):
     '''
     classdocs
     '''
-    log_level = 'DEBUG'
+    log_level = 'WARNING'
 
     def __init__(self, kmotion_dir):
         '''
@@ -36,20 +36,21 @@ class Kmotion_split(Thread):
         os.kill(os.getpid(), signal.SIGTERM)
         
     def main(self, event):
+        state_file = os.path.join(self.states_dir, event)
         self.logger.log('event = %s' % (event), 'DEBUG')
-        if (time.time() - os.path.getmtime(os.path.join(self.events_dir, event))) >= self.max_duration:
-            state_file = os.path.join(self.states_dir, event)
-            with open(state_file, 'w') as f_obj:
-                os.write(f_obj, '1')
+        
+        if not os.path.isfile(state_file) and (time.time() - os.path.getmtime(os.path.join(self.events_dir, event))) >= self.max_duration:
+            
+            with open(state_file, 'w'):
+                pass
             if os.path.isfile(self.event_end):
-                self.logger.log('event_stop from %s' % self.getName(), 'DEBUG')
-                Popen([self.event_end, event], shell=True).communicate()
-            with open(state_file, 'r') as f_obj:
-                state = int(os.read(f_obj))
-            os.unlink(state_file)
-            if state == 1:
-                self.logger.log('event_start from %s' % self.getName(), 'DEBUG')
-                Popen([self.event_start, event], shell=True) 
+                self.logger.log('event %s stop' % event, 'DEBUG')
+                Popen([self.event_end, event]).wait()
+            
+            if os.path.isfile(state_file) and os.path.isfile(self.event_start):
+                self.logger.log('event %s start' % event, 'DEBUG')
+                os.unlink(state_file)
+                Popen([self.event_start, event]) 
         
         
     def run(self):
@@ -66,13 +67,13 @@ class Kmotion_split(Thread):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                  
-                self.logger.log('** CRITICAL ERROR ** kmotion_split crash - type: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_split crash - value: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_split crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_split crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, 'CRIT')
                 time.sleep(60)
                 

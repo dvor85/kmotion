@@ -28,8 +28,9 @@ import logger
 from mutex_parsers import *
 from mutex import Mutex
 from threading import Thread 
+from subprocess import *
 
-log_level = 'DEBUG'
+log_level = 'WARNING'
 logger = logger.Logger('kmotion_hkd2', log_level)
 
 
@@ -175,7 +176,7 @@ class Hkd2_Feed:
                     logger.log('service_snap() - move %s/%s.jpg %s/%s.jpg' 
                                % (tmp_snap_dir, snap_date_time, snap_dir,
                                   time_), 'DEBUG')  
-                    os.popen3('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_))
+                    Popen('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_), shell=True).wait()
                     feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
                     if os.path.isfile(feed_www_jpg):
                         os.remove(feed_www_jpg)
@@ -325,13 +326,13 @@ class Kmotion_Hkd2(Thread):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                  
-                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - type: %s' 
+                logger.log('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, 'CRIT')
-                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - value: %s' 
+                logger.log('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, 'CRIT')
-                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - traceback: %s' 
+                logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, 'CRIT')
-                logger.log('** CRITICAL ERROR ** kmotion_hkd2 crash - traceback: %s' 
+                logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, 'CRIT')
                 time.sleep(60)
 

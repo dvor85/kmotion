@@ -69,9 +69,11 @@ class Mutex:
         excepts : 
         return  : none
         """
-
-        if os.path.isfile(os.path.join(self.mutex_dir, str(os.getpid()))):
-            os.remove(os.path.join(self.mutex_dir, str(os.getpid())))
+        
+        try:
+            os.unlink(os.path.join(self.mutex_dir, str(os.getpid())))
+        except:
+            pass
        
         
     def is_lock(self):
@@ -89,7 +91,10 @@ class Mutex:
         lock = False
         for m in files:
             if not os.path.isdir(os.path.join('/proc', m)):
-                os.unlink(os.path.join(self.mutex_dir, m))
+                try:
+                    os.unlink(os.path.join(self.mutex_dir, m))
+                except:
+                    pass
             else:
                 lock = True
                         

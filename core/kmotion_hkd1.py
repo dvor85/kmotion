@@ -28,6 +28,7 @@ from mutex_parsers import *
 from mutex import Mutex
 from www_logs import WWWLog
 from threading import Thread
+from subprocess import *
 
 class Kmotion_Hkd1(Thread):
     
@@ -109,9 +110,9 @@ class Kmotion_Hkd1(Thread):
                             
                         # if need to delete current recording, shut down kmotion 
                         if date == dir_[0]:
-                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - image storage limit reached ... need to', 'CRIT')
-                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
-                            self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - SHUTTING DOWN KMOTION !!', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** crash - image storage limit reached ... need to', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** crash - delete todays data, \'images_dbase\' is too small', 'CRIT')
+                            self.logger.log('** CRITICAL ERROR ** crash - SHUTTING DOWN KMOTION !!', 'CRIT')
                             self.www_logs.add_no_space_event()
                             self.stop()
                         
@@ -134,13 +135,13 @@ class Kmotion_Hkd1(Thread):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                  
-                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - type: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - value: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_hkd1 crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, 'CRIT')
                 time.sleep(60)
                 
@@ -375,8 +376,7 @@ class Kmotion_Hkd1(Thread):
         """
         
         # don't use os.path.getsize as it does not report disk useage
-        with os.popen('nice -n 19 du -s %s/movie' % feed_dir) as f_obj:
-            line = f_obj.readline()
+        line = Popen('nice -n 19 du -s %s/movie' % feed_dir, shell=True, stdout=PIPE).communicate()[0]
         
         bytes_ = int(line.split()[0]) * 1000
         self.logger.log('size_movie() - %s size : %s' % (feed_dir, bytes_), 'DEBUG')
@@ -431,8 +431,7 @@ class Kmotion_Hkd1(Thread):
                 dir_ = tzone_dirs[tzone][i]
                 
                 # don't use os.path.getsize as it does not report disk useage
-                with os.popen('nice -n 19 du -s %s/smovie/%s' % (feed_dir, dir_)) as f_obj:
-                    line = f_obj.readline()
+                line = Popen('nice -n 19 du -s %s/smovie/%s' % (feed_dir, dir_), shell=True, stdout=PIPE).communicate()[0]
                 total_bytes += int(line.split()[0]) * 1000
 
             total_size += num_dirs * (total_bytes / sample)
@@ -489,8 +488,7 @@ class Kmotion_Hkd1(Thread):
                 jpeg = tzone_jpegs[tzone][i]
                 
                 # don't use os.path.getsize as it does not report disk useage
-                with os.popen('nice -n 19 du -s %s/snap/%s' % (feed_dir, jpeg)) as f_obj:
-                    line = f_obj.readline()
+                line = Popen('nice -n 19 du -s %s/snap/%s' % (feed_dir, jpeg), shell=True, stdout=PIPE).communicate()[0]
                 total_bytes += int(line.split()[0]) * 1000
                 
             total_size += num_jpegs * (total_bytes / sample)

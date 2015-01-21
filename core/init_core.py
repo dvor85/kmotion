@@ -176,8 +176,7 @@ class InitCore:
             event_file = os.path.join(events_dir, efile)
             if os.path.isfile(event_file):
                 with open(event_file, 'r') as f_obj:
-                    pid = f_obj.read()
-                    pid = pid.strip()
+                    pid = f_obj.read().strip()
                     if pid == '':
                         self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (event_file), 'DEBUG')
                         os.remove(event_file)

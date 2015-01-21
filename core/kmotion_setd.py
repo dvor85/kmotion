@@ -169,11 +169,8 @@ class Kmotion_setd(Thread):
             
             self.logger.log('waiting on FIFO pipe data', 'DEBUG')
             
-            try:
-                pipein = open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r')
+            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein: 
                 data = pipein.read()
-            finally:
-                pipein.close()
             data = data.rstrip()        
             self.logger.log('kmotion FIFO pipe data: %s' % data, 'DEBUG')
             
@@ -192,7 +189,6 @@ class Kmotion_setd(Thread):
             masks_modified = []  # reset masks changed list
             
             
-        
             raws_data = data.split('$')
             for raw_data in raws_data:
                 if raw_data == '': continue  # filter starting ''
@@ -491,13 +487,13 @@ class Kmotion_setd(Thread):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                 
-                self.logger.log('** CRITICAL ERROR ** kmotion_setd crash - type: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_setd crash - value: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_setd crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, 'CRIT')
-                self.logger.log('** CRITICAL ERROR ** kmotion_setd crash - traceback: %s' 
+                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, 'CRIT') 
                 time.sleep(60)
         
