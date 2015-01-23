@@ -25,17 +25,17 @@ The kmotion exe file cannot call this code directly because it may be in a
 different working directory
 """
 
-import os, sys, time
+import os, sys, time, threading, signal
 from subprocess import *  # breaking habit of a lifetime !
-from core.init_core import InitCore 
-from core.init_motion import InitMotion
-import core.logger as logger
 from core.mutex_parsers import *
-from core.daemon_whip import DaemonControl
-import signal
 from core.www_logs import WWWLog
 from core.motion_daemon import MotionDaemon
-import threading
+from core.init_core import InitCore 
+import core.logger as logger
+from core.kmotion_hkd1 import Kmotion_Hkd1
+from core.kmotion_hkd2 import Kmotion_Hkd2
+from core.kmotion_setd import Kmotion_setd
+from core.kmotion_split import Kmotion_split
 
 
 class exit_(Exception): pass
@@ -44,8 +44,9 @@ class Kmotion:
     
     log_level = 'DEBUG'
     
-    def __init__(self, kmotion_dir):
+    def __init__(self, kmotion_dir, action):
         self.kmotion_dir = kmotion_dir
+        self.action = action
         self.logger = logger.Logger('kmotion', Kmotion.log_level)
         signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
@@ -53,12 +54,46 @@ class Kmotion:
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
          
-        self.daemon_whip = DaemonControl(self.kmotion_dir)
         self.init_core = InitCore(self.kmotion_dir)
         self.motion_daemon = MotionDaemon(self.kmotion_dir)
+        
+    def start_daemons(self):
+        """ 
+        Check and start all the kmotion daemons
+    
+        args    : 
+        excepts : 
+        return  : none
+        """ 
+        
+        self.logger.log('starting daemons ...', 'DEBUG')
+        
+        Kmotion_Hkd1(self.kmotion_dir).start()
+        Kmotion_Hkd2(self.kmotion_dir).start()
+        Kmotion_setd(self.kmotion_dir).start()        
+        Kmotion_split(self.kmotion_dir).start()
 
 
-    def main(self, option):
+    def kill_daemons(self):
+        """ 
+        Kill all the kmotion daemons 
+    
+        args    : 
+        excepts : 
+        return  : none
+        """
+        
+        self.logger.log('killing daemons ...', 'DEBUG')
+        
+        # self.stop_motion()
+        for pid in self.get_kmotion_pids():
+            os.kill(int(pid), signal.SIGTERM) 
+        while len(self.get_kmotion_pids()) > 0:
+            time.sleep(1)
+        self.logger.log('daemons killed ...', 'DEBUG')
+
+
+    def main(self):
         """
         Re-initialises the kmotion core and reload the kmotion daemon configs
            
@@ -67,16 +102,14 @@ class Kmotion:
         return  : none
         """
         
-           
-        
         
         # if 'stop' shutdown and exit here
-        if option == 'stop':
+        if self.action == 'stop':
             self.logger.log('stopping kmotion ...', 'CRIT')
-            self.daemon_whip.kill_daemons()
+            self.kill_daemons()
             sys.exit()
-        elif option == 'status':
-            pids = self.daemon_whip.get_kmotion_pids()
+        elif self.action == 'status':
+            pids = self.get_kmotion_pids()
             if len(pids) > 0:
                 print 'kmotion started with pids: ' + ' '.join(pids)
             else:
@@ -84,15 +117,6 @@ class Kmotion:
             sys.exit()
         else:
             self.logger.log('starting kmotion ...', 'CRIT')
-        # check for any invalid motion processes
-        
-#         if self.daemon_whip.is_motion_running():
-#             logger.log('** CRITICAL ERROR ** kmotion failed to start ...', 'CRIT')
-#             logger.log('** CRITICAL ERROR ** Another instance of motion daemon has been detected', 'CRIT')
-#             raise exit_("""An instance of the motion daemon has been detected which is not under control 
-#     of kmotion. Please kill this instance and ensure that motion is not started
-#     automatically on system bootup. This a known problem with Ubuntu 8.04 
-#     Reference Bug #235599.""")
     
         # init the ramdisk dir
         self.init_core.init_ramdisk_dir()
@@ -107,12 +131,10 @@ class Kmotion:
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
     
-        # init motion_conf directory with motion.conf, thread1.conf ...
-#        self.init_motion.gen_motion_configs()
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
-        self.daemon_whip.kill_daemons()
-        self.daemon_whip.start_daemons()        
+        self.kill_daemons()
+        self.start_daemons()        
         self.motion_daemon.start_motion()
               
         time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
@@ -124,6 +146,12 @@ class Kmotion:
                 
         for t in threading.enumerate():
             self.logger.log('thread %s is started' % t.getName(), 'DEBUG')
+            
+    def get_kmotion_pids(self):
+        p_objs = Popen('pgrep -f ".*%s.*"' % os.path.basename(__file__), shell=True, stdout=PIPE)  
+        stdout = p_objs.communicate()[0]
+        return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+    
                 
     def signal_term(self, signum, frame):
         self.www_log.add_shutdown_event()
@@ -137,7 +165,7 @@ class Kmotion:
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.dirname(__file__))
-    kmotion = Kmotion(kmotion_dir)
-    kmotion.main(sys.argv[1])
+    kmotion = Kmotion(kmotion_dir, sys.argv[1])
+    kmotion.main()
     kmotion.wait_termination()
 

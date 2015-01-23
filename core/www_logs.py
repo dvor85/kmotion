@@ -87,30 +87,30 @@ class WWWLog:
                 
             self.logger.log('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown', 'DEBUG')
             
-            # so we can scan for the latest jpeg files to get the latest times
-            latests = []
-            for feed in range(1, self.max_feed):
-                jpegs = os.listdir('%s/%02i' % (self.ramdisk_dir, feed))
-            
-                if len(jpegs) > 1:  # ie we have some jpegs
-                    jpegs.sort()
-                    latests.append(jpegs[-2][:-4])  # skip 'latest_jpeg' file
-          
-            
-                    
-            # get the latest filename, calculate its time and date and construct an 
-            # event string
-            latests.sort()
-            if len(latests) > 0:  # as long as a feed has run at some time !      
-                latest = latests[-1]
-                year = latest[:4]
-                month = latest[4:6]
-                day = latest[6:8]
-                hour = latest[8:10]
-                min_ = latest[10:12]
-                sec = latest[12:]
-                new_event = '%s/%s/%s#%s:%s:%s#Incorrect shutdown / Mains failure' % (day, month, year, hour, min_, sec)
-                self.add_event(new_event)
+#             # so we can scan for the latest jpeg files to get the latest times
+#             latests = []
+#             for feed in range(1, self.max_feed):
+#                 jpegs = os.listdir('%s/%02i' % (self.ramdisk_dir, feed))
+#             
+#                 if len(jpegs) > 1:  # ie we have some jpegs
+#                     jpegs.sort()
+#                     latests.append(jpegs[-2][:-4])  # skip 'latest_jpeg' file
+#           
+#             
+#                     
+#             # get the latest filename, calculate its time and date and construct an 
+#             # event string
+#             latests.sort()
+#             if len(latests) > 0:  # as long as a feed has run at some time !      
+#                 latest = latests[-1]
+#                 year = latest[:4]
+#                 month = latest[4:6]
+#                 day = latest[6:8]
+#                 hour = latest[8:10]
+#                 min_ = latest[10:12]
+#                 sec = latest[12:]
+#                 new_event = '%s/%s/%s#%s:%s:%s#Incorrect shutdown / Mains failure' % (day, month, year, hour, min_, sec)
+#                 self.add_event(new_event)
         
         # in all cases add a starting up message
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion starting up'))

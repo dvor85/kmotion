@@ -4,7 +4,6 @@
 from threading import Thread
 import logger,os,time
 from subprocess import *
-from init_core import InitCore
 from init_motion import InitMotion
 
 class MotionDaemon():
@@ -19,7 +18,6 @@ class MotionDaemon():
         '''
         self.kmotion_dir = kmotion_dir
         self.logger = logger.Logger('motion_daemon', MotionDaemon.log_level)
-        self.init_core = InitCore(self.kmotion_dir)
         self.init_motion = InitMotion(self.kmotion_dir)
         
     def is_motion_running(self):
@@ -36,7 +34,7 @@ class MotionDaemon():
         self.init_motion.gen_motion_configs()
         if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):
             if not self.is_motion_running(): 
-                self.init_core.init_motion_out()  # clear 'motion_out'
+                self.init_motion.init_motion_out()  # clear 'motion_out'
                 Popen('while true; do test -z "$(pgrep -f \'^motion.+-c.*\')" -o -z "$(netstat -ntl | grep 8080)" && ( pkill -9 -f \'^motion.+-c.*\'; motion -c {0}/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> {0}/www/motion_out & ); sleep 2; done &'.format(self.kmotion_dir), shell=True)
                 self.logger.log('starting motion', 'CRIT')
         else:

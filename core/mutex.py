@@ -77,14 +77,6 @@ class Mutex:
        
         
     def is_lock(self):
-        """
-        Return the number of active locks on the 'mutex' mutex, filters out .svn
-    
-        args    : kmotion_dir ... the 'root' directory of kmotion 
-              mutex ...       the actual mutexkmotion_dir 
-        excepts : 
-        return  : num locks ... the number of active locks
-        """
     
         files = os.listdir(self.mutex_dir)
         files.sort()

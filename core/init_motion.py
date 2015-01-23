@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# Copyright 2008 David Selby dave6502@googlemail.com
-
 # This file is part of kmotion.
 
 # kmotion is free software: you can redistribute it and/or modify
@@ -46,6 +44,19 @@ class InitMotion:
         for feed in range(1, self.max_feed):
             if self.www_parser.has_section('motion_feed%02i' % feed) and self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
                 self.feed_list.append(feed)
+                
+    def init_motion_out(self):
+        """
+        Wipes the 'motion_output' file in preperation for new output.
+        
+        args    : kmotion_dir ... the 'root' directory of kmotion
+        excepts :
+        return  : none
+        """      
+              
+        motion_out = os.path.join(self.kmotion_dir, 'www/motion_out')
+        if os.path.isfile(motion_out):
+            os.remove(motion_out)
                 
     def gen_motion_configs(self):
         """
@@ -151,7 +162,7 @@ pre_capture 1
 post_capture 16
 quality 85
 webcam_localhost on
-#ffmpeg_bps 400000'''
+'''
             
                 # pal or ntsc,
                 if self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_pal'):
@@ -192,7 +203,6 @@ webcam_localhost on
 # 'override' section
 # ------------------------------------------------------------------------------
 
-#ffmpeg_video_codec swf
 snapshot_interval 1
 #webcam_localhost on
 '''
@@ -219,9 +229,6 @@ snapshot_interval 1
                 if self.www_parser.getboolean('motion_feed%02i' % feed, 'ptz_enabled') and self.www_parser.getint('motion_feed%02i' % feed, 'ptz_track_type') < 9: 
                     print >> f_obj1, 'track_type %s' % self.www_parser.get('motion_feed%02i' % feed, 'ptz_track_type')
                     
-                # prefix to 'walk backwards' from the 'target_dir'
-                # rel_prefix = ('../' * len(self.ramdisk_dir.split('/')))[:-1]    
-                
                 # always on for feed updates
                 if (self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_smovie_enabled')):
                     print >> f_obj1, 'output_normal on'
@@ -230,25 +237,14 @@ snapshot_interval 1
                     print >> f_obj1, 'output_normal off'
                     print >> f_obj1, 'jpeg_filename %s/%%Y%%m%%d/%0.2d/snap/%%H%%M%%S' % (self.images_dbase_dir, feed)
         
-                # movie mode
-#                 if self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_movie_enabled'): 
-#                     print >> f_obj1, 'ffmpeg_cap_new on'
-#                 else:
-#                     print >> f_obj1, 'ffmpeg_cap_new off'
                     
                 print >> f_obj1, '' 
                 
-#                 print >> f_obj1, 'movie_filename %s/%%Y%%m%%d/%0.2d/movie/%%H%%M%%S' % (self.images_dbase_dir, feed)
                 print >> f_obj1, 'snapshot_filename %0.2d/%%Y%%m%%d%%H%%M%%S' % feed
-                # 'on_movie_start' not recorded, uses 'movie_filename' for more accuracy
-                # print >> f_obj1, 'on_movie_start echo \'$%%H%%M%%S\' >> %s/%%Y%%m%%d/%0.2d/movie_journal' % (images_dbase_dir, feed)
-#                 print >> f_obj1, 'on_movie_end echo \'$%%H%%M%%S\' >> %s/%%Y%%m%%d/%0.2d/movie_journal' % (self.images_dbase_dir, feed)
-                print >> f_obj1, 'on_event_start %s/core/event_start.py %i' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_event_end %s/core/event_end.py %i' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_camera_lost %s/core/camera_lost.py %i' % (self.kmotion_dir, feed)
-                # print >> f_obj1, 'on_picture_save ln -sf %%f %s/%0.2d/last.jpg' % (ramdisk_dir, feed)
+                print >> f_obj1, 'on_event_start %s/core/events.py start %i' % (self.kmotion_dir, feed)
+                print >> f_obj1, 'on_event_end %s/core/events.py stop %i' % (self.kmotion_dir, feed)
+                print >> f_obj1, 'on_camera_lost %s/core/events.py lost %i' % (self.kmotion_dir, feed)
                 print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f' % (self.kmotion_dir)
-            
 
 
 # Module test code

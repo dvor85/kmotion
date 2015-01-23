@@ -52,25 +52,6 @@ class InitCore:
 #############################################################
 """
 
-    CODE_TEXT = """#!/bin/bash
-
-# Copyright 2008 David Selby dave6502@googlemail.com
-
-# This file is part of kmotion.
-
-# kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# kmotion is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
-"""
 
     def __init__(self, kmotion_dir):
         self.logger = logger.Logger('init_core', InitCore.log_level)
@@ -131,16 +112,16 @@ class InitCore:
         
         mutex_www_parser_wr(self.kmotion_dir, self.www_parser)
         
+        mutex = Mutex(self.kmotion_dir, 'www_rc')
+        mutex.acquire()
         try:
-            mutex = Mutex(self.kmotion_dir, 'www_rc')
-            mutex.acquire() 
             sort_rc.sort_rc('%s/www/www_rc' % self.kmotion_dir) 
         finally:
             mutex.release()
-            
+         
+        mutex = Mutex(self.kmotion_dir, 'kmotion_rc')
+        mutex.acquire()     
         try:
-            mutex = Mutex(self.kmotion_dir, 'kmotion_rc')
-            mutex.acquire() 
             sort_rc.sort_rc('%s/kmotion_rc' % self.kmotion_dir)
         finally:
             mutex.release()
@@ -174,12 +155,9 @@ class InitCore:
             
         for efile in os.listdir(events_dir):
             event_file = os.path.join(events_dir, efile)
-            if os.path.isfile(event_file):
-                with open(event_file, 'r') as f_obj:
-                    pid = f_obj.read().strip()
-                    if pid == '':
-                        self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (event_file), 'DEBUG')
-                        os.remove(event_file)
+            if os.path.isfile(event_file) and os.path.getsize(event_file) == 0:
+                self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (event_file), 'DEBUG')
+                os.remove(event_file)
         
         
         for i in range(1, self.max_feed):
@@ -197,20 +175,6 @@ class InitCore:
             except OSError:
                 pass   
             
-    def init_motion_out(self):
-        """
-        Wipes the 'motion_output' file in preperation for new output.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion
-        excepts :
-        return  : none
-        """      
-              
-        motion_out = os.path.join(self.kmotion_dir, 'www/motion_out')
-        if os.path.isfile(motion_out):
-            os.remove(motion_out)
-  
-    
     def set_uid_gid_mutex(self, uid, gid):
         """
         Set the 'mutex', 'logs', 'www_rc', 'kmotion_rc' and 'servo_state' directories 
@@ -281,25 +245,6 @@ class InitCore:
         os.chown(fifo_ptz_preset, uid, gid)
         os.chmod(fifo_ptz_preset, 0660)
     
-    
-    def set_uid_gid_servo_state(self, uid, gid):
-        """
-        Generate 'servo_state' file with the appropreate 'uid' and 'gid'. 
-        Called by 'install' and 'core_setup' the 'uid' and 'gid' are set to allow 
-        the apache2 user to read these files.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion 
-                  uid ...         the user id
-                  gid ...         the group id of apache2
-        excepts : 
-        return  : none
-        """
-        
-        servo_state = '%s/www/servo_state' % self.kmotion_dir
-        os.chown(servo_state, uid, gid)
-        os.chmod(servo_state, 0640)  
-
-    
     def gen_vhost(self):
         """
         Generate the kmotion vhost file from vhost_template expanding %directory%
@@ -336,106 +281,6 @@ AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
             self.logger.log(str(sys.exc_info()[1]), 'CRIT')
         
       
-    def gen_kmotion(self, uid, gid):
-        """
-        Generates a kmotion executable which starts the kmotion daemons, executable 
-        from anywhere in the system
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion
-                  uid ...         the uid for kmotion  
-                  gid ...         the gid for kmotion  
-        excepts : 
-        return  : none
-        """
-        
-        code = InitCore.CODE_TEXT + """
-# Starts/stop/reloads the kmotion daemons, executable from anywhere in the system
-# kmotion start|stop|reload
-
-if [[ $UID = 0 ]]; then
-    echo -e '\\nkmotion cant be run as root\\n'
-    exit 0
-fi
-
-if [[ $1 != 'start' && $1 != 'stop' && $1 != 'restart' ]]; then
-    echo -e '\\nkmotion start|stop|restart\\n'
-    exit 0
-fi
-
-if [[ ! -z $2 ]]; then
-    echo -e '\\nkmotion start|stop|restart\\n'
-    exit 0
-fi
-
-cd %s/core
-./kmotion.py $1
-
-""" % self.kmotion_dir
-        
-        self.logger.log('gen_kmotion() - Generating \'kmotion\' exe', 'DEBUG')
-            
-        with open('%s/kmotion' % self.kmotion_dir, 'w') as f_obj:
-            print >> f_obj, code
-    
-        os.chmod('%s/kmotion' % self.kmotion_dir, 0755)
-        os.chown('%s/kmotion' % self.kmotion_dir, uid, gid)
-    
-      
-    def gen_kmotion_ptz(self, uid, gid):
-        """
-        Generates a kmotion_ptz executable which activates a ptz preset, 
-        executable from anywhere in the system
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion
-                  uid ...         the uid for kmotion  
-                  gid ...         the gid for kmotion      
-        excepts : 
-        return  : none
-        """
-        
-        code = InitCore.CODE_TEXT + """
-# Activates a ptz preset, executable from anywhere in the system
-# kmotion_ptz <feed 1...16> <preset 1...4>
-
-if [[ $UID = 0 ]]; then
-    echo -e '\\nkmotion_ptz cant be run as root\\n'
-    exit 0
-fi
-
-if [[ $1 = '-h' || $1 = '--help' ]]; then
-    echo -e '\\nkmotion_ptz <feed 1..16> <preset 1..4>\\n'
-    exit 0
-fi
-
-if [ -z $2 ]; then
-    echo -e '\\nkmotion_ptz - to few parameters'
-    echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\\n'
-    exit 0
-fi
-
-if [ ! -z $3 ]; then
-    echo -e '\\nkmotion_ptz - to many parameters'
-    echo -e 'kmotion_ptz <feed 1..16> <preset 1..4>\\n'
-    exit 0
-fi
-
-if [[ $1 -lt 1 || $1 -gt 16 || $2 -lt 1 || $2 -gt 4 ]]; then
-    echo -e '\\nkmotion_ptz - parameters out of range\\n'
-    exit 0
-fi
-    
-cd %s/core
-./kmotion_ptz.py $1 $2
-
-""" % self.kmotion_dir
-            
-        self.logger.log('gen_kmotion_ptz() - Generating \'kmotion_ptz\' exe', 'DEBUG')
-        
-        with open('%s/kmotion_ptz' % self.kmotion_dir, 'w') as f_obj:
-            print >> f_obj, code
-    
-        os.chmod('%s/kmotion_ptz' % self.kmotion_dir, 0755)
-        os.chown('%s/kmotion_ptz' % self.kmotion_dir, uid, gid)
         
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

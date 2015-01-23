@@ -2,14 +2,14 @@
 
 @author: demon
 '''
-from threading import Thread
+import threading
 import os, sys, signal, time, traceback
 import logger
 from mutex_parsers import *
 from subprocess import *
 
 
-class Kmotion_split(Thread):
+class Kmotion_split(threading.Thread):
     '''
     classdocs
     '''
@@ -19,7 +19,7 @@ class Kmotion_split(Thread):
         '''
         Constructor
         '''
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.setName('kmotion_split')
         self.setDaemon(True)
         self.kmotion_dir = kmotion_dir
@@ -31,26 +31,39 @@ class Kmotion_split(Thread):
         self.max_duration = 3 * 60
         self.event_end = os.path.join(self.kmotion_dir, 'event/stop.sh')
         self.event_start = os.path.join(self.kmotion_dir, 'event/start.sh')
+        self.semaphore = threading.Semaphore(8)
+        self.locks = {}
         
     def stop(self):
         os.kill(os.getpid(), signal.SIGTERM)
         
     def main(self, event):
-        state_file = os.path.join(self.states_dir, event)
-        self.logger.log('event = %s' % (event), 'DEBUG')
+        if not event in self.locks:
+            self.locks[event] = threading.Lock()
+        lock = self.locks.get(event)
         
-        if not os.path.isfile(state_file) and (time.time() - os.path.getmtime(os.path.join(self.events_dir, event))) >= self.max_duration:
+        self.semaphore.acquire()
+        try:
+            lock.acquire()
+            try:
+                state_file = os.path.join(self.states_dir, event)
+                self.logger.log('event = %s' % (event), 'DEBUG')
+                if not os.path.isfile(state_file) and (time.time() - os.path.getmtime(os.path.join(self.events_dir, event))) >= self.max_duration:
+                    with open(state_file, 'w'):
+                        pass
+                    if os.path.isfile(self.event_end):
+                        self.logger.log('event %s stop' % event, 'DEBUG')
+                        Popen([self.event_end, event]).wait()
+                    
+                    if os.path.isfile(state_file) and os.path.isfile(self.event_start):
+                        self.logger.log('event %s start' % event, 'DEBUG')
+                        os.unlink(state_file)
+                        Popen([self.event_start, event]) 
             
-            with open(state_file, 'w'):
-                pass
-            if os.path.isfile(self.event_end):
-                self.logger.log('event %s stop' % event, 'DEBUG')
-                Popen([self.event_end, event]).wait()
-            
-            if os.path.isfile(state_file) and os.path.isfile(self.event_start):
-                self.logger.log('event %s start' % event, 'DEBUG')
-                os.unlink(state_file)
-                Popen([self.event_start, event]) 
+            finally:
+                lock.release()
+        finally:
+            self.semaphore.release()
         
         
     def run(self):
@@ -59,7 +72,7 @@ class Kmotion_split(Thread):
             try:
                 events = os.listdir(self.events_dir)
                 for event in events:
-                    Thread(target=self.main,args=(event,)).start()
+                    threading.Thread(target=self.main,args=(event,)).start()
                 time.sleep(60)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()

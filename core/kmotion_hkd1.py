@@ -122,11 +122,8 @@ class Kmotion_Hkd1(Thread):
                         shutil.rmtree('%s/%s' % (self.images_dbase_dir, dir_[0])) 
                         
                     if date != old_date:
-                        
                         time.sleep(5 * 60)  # to ensure journals are written
                         self.logger.log('midnight processes started ...', 'CRIT')
-                        # self.ping_server_0000()
-                        # self.update_version()
                         self.build_smovie_cache(date)
                         old_date = date
             except:  # global exception catch        
