@@ -160,7 +160,7 @@ def install():
     ok()
     
     checking('Killing kmotion daemons')
-    daemon_whip.kill_daemons()
+    daemon_whip.stop()
     ok()
         
     # select a user to run the kmotion service

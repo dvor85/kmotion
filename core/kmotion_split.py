@@ -3,13 +3,14 @@
 @author: demon
 '''
 import threading
+from multiprocessing import Process
 import os, sys, signal, time, traceback
 import logger
 from mutex_parsers import *
 from subprocess import *
 
 
-class Kmotion_split(threading.Thread):
+class Kmotion_split(Process):
     '''
     classdocs
     '''
@@ -19,9 +20,7 @@ class Kmotion_split(threading.Thread):
         '''
         Constructor
         '''
-        threading.Thread.__init__(self)
-        self.setName('kmotion_split')
-        self.setDaemon(True)
+        Process.__init__(self)
         self.kmotion_dir = kmotion_dir
         self.logger = logger.Logger('kmotion_split', Kmotion_split.log_level)
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
@@ -34,11 +33,8 @@ class Kmotion_split(threading.Thread):
         self.semaphore = threading.Semaphore(8)
         self.locks = {}
         
-    def stop(self):
-        os.kill(os.getpid(), signal.SIGTERM)
-        
     def main(self, event):
-        if not event in self.locks:
+        if not self.locks.has_key(event):
             self.locks[event] = threading.Lock()
         lock = self.locks.get(event)
         
@@ -47,8 +43,9 @@ class Kmotion_split(threading.Thread):
             lock.acquire()
             try:
                 state_file = os.path.join(self.states_dir, event)
+                event_file = os.path.join(self.events_dir, event)
                 self.logger.log('event = %s' % (event), 'DEBUG')
-                if not os.path.isfile(state_file) and (time.time() - os.path.getmtime(os.path.join(self.events_dir, event))) >= self.max_duration:
+                if not os.path.isfile(state_file) and os.path.isfile(event_file) and (time.time() - os.path.getmtime(event_file)) >= self.max_duration:
                     with open(state_file, 'w'):
                         pass
                     if os.path.isfile(self.event_end):

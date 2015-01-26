@@ -28,6 +28,7 @@ import logger
 from mutex_parsers import *
 from mutex import Mutex
 from threading import Thread , Semaphore, Lock
+from multiprocessing import Process
 from subprocess import *
 
 
@@ -71,7 +72,7 @@ class Hkd2_Feed():
             logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
                        sys.exc_info()[1], 'CRIT')
             logger.log('** CRITICAL ERROR ** killing all daemons and terminating', 'CRIT')
-            self.daemon_whip.kill_daemons()
+            self.daemon_whip.stop()
             
         parser = mutex_www_parser_rd(self.kmotion_dir) 
         self.feed_enabled = parser.getboolean('motion_feed%02i' % self.feed, 'feed_enabled')
@@ -281,22 +282,16 @@ class Hkd2_Feed():
             
             
     
-class Kmotion_Hkd2(Thread):
+class Kmotion_Hkd2(Process):
     
     
     def __init__(self, kmotion_dir):
-        Thread.__init__(self)
-        self.setName('kmotion_hkd2')
-        self.setDaemon(True)
+        Process.__init__(self)
         self.kmotion_dir = kmotion_dir
-        
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         self.max_feed = parser.getint('misc', 'max_feed')
         self.semaphore = Semaphore(8) 
-        
-    def stop(self):
-        os.kill(os.getpid(), signal.SIGTERM)    
         
     def run(self):
         """
@@ -306,7 +301,6 @@ class Kmotion_Hkd2(Thread):
         excepts : 
         return  : none
         """
-        
         while True:
             try:
                 logger.log('starting daemon ...', 'CRIT')

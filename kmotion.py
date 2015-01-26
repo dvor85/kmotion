@@ -44,11 +44,11 @@ class Kmotion:
     
     log_level = 'DEBUG'
     
-    def __init__(self, kmotion_dir, action):
+    def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
-        self.action = action
+      
         self.logger = logger.Logger('kmotion', Kmotion.log_level)
-        signal.signal(signal.SIGTERM, self.signal_term)
+        # signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
@@ -57,7 +57,22 @@ class Kmotion:
         self.init_core = InitCore(self.kmotion_dir)
         self.motion_daemon = MotionDaemon(self.kmotion_dir)
         
-    def start_daemons(self):
+        self.daemons = []
+        self.daemons.append(Kmotion_Hkd1(self.kmotion_dir))
+        self.daemons.append(Kmotion_Hkd2(self.kmotion_dir))
+        self.daemons.append(Kmotion_setd(self.kmotion_dir))
+        self.daemons.append(Kmotion_split(self.kmotion_dir))
+        
+    def main(self, option):
+        if option == 'stop':            
+            self.stop()
+        elif option == 'status':
+            pass
+        else:
+            self.stop()
+            self.start()
+        
+    def start(self):
         """ 
         Check and start all the kmotion daemons
     
@@ -66,57 +81,8 @@ class Kmotion:
         return  : none
         """ 
         
-        self.logger.log('starting daemons ...', 'DEBUG')
+        self.logger.log('starting kmotion ...', 'CRIT')
         
-        Kmotion_Hkd1(self.kmotion_dir).start()
-        Kmotion_Hkd2(self.kmotion_dir).start()
-        Kmotion_setd(self.kmotion_dir).start()        
-        Kmotion_split(self.kmotion_dir).start()
-
-
-    def kill_daemons(self):
-        """ 
-        Kill all the kmotion daemons 
-    
-        args    : 
-        excepts : 
-        return  : none
-        """
-        
-        self.logger.log('killing daemons ...', 'DEBUG')
-        
-        # self.stop_motion()
-        for pid in self.get_kmotion_pids():
-            os.kill(int(pid), signal.SIGTERM) 
-        while len(self.get_kmotion_pids()) > 0:
-            time.sleep(1)
-        self.logger.log('daemons killed ...', 'DEBUG')
-
-
-    def main(self):
-        """
-        Re-initialises the kmotion core and reload the kmotion daemon configs
-           
-        args    : start|stop|reload on command line
-        excepts : 
-        return  : none
-        """
-        
-        
-        # if 'stop' shutdown and exit here
-        if self.action == 'stop':
-            self.logger.log('stopping kmotion ...', 'CRIT')
-            self.kill_daemons()
-            sys.exit()
-        elif self.action == 'status':
-            pids = self.get_kmotion_pids()
-            if len(pids) > 0:
-                print 'kmotion started with pids: ' + ' '.join(pids)
-            else:
-                print 'kmotion is not started'
-            sys.exit()
-        else:
-            self.logger.log('starting kmotion ...', 'CRIT')
     
         # init the ramdisk dir
         self.init_core.init_ramdisk_dir()
@@ -133,39 +99,63 @@ class Kmotion:
     
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
-        self.kill_daemons()
-        self.start_daemons()        
+        self.logger.log('starting daemons ...', 'DEBUG')
         self.motion_daemon.start_motion()
-              
-        time.sleep(1)  # purge all fifo buffers, FIFO bug workaround :)
-        
+        for d in self.daemons:
+            d.start()
+        self.logger.log('daemons started...', 'DEBUG')
+            
         purge_str = '#' * 1000 + '99999999'
         for fifo in ['fifo_settings_wr']:
             with open(os.path.join(self.kmotion_dir, 'www', fifo), 'w') as pipeout:
                 pipeout.write(purge_str)
                 
-        for t in threading.enumerate():
-            self.logger.log('thread %s is started' % t.getName(), 'DEBUG')
+        self.logger.log('waiting daemons ...', 'DEBUG')    
+        self.wait_termination()
+
+
+    def stop(self):
+        """ 
+        Kill all the kmotion daemons 
+    
+        args    : 
+        excepts : 
+        return  : none
+        """
+        self.logger.log('stopping kmotion ...', 'CRIT')
+        self.logger.log('killing daemons ...', 'DEBUG')
+
+        for pid in self.get_kmotion_pids():
+            os.kill(int(pid), signal.SIGTERM) 
             
+        self.motion_daemon.stop_motion()
+        
+        self.logger.log('daemons killed ...', 'DEBUG')
+        self.www_log.add_shutdown_event()
+
+
     def get_kmotion_pids(self):
         p_objs = Popen('pgrep -f ".*%s.*"' % os.path.basename(__file__), shell=True, stdout=PIPE)  
         stdout = p_objs.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     
-                
-    def signal_term(self, signum, frame):
-        self.www_log.add_shutdown_event()
-        self.motion_daemon.stop_motion()
-        sys.exit()
+#                 
+#     def signal_term(self, signum, frame):
+#         print 'exit'        
+#         #sys.exit()
     
     def wait_termination(self):
-        while True:      
-            time.sleep(60 * 60 * 24)
+        for d in self.daemons:
+            d.join()
 
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.dirname(__file__))
-    kmotion = Kmotion(kmotion_dir, sys.argv[1])
-    kmotion.main()
-    kmotion.wait_termination()
+    option = ''
+    if len(sys.argv) > 1:
+        option = sys.argv[1]
+    kmotion = Kmotion(kmotion_dir).main(option)
+
+ 
+
 

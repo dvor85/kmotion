@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from sys import stderr
 
 # This file is part of kmotion.
 
@@ -20,9 +21,11 @@ Creates the appropreate file in 'ramdisk_dir/events' and execute the
 appropreate script in 'event' if it exists.
 """
 
-import os, sys, subprocess, time
-import logger
+import os, sys, subprocess, time, datetime
+import logger, ConfigParser
 from mutex_parsers import *
+from StringIO import StringIO
+import shlex
 
 
 
@@ -36,9 +39,23 @@ class Events:
         self.action = action
         parser = mutex_kmotion_parser_rd(kmotion_dir) 
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
+        self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
     
         self.event_file = os.path.join(self.ramdisk_dir, 'events', self.feed)
         self.state_file = os.path.join(self.ramdisk_dir, 'states', self.feed)
+        
+        try:
+            www_parser = mutex_www_parser_rd(self.kmotion_dir)
+            self.feed_rtsp_url = www_parser.get('motion_feed%02i' % int(self.feed), 'feed_rtsp_url')
+            self.feed_reboot_url = www_parser.get('motion_feed%02i' % int(self.feed), 'feed_reboot_url') 
+            self.feed_sound = www_parser.getboolean('motion_feed%02i' % int(self.feed), 'feed_sound')
+            self.feed_format = www_parser.get('motion_feed%02i' % int(self.feed), 'feed_format')
+            self.feed_kbs = www_parser.get('motion_feed%02i' % int(self.feed), 'feed_kbs')
+            self.feed_recode = www_parser.getboolean('motion_feed%02i' % int(self.feed), 'feed_recode')
+            self.username = www_parser.get('motion_feed%02i' % int(self.feed), 'feed_lgn_name')
+            self.password = www_parser.get('motion_feed%02i' % int(self.feed), 'feed_lgn_pw')
+        except:
+            pass
         
     def main(self):
         if len(self.get_prev_instances()) == 0:
@@ -50,9 +67,81 @@ class Events:
                 self.lost(os.path.join(self.kmotion_dir, 'event/lost.sh'))
         else:
             self.logger.log('%s %s already running' % (os.path.basename(__file__), self.feed), 'CRIT')
+            
+    def get_parser_event_file(self):
+        with open(self.event_file, 'r') as f_obj:
+            parser = ConfigParser.SafeConfigParser()
+            parser.readfp(StringIO('[root]\n' + f_obj.read()))
+        return parser
+            
+            
+    def is_grab_started(self):
+        try:
+            parser = self.get_parser_event_file()
+            pid = parser.get('root', 'pid')
+            trys = 2
+            while trys > 0:
+                if not os.path.isfile(os.path.join('/proc', pid)):
+                    return False
+                trys -= 1
+                time.sleep(0.5)
+        except:
+            return False
+        return True
+        
+            
+    def start_event(self):
+
+        dt = datetime.datetime.fromtimestamp(time.time())
+        event_date = dt.strftime("%Y%m%d")
+        movie_file = dt.strftime("%H%M%S")
+        snap_file = "%s/%s/%s%s.jpg" % (self.ramdisk_dir, self.feed, event_date, movie_file)
+        dbase_dir = os.path.join(self.images_dbase_dir, event_date, self.feed)
+        movie_dir = os.path.join(dbase_dir, 'movie')
+        snap_dir = os.path.join(dbase_dir, 'snap')
+        
+        
+        if not self.is_grab_started():
+        
+            if not os.path.isdir(movie_dir):
+                os.makedirs(movie_dir)   
+                
+            dst = os.path.join(movie_dir, '%s.%s' % (movie_file, self.feed_format))        
+    
+            pid = self.start_grab(self.feed_rtsp_url, dst) 
+            
+            if not pid == '' and os.path.isdir(os.path.join('/proc', str(pid))):
+                with open(self.event_file, 'w') as f_obj:
+                    f_obj.write('pid=%s\n' % str(pid))
+                    f_obj.write('movie=%s\n' % movie_file)
+                    f_obj.write('date=%s\n' % event_date)
+            else:
+                os.unlink(dst)
+
+
+    def start_grab(self, src, dst):
+        if self.feed_sound:
+            audio = "-c:a libfaac -ac 1 -ar 22050 -b:a 64k" 
+        else:
+            audio = "-an";
+        
+        if self.feed_recode:
+            vcodec = "-c:v libx264 -preset ultrafast -profile:v baseline -b:v %sk -qp 30" % self.feed_kbs
+        else:
+            vcodec = '-c:v copy'
+            
+        grab = 'avconv -rtsp_transport tcp -n -i {src} {vcodec} {audio} {dst}'.format(**{'src':src, 'dst':dst, 'vcodec':vcodec, 'audio':audio})
+        
+        try:
+            from subprocess import DEVNULL # py3k
+        except ImportError:
+            DEVNULL = open(os.devnull, 'wb')
+            
+        ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
+        return ps.pid
 
     def start(self, exe_file):
-        """
+        """ 
         Creates the appropreate file in 'ramdisk_dir/events' and execute the
         appropreate script in 'event' if it exists.
         """

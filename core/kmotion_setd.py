@@ -28,22 +28,17 @@ from mutex_parsers import *
 from mutex import Mutex
 from init_motion import InitMotion
 from threading import Thread
+from multiprocessing import Process
 
 
-class Kmotion_setd(Thread):
+class Kmotion_setd(Process):
     log_level = 'DEBUG'
     
     
     def __init__(self, kmotion_dir):
-        Thread.__init__(self)
-        self.setName('kmotion_setd')
-        self.setDaemon(True)
+        Process.__init__(self)
         self.kmotion_dir = kmotion_dir
         self.logger = logger.Logger('kmotion_setd', Kmotion_setd.log_level)
-        
-        
-    def stop(self):
-        os.kill(os.getpid(), signal.SIGTERM)
 
     def main(self):  
         """
@@ -221,34 +216,34 @@ class Kmotion_setd(Thread):
                 value = split_data[1]
                 
                 if key == 'ine':  # interleave
-                    parser.set('misc', 'misc1_interleave', num_bool(value))
+                    parser.set('misc', 'misc1_interleave', self.num_bool(value))
                 elif key == 'fse':  # full screen
-                    parser.set('misc', 'misc1_full_screen', num_bool(value))
+                    parser.set('misc', 'misc1_full_screen', self.num_bool(value))
                 elif key == 'lbe':  # low bandwidth
-                    parser.set('misc', 'misc1_low_bandwidth', num_bool(value))
+                    parser.set('misc', 'misc1_low_bandwidth', self.num_bool(value))
                 elif key == 'lce':  # low cpu
-                    parser.set('misc', 'misc1_low_cpu', num_bool(value))
+                    parser.set('misc', 'misc1_low_cpu', self.num_bool(value))
                 elif key == 'skf':  # skip archive frames enabled
-                    parser.set('misc', 'misc1_skip_frames', num_bool(value))
+                    parser.set('misc', 'misc1_skip_frames', self.num_bool(value))
                 elif key == 'are':  # archive button enabled
-                    parser.set('misc', 'misc2_archive_button_enabled', num_bool(value))
+                    parser.set('misc', 'misc2_archive_button_enabled', self.num_bool(value))
                 elif key == 'lge':  # logs button enabled
-                    parser.set('misc', 'misc2_logs_button_enabled', num_bool(value))
+                    parser.set('misc', 'misc2_logs_button_enabled', self.num_bool(value))
                 elif key == 'coe':  # config button enabled
-                    parser.set('misc', 'misc2_config_button_enabled', num_bool(value))
+                    parser.set('misc', 'misc2_config_button_enabled', self.num_bool(value))
                 elif key == 'fue':  # function button enabled
-                    parser.set('misc', 'misc2_func_button_enabled', num_bool(value))
+                    parser.set('misc', 'misc2_func_button_enabled', self.num_bool(value))
                 elif key == 'spa':  # update button enabled
-                    parser.set('misc', 'misc2_msg_button_enabled', num_bool(value))
+                    parser.set('misc', 'misc2_msg_button_enabled', self.num_bool(value))
                 elif key == 'abe':  # about button enabled
-                    parser.set('misc', 'misc2_about_button_enabled', num_bool(value))
+                    parser.set('misc', 'misc2_about_button_enabled', self.num_bool(value))
                 elif key == 'loe':  # logout button enabled
-                    parser.set('misc', 'misc2_logout_button_enabled', num_bool(value))
+                    parser.set('misc', 'misc2_logout_button_enabled', self.num_bool(value))
                 elif key == 'hbb':  # hide_button_bar
-                    parser.set('misc', 'hide_button_bar', num_bool(value))
+                    parser.set('misc', 'hide_button_bar', self.num_bool(value))
     
                 elif key == 'sec':  # secure config
-                    parser.set('misc', 'misc3_secure', num_bool(value))
+                    parser.set('misc', 'misc3_secure', self.num_bool(value))
                 elif key == 'coh':  # config hash
                     parser.set('misc', 'misc3_config_hash', value)
             
@@ -257,41 +252,41 @@ class Kmotion_setd(Thread):
                     masks_modified.append((index, value))
             
                 elif key == 'fen':  # feed enabled
-                    parser.set('motion_feed%02i' % index, 'feed_enabled', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_enabled', self.num_bool(value))
                 elif key == 'fpl':  # feed pal 
-                    parser.set('motion_feed%02i' % index, 'feed_pal', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_pal', self.num_bool(value))
                 elif key == 'fde':  # feed device
                     parser.set('motion_feed%02i' % index, 'feed_device', value)
                 elif key == 'fin':  # feed input
                     parser.set('motion_feed%02i' % index, 'feed_input', value)
                 elif key == 'ful':  # feed url
-                    parser.set('motion_feed%02i' % index, 'feed_url', '"%s"' % de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_url', '"%s"' % self.de_sanitise(value))
                 elif key == 'fpr':  # feed proxy
-                    parser.set('motion_feed%02i' % index, 'feed_proxy', '"%s"' % de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_proxy', '"%s"' % self.de_sanitise(value))
                 elif key == 'fln':  # feed loggin name
-                    parser.set('motion_feed%02i' % index, 'feed_lgn_name', de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_lgn_name', self.de_sanitise(value))
                 elif key == 'flp':  # feed loggin password
                     # check to see if default *'d password is returned
-                    if de_sanitise(value) != '*' * len(parser.get('motion_feed%02i' % index, 'feed_lgn_pw')):
-                        parser.set('motion_feed%02i' % index, 'feed_lgn_pw', de_sanitise(value))
+                    if self.de_sanitise(value) != '*' * len(parser.get('motion_feed%02i' % index, 'feed_lgn_pw')):
+                        parser.set('motion_feed%02i' % index, 'feed_lgn_pw', self.de_sanitise(value))
                 elif key == 'fwd':  # feed width
                     parser.set('motion_feed%02i' % index, 'feed_width', value)
                 elif key == 'fhe':  # feed height
                     parser.set('motion_feed%02i' % index, 'feed_height', value)
                 elif key == 'fna':  # feed name
-                    parser.set('motion_feed%02i' % index, 'feed_name', de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_name', self.de_sanitise(value))
                 elif key == 'fbo':  # feed show box
-                    parser.set('motion_feed%02i' % index, 'feed_show_box', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_show_box', self.num_bool(value))
                 elif key == 'ffp':  # feed fps
                     parser.set('motion_feed%02i' % index, 'feed_fps', value)
                 elif key == 'fpe':  # feed snap enabled
-                    parser.set('motion_feed%02i' % index, 'feed_snap_enabled', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_snap_enabled', self.num_bool(value))
                 elif key == 'fsn':  # feed snap interval
                     parser.set('motion_feed%02i' % index, 'feed_snap_interval', value)
                 elif key == 'ffe':  # feed smovie enabled
-                    parser.set('motion_feed%02i' % index, 'feed_smovie_enabled', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_smovie_enabled', self.num_bool(value))
                 elif key == 'fme':  # feed movie enabled
-                    parser.set('motion_feed%02i' % index, 'feed_movie_enabled', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_movie_enabled', self.num_bool(value))
                     
                 elif key == 'psx':  # ptz step x
                     parser.set('motion_feed%02i' % index, 'ptz_step_x', value)                
@@ -301,13 +296,13 @@ class Kmotion_setd(Thread):
                     parser.set('motion_feed%02i' % index, 'ptz_track_type', value)
             
                 elif key == 'pte':  # ptz enabled
-                    parser.set('motion_feed%02i' % index, 'ptz_enabled', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'ptz_enabled', self.num_bool(value))
                 elif key == 'ptc':  # ptz calib first
-                    parser.set('motion_feed%02i' % index, 'ptz_calib_first', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'ptz_calib_first', self.num_bool(value))
                 elif key == 'pts':  # ptz servo settle
                     parser.set('motion_feed%02i' % index, 'ptz_servo_settle', value)
                 elif key == 'ppe':  # ptz park enable
-                    parser.set('motion_feed%02i' % index, 'ptz_park_enabled', num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'ptz_park_enabled', self.num_bool(value))
                 elif key == 'ppd':  # ptz park delay
                     parser.set('motion_feed%02i' % index, 'ptz_park_delay', value)
                 elif key == 'ppx':  # ptz park x
@@ -498,33 +493,33 @@ class Kmotion_setd(Thread):
                 time.sleep(60)
         
 
-
-def num_bool(num):
-    """
-    Converts a 1 or 0 to a 'true' or 'false' string 
-
-    args    : int ... 1 for 'true', 0 for 'false'bool_str
-    excepts : 
-    return  : 'true' or 'false' string 
-    """
+    @staticmethod
+    def num_bool(num):
+        """
+        Converts a 1 or 0 to a 'true' or 'false' string 
     
-    if int(num) == 1: return 'true'
-    return 'false'
-
-
-def de_sanitise(text):
-    """
-    Converts sanitised <...> to troublesome characters
-
-    args    : text ... the text to be de-sanitised
-    excepts : 
-    return  : text ... the de-sanitised text
-    """
+        args    : int ... 1 for 'true', 0 for 'false'bool_str
+        excepts : 
+        return  : 'true' or 'false' string 
+        """
+        
+        if int(num) == 1: return 'true'
+        return 'false'
     
-    text = text.replace('<amp>', '&')
-    text = text.replace('<que>', '?')
-    text = text.replace('<col>', ':')
-    return text
+    @staticmethod
+    def de_sanitise(text):
+        """
+        Converts sanitised <...> to troublesome characters
+    
+        args    : text ... the text to be de-sanitised
+        excepts : 
+        return  : text ... the de-sanitised text
+        """
+        
+        text = text.replace('<amp>', '&')
+        text = text.replace('<que>', '?')
+        text = text.replace('<col>', ':')
+        return text
     
 
 

@@ -27,28 +27,23 @@ import logger, sort_rc
 from mutex_parsers import *
 from mutex import Mutex
 from www_logs import WWWLog
-from threading import Thread
+from multiprocessing import Process
 from subprocess import *
 
-class Kmotion_Hkd1(Thread):
+class Kmotion_Hkd1(Process):
     
     log_level = 'WARNING'
     
     def __init__(self, kmotion_dir):
-        Thread.__init__(self)
-        self.setName('kmotion_hkd1')
-        self.setDaemon(True)
+        Process.__init__(self)
         self.logger = logger.Logger('kmotion_hkd1', Kmotion_Hkd1.log_level)
         self.images_dbase_dir = ''  # the 'root' directory of the images dbase
         self.kmotion_dir = kmotion_dir
         self.max_size_gb = 0  # max size permitted for the images dbase
         self.version = ''  # the current kmotion software version
-        
+        self.running = False
         self.www_logs = WWWLog(self.kmotion_dir) 
 #        self.read_config()
-
-    def stop(self):
-        os.kill(os.getpid(), signal.SIGTERM)
         
     def read_config(self):
         """ 
@@ -78,7 +73,7 @@ class Kmotion_Hkd1(Thread):
           
         
         
-    def run(self):    
+    def run(self):
         """
         Start the hkd1 daemon. This daemon wakes up every 15 minutes
         
