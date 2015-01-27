@@ -14,7 +14,7 @@ class Kmotion_split(Process):
     '''
     classdocs
     '''
-    log_level = 'WARNING'
+    log_level = logger.WARNING
 
     def __init__(self, kmotion_dir):
         '''
@@ -44,16 +44,16 @@ class Kmotion_split(Process):
             try:
                 state_file = os.path.join(self.states_dir, event)
                 event_file = os.path.join(self.events_dir, event)
-                self.logger.log('event = %s' % (event), 'DEBUG')
+                self.logger.log('event = %s' % (event), logger.DEBUG)
                 if not os.path.isfile(state_file) and os.path.isfile(event_file) and (time.time() - os.path.getmtime(event_file)) >= self.max_duration:
                     with open(state_file, 'w'):
                         pass
                     if os.path.isfile(self.event_end):
-                        self.logger.log('event %s stop' % event, 'DEBUG')
+                        self.logger.log('event %s stop' % event, logger.DEBUG)
                         Popen([self.event_end, event]).wait()
                     
                     if os.path.isfile(state_file) and os.path.isfile(self.event_start):
-                        self.logger.log('event %s start' % event, 'DEBUG')
+                        self.logger.log('event %s start' % event, logger.DEBUG)
                         os.unlink(state_file)
                         Popen([self.event_start, event]) 
             
@@ -64,7 +64,7 @@ class Kmotion_split(Process):
         
         
     def run(self):
-        self.logger.log('starting daemon ...', 'CRIT')
+        self.logger.log('starting daemon ...', logger.CRIT)
         while True:
             try:
                 events = os.listdir(self.events_dir)
@@ -78,12 +78,12 @@ class Kmotion_split(Process):
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                  
                 self.logger.log('** CRITICAL ERROR ** crash - type: %s' 
-                           % exc_type, 'CRIT')
+                           % exc_type, logger.CRIT)
                 self.logger.log('** CRITICAL ERROR ** crash - value: %s' 
-                           % exc_value, 'CRIT')
+                           % exc_value, logger.CRIT)
                 self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
-                           % exc_loc1, 'CRIT')
+                           % exc_loc1, logger.CRIT)
                 self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
-                           % exc_loc2, 'CRIT')
+                           % exc_loc2, logger.CRIT)
                 time.sleep(60)
                 

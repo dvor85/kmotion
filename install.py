@@ -24,7 +24,6 @@ The auto installer
 import os, sys, pwd, grp, time, stat, ConfigParser, shutil
 from subprocess import * # breaking habit of a lifetime !
 import core.init_core   as init_core
-import core.daemon_whip as daemon_whip
 
 class exit_(Exception): pass
 
@@ -160,7 +159,7 @@ def install():
     ok()
     
     checking('Killing kmotion daemons')
-    daemon_whip.stop()
+    daemon_whip.end()
     ok()
         
     # select a user to run the kmotion service

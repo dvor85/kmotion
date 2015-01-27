@@ -28,7 +28,7 @@ from mutex_parsers import *
 
 class InitMotion:
     
-    log_level = 'WARNING'
+    log_level = logger.WARNING
     
     def __init__(self, kmotion_dir):
         self.logger = logger.Logger('init_motion', InitMotion.log_level)
@@ -114,7 +114,7 @@ quiet on
                     user_conf = f_obj2.read()
             except IOError:   
                 print >> f_obj1, '# virtual_motion_conf/motion.conf not readable - ignored'
-                self.logger.log('no motion.conf readable in virtual_motion_conf dir - none included in final motion.conf', 'CRIT')
+                self.logger.log('no motion.conf readable in virtual_motion_conf dir - none included in final motion.conf', logger.CRIT)
             else:
                 print >> f_obj1, user_conf
             
@@ -193,7 +193,7 @@ webcam_localhost on
                         user_conf = f_obj2.read()
                 except IOError:   
                     print >> f_obj1, '# virtual_motion_conf/thread%02i.conf not readable - ignored' % feed
-                    self.logger.log('no feed%02i.conf readable in virtual_motion_conf dir - none included in final motion.conf' % feed, 'CRIT')
+                    self.logger.log('no feed%02i.conf readable in virtual_motion_conf dir - none included in final motion.conf' % feed, logger.CRIT)
                 else:
                     print >> f_obj1, user_conf
                 
@@ -241,8 +241,8 @@ snapshot_interval 1
                 print >> f_obj1, '' 
                 
                 print >> f_obj1, 'snapshot_filename %0.2d/%%Y%%m%%d%%H%%M%%S' % feed
-                print >> f_obj1, 'on_event_start %s/core/events.py start %i' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_event_end %s/core/events.py stop %i' % (self.kmotion_dir, feed)
+                print >> f_obj1, 'on_event_start %s/core/events.py %i start' % (self.kmotion_dir, feed)
+                print >> f_obj1, 'on_event_end %s/core/events.py %i end' % (self.kmotion_dir, feed)
                 print >> f_obj1, 'on_camera_lost %s/core/events.py lost %i' % (self.kmotion_dir, feed)
                 print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f' % (self.kmotion_dir)
 

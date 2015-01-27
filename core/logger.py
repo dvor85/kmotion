@@ -21,7 +21,18 @@
 A workaround for the buggy syslog module - should not be necessary but nothing's perfect
 """
 
+
+
 import syslog
+
+EMERG = 'EMERG'
+ALERT = 'ALERT'
+CRIT = 'CRIT'
+ERR = 'ERR'
+WARNING = 'WARNING'
+NOTICE = 'NOTICE'
+INFO = 'INFO'
+DEBUG = 'DEBUG'
 
 class Logger:
 
@@ -42,14 +53,14 @@ class Logger:
         # 'min_priority' is the min priority level at which events will be sent
         # to syslog, it  must be one of ... EMERG, ALERT, CRIT, ERR, WARNING, 
         # NOTICE, INFO, DEBUG
-        self.case = {'EMERG': syslog.LOG_EMERG,
-                            'ALERT': syslog.LOG_ALERT,
-                            'CRIT': syslog.LOG_CRIT,
-                            'ERR': syslog.LOG_ERR,
-                            'WARNING': syslog.LOG_WARNING,
-                            'NOTICE': syslog.LOG_NOTICE,
-                            'INFO': syslog.LOG_INFO,
-                            'DEBUG': syslog.LOG_DEBUG}
+        self.case = {EMERG: syslog.LOG_EMERG,
+                            ALERT: syslog.LOG_ALERT,
+                            CRIT: syslog.LOG_CRIT,
+                            ERR: syslog.LOG_ERR,
+                            WARNING: syslog.LOG_WARNING,
+                            NOTICE: syslog.LOG_NOTICE,
+                            INFO: syslog.LOG_INFO,
+                            DEBUG: syslog.LOG_DEBUG}
         self.ident = ident
         self.min_priority = min_priority       
     
@@ -69,7 +80,7 @@ class Logger:
         self.min_priority = min_priority  
     
         
-    def log(self, msg, priority):
+    def log(self, msg, priority=DEBUG):
         """
         Log an message string with a certain priority string. If that priority
         is greater than the pre-defined min priority log the message to 
@@ -82,7 +93,6 @@ class Logger:
         excepts : 
         return  : none
         """
-        
         # 'priority' is the actual level of the event, it must be one of ...
         # EMERG, ALERT, CRIT, ERR, WARNING, NOTICE, INFO, DEBUG
         # 'msg' will only be sent to syslog if 'priority' >= 'min_priority'

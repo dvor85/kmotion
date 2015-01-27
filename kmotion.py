@@ -42,7 +42,7 @@ class exit_(Exception): pass
 
 class Kmotion:
     
-    log_level = 'DEBUG'
+    log_level = logger.DEBUG
     
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
@@ -64,12 +64,12 @@ class Kmotion:
         self.daemons.append(Kmotion_split(self.kmotion_dir))
         
     def main(self, option):
-        if option == 'stop':            
-            self.stop()
+        if option == 'end':            
+            self.end()
         elif option == 'status':
             pass
         else:
-            self.stop()
+            self.end()
             self.start()
         
     def start(self):
@@ -81,7 +81,7 @@ class Kmotion:
         return  : none
         """ 
         
-        self.logger.log('starting kmotion ...', 'CRIT')
+        self.logger.log('starting kmotion ...', logger.CRIT)
         
     
         # init the ramdisk dir
@@ -99,22 +99,22 @@ class Kmotion:
     
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
-        self.logger.log('starting daemons ...', 'DEBUG')
+        self.logger.log('starting daemons ...', logger.DEBUG)
         self.motion_daemon.start_motion()
         for d in self.daemons:
             d.start()
-        self.logger.log('daemons started...', 'DEBUG')
+        self.logger.log('daemons started...', logger.DEBUG)
             
         purge_str = '#' * 1000 + '99999999'
         for fifo in ['fifo_settings_wr']:
             with open(os.path.join(self.kmotion_dir, 'www', fifo), 'w') as pipeout:
                 pipeout.write(purge_str)
                 
-        self.logger.log('waiting daemons ...', 'DEBUG')    
+        self.logger.log('waiting daemons ...', logger.DEBUG)    
         self.wait_termination()
 
 
-    def stop(self):
+    def end(self):
         """ 
         Kill all the kmotion daemons 
     
@@ -122,15 +122,15 @@ class Kmotion:
         excepts : 
         return  : none
         """
-        self.logger.log('stopping kmotion ...', 'CRIT')
-        self.logger.log('killing daemons ...', 'DEBUG')
+        self.logger.log('stopping kmotion ...', logger.CRIT)
+        self.logger.log('killing daemons ...', logger.DEBUG)
 
         for pid in self.get_kmotion_pids():
             os.kill(int(pid), signal.SIGTERM) 
             
         self.motion_daemon.stop_motion()
         
-        self.logger.log('daemons killed ...', 'DEBUG')
+        self.logger.log('daemons killed ...', logger.DEBUG)
         self.www_log.add_shutdown_event()
 
 

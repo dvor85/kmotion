@@ -31,7 +31,7 @@ from mutex import Mutex
 class WWWLog:
     
 
-    log_level = 'WARNING'
+    log_level = logger.WARNING
     
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
@@ -61,7 +61,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_startup_event() - adding startup event', 'DEBUG')       
+        self.logger.log('add_startup_event() - adding startup event', logger.DEBUG)       
         
         # if last event did not include 'shutting down' text, either the first 
         # run or a power fail crashed the system
@@ -85,7 +85,7 @@ class WWWLog:
           
         if error_flag: 
                 
-            self.logger.log('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown', 'DEBUG')
+            self.logger.log('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown', logger.DEBUG)
             
 #             # so we can scan for the latest jpeg files to get the latest times
 #             latests = []
@@ -125,7 +125,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_shutdown_event() - adding shutdown event', 'DEBUG')
+        self.logger.log('add_shutdown_event() - adding shutdown event', logger.DEBUG)
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion shutting down'))
               
     
@@ -138,7 +138,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_deletion_event() - adding deletion event', 'DEBUG')
+        self.logger.log('add_deletion_event() - adding deletion event', logger.DEBUG)
         year = date[:4]
         month = date[4:6]
         day = date[6:8]
@@ -154,7 +154,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_no_space_event() - adding deletion event', 'DEBUG')
+        self.logger.log('add_no_space_event() - adding deletion event', logger.DEBUG)
         self.add_event('%s#Deleting todays data, \'images_dbase\' is too small' % time.strftime('%d/%m/%Y#%H:%M:%S'))
     
     

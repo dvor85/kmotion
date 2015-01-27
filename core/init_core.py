@@ -29,7 +29,7 @@ from mutex import Mutex
 
 class InitCore:
     
-    log_level = 'WARNING'    
+    log_level = logger.WARNING    
 
     HEADER_TEXT = """
 ##############################################################
@@ -90,7 +90,7 @@ class InitCore:
         
         # Sets the 'func_f??_enabled' in 'www_rc' by scanning for valid files in 
         # the 'func' directory. Valid files have the format 'func<01-16>.sh'.
-        self.logger.log('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', 'DEBUG')
+        self.logger.log('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', logger.DEBUG)
         for func_num in range(1, self.max_feed):
             if os.path.isfile('%s/func/func%02i.sh' % (self.kmotion_dir, func_num)):
                 self.www_parser.set('system', 'func_f%02i_enabled' % func_num, 'true')
@@ -98,14 +98,14 @@ class InitCore:
                 self.www_parser.set('system', 'func_f%02i_enabled' % func_num, 'false')
         
         # copy 'msg' to 'www_rc' 
-        self.logger.log('update_rcs() - Copy \'msg\' to \'www_rc\'', 'DEBUG') 
+        self.logger.log('update_rcs() - Copy \'msg\' to \'www_rc\'', logger.DEBUG) 
         # user generated file so error trap
         try:
             with open('../msg') as f_obj:
                 msg = f_obj.read()
         except IOError:
             msg = ''
-            self.logger.log('update_rcs() - unable to read \'msg\'', 'DEBUG') 
+            self.logger.log('update_rcs() - unable to read \'msg\'', logger.DEBUG) 
             
         msg = msg.replace('\n', '<br>') 
         self.www_parser.set('system', 'msg', msg)
@@ -137,7 +137,7 @@ class InitCore:
         return  : none
         """
         
-        self.logger.log('init_ramdisk_dir() - creating \'states\' folder', 'DEBUG')
+        self.logger.log('init_ramdisk_dir() - creating \'states\' folder', logger.DEBUG)
         states_dir = os.path.join(self.ramdisk_dir, 'states')
         if not os.path.isdir(states_dir):
             os.makedirs(states_dir)
@@ -145,18 +145,18 @@ class InitCore:
         for sfile in os.listdir(states_dir):
             state_file = os.path.join(states_dir, sfile)
             if os.path.isfile(state_file):
-                self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), 'DEBUG')
+                self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), logger.DEBUG)
                 os.remove(state_file)
                     
         events_dir = os.path.join(self.ramdisk_dir, 'events')
         if not os.path.isdir(events_dir):
-            self.logger.log('init_ramdisk_dir() - creating \'events\' folder', 'DEBUG') 
+            self.logger.log('init_ramdisk_dir() - creating \'events\' folder', logger.DEBUG) 
             os.makedirs(events_dir)
             
         for efile in os.listdir(events_dir):
             event_file = os.path.join(events_dir, efile)
             if os.path.isfile(event_file) and os.path.getsize(event_file) == 0:
-                self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (event_file), 'DEBUG')
+                self.logger.log('init_ramdisk_dir() - deleting \'%s\' file' % (event_file), logger.DEBUG)
                 os.remove(event_file)
         
         
@@ -164,14 +164,14 @@ class InitCore:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, i)): 
                 try:
                     os.makedirs('%s/%02i' % (self.ramdisk_dir, i))
-                    self.logger.log('init_ramdisk_dir() - creating \'%02i\' folder' % i, 'DEBUG')
+                    self.logger.log('init_ramdisk_dir() - creating \'%02i\' folder' % i, logger.DEBUG)
                 except OSError:
                     pass
                     
         if not os.path.isdir('%s/tmp' % self.ramdisk_dir): 
             try:
                 os.makedirs('%s/tmp' % self.ramdisk_dir)
-                self.logger.log('init_ramdisk_dir() - creating \'tmp\' folder', 'DEBUG')
+                self.logger.log('init_ramdisk_dir() - creating \'tmp\' folder', logger.DEBUG)
             except OSError:
                 pass   
             
@@ -255,9 +255,9 @@ class InitCore:
         return  : none
         """    
 
-        self.logger.log('gen_vhost() - Generating vhost/kmotion file', 'DEBUG')
+        self.logger.log('gen_vhost() - Generating vhost/kmotion file', logger.DEBUG)
         
-        self.logger.log('gen_vhost() - users_digest mode enabled', 'DEBUG')
+        self.logger.log('gen_vhost() - users_digest mode enabled', logger.DEBUG)
         LDAP_block = """
 # ** INFORMATION ** Users digest file enabled ...
 AuthName "kmotion"
@@ -277,8 +277,8 @@ AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
                     lines[i] = lines[i].replace('%LDAP_block%', LDAP_block)
                     f_obj1.write(lines[i])
         except IOError:
-            self.logger.log('ERROR by generating vhost/kmotion file', 'CRIT')
-            self.logger.log(str(sys.exc_info()[1]), 'CRIT')
+            self.logger.log('ERROR by generating vhost/kmotion file', logger.CRIT)
+            self.logger.log(str(sys.exc_info()[1]), logger.CRIT)
         
       
         
