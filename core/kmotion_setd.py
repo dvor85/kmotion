@@ -22,7 +22,6 @@ and modifiy 'www_rc', also updates 'feeds_cache'
 """
 
 import sys, os.path, logger, time, traceback
-import sort_rc
 import signal
 from mutex_parsers import *
 from mutex import Mutex
@@ -32,13 +31,11 @@ from multiprocessing import Process
 
 
 class Kmotion_setd(Process):
-    log_level = logger.DEBUG
-    
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
         self.kmotion_dir = kmotion_dir
-        self.logger = logger.Logger('kmotion_setd', Kmotion_setd.log_level)
+        self.logger = logger.Logger('kmotion_setd', logger.DEBUG)
 
     def main(self):  
         """
@@ -137,7 +134,7 @@ class Kmotion_setd(Process):
         return  : none
         """
         
-        self.logger.log('starting daemon ...', logger.WARNING)
+        self.logger('starting daemon ...', logger.WARNING)
         init_motion = InitMotion(self.kmotion_dir)
         
         reload_ptz_config = False
@@ -162,22 +159,22 @@ class Kmotion_setd(Process):
         
         while True:
             
-            self.logger.log('waiting on FIFO pipe data', logger.DEBUG)
+            self.logger('waiting on FIFO pipe data', logger.DEBUG)
             
             with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein: 
                 data = pipein.read()
             data = data.rstrip()        
-            self.logger.log('kmotion FIFO pipe data: %s' % data, logger.DEBUG)
+            self.logger('kmotion FIFO pipe data: %s' % data, logger.DEBUG)
             
             if len(data) < 8:
                 continue
             
             if len(data) > 7 and data[-8:] == '99999999':  # FIFO purge
-                self.logger.log('FIFO purge', logger.DEBUG)
+                self.logger('FIFO purge', logger.DEBUG)
                 continue
     
             if int(data[-8:]) != len(data) - 13:  # filter checksum
-                self.logger.log('data checksum error - rejecting data', logger.CRIT)
+                self.logger('data checksum error - rejecting data', logger.CRIT)
                 continue
             
     
@@ -200,7 +197,7 @@ class Kmotion_setd(Process):
                 must_reload = False
             
             
-            self.logger.log('kmotion_setd user: %s' % user, logger.CRIT)
+            self.logger('kmotion_setd user: %s' % user, logger.CRIT)
             parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
             
             for raw_data in raws_data:
@@ -216,34 +213,34 @@ class Kmotion_setd(Process):
                 value = split_data[1]
                 
                 if key == 'ine':  # interleave
-                    parser.set('misc', 'misc1_interleave', self.num_bool(value))
+                    parser.set('misc', 'misc1_interleave', Kmotion_setd.num_bool(value))
                 elif key == 'fse':  # full screen
-                    parser.set('misc', 'misc1_full_screen', self.num_bool(value))
+                    parser.set('misc', 'misc1_full_screen', Kmotion_setd.num_bool(value))
                 elif key == 'lbe':  # low bandwidth
-                    parser.set('misc', 'misc1_low_bandwidth', self.num_bool(value))
+                    parser.set('misc', 'misc1_low_bandwidth', Kmotion_setd.num_bool(value))
                 elif key == 'lce':  # low cpu
-                    parser.set('misc', 'misc1_low_cpu', self.num_bool(value))
+                    parser.set('misc', 'misc1_low_cpu', Kmotion_setd.num_bool(value))
                 elif key == 'skf':  # skip archive frames enabled
-                    parser.set('misc', 'misc1_skip_frames', self.num_bool(value))
+                    parser.set('misc', 'misc1_skip_frames', Kmotion_setd.num_bool(value))
                 elif key == 'are':  # archive button enabled
-                    parser.set('misc', 'misc2_archive_button_enabled', self.num_bool(value))
+                    parser.set('misc', 'misc2_archive_button_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'lge':  # logs button enabled
-                    parser.set('misc', 'misc2_logs_button_enabled', self.num_bool(value))
+                    parser.set('misc', 'misc2_logs_button_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'coe':  # config button enabled
-                    parser.set('misc', 'misc2_config_button_enabled', self.num_bool(value))
+                    parser.set('misc', 'misc2_config_button_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'fue':  # function button enabled
-                    parser.set('misc', 'misc2_func_button_enabled', self.num_bool(value))
+                    parser.set('misc', 'misc2_func_button_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'spa':  # update button enabled
-                    parser.set('misc', 'misc2_msg_button_enabled', self.num_bool(value))
+                    parser.set('misc', 'misc2_msg_button_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'abe':  # about button enabled
-                    parser.set('misc', 'misc2_about_button_enabled', self.num_bool(value))
+                    parser.set('misc', 'misc2_about_button_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'loe':  # logout button enabled
-                    parser.set('misc', 'misc2_logout_button_enabled', self.num_bool(value))
+                    parser.set('misc', 'misc2_logout_button_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'hbb':  # hide_button_bar
-                    parser.set('misc', 'hide_button_bar', self.num_bool(value))
+                    parser.set('misc', 'hide_button_bar', Kmotion_setd.num_bool(value))
     
                 elif key == 'sec':  # secure config
-                    parser.set('misc', 'misc3_secure', self.num_bool(value))
+                    parser.set('misc', 'misc3_secure', Kmotion_setd.num_bool(value))
                 elif key == 'coh':  # config hash
                     parser.set('misc', 'misc3_config_hash', value)
             
@@ -252,41 +249,41 @@ class Kmotion_setd(Process):
                     masks_modified.append((index, value))
             
                 elif key == 'fen':  # feed enabled
-                    parser.set('motion_feed%02i' % index, 'feed_enabled', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'fpl':  # feed pal 
-                    parser.set('motion_feed%02i' % index, 'feed_pal', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_pal', Kmotion_setd.num_bool(value))
                 elif key == 'fde':  # feed device
                     parser.set('motion_feed%02i' % index, 'feed_device', value)
                 elif key == 'fin':  # feed input
                     parser.set('motion_feed%02i' % index, 'feed_input', value)
                 elif key == 'ful':  # feed url
-                    parser.set('motion_feed%02i' % index, 'feed_url', '"%s"' % self.de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_url', '"%s"' % Kmotion_setd.de_sanitise(value))
                 elif key == 'fpr':  # feed proxy
-                    parser.set('motion_feed%02i' % index, 'feed_proxy', '"%s"' % self.de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_proxy', '"%s"' % Kmotion_setd.de_sanitise(value))
                 elif key == 'fln':  # feed loggin name
-                    parser.set('motion_feed%02i' % index, 'feed_lgn_name', self.de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_lgn_name', Kmotion_setd.de_sanitise(value))
                 elif key == 'flp':  # feed loggin password
                     # check to see if default *'d password is returned
-                    if self.de_sanitise(value) != '*' * len(parser.get('motion_feed%02i' % index, 'feed_lgn_pw')):
-                        parser.set('motion_feed%02i' % index, 'feed_lgn_pw', self.de_sanitise(value))
+                    if Kmotion_setd.de_sanitise(value) != '*' * len(parser.get('motion_feed%02i' % index, 'feed_lgn_pw')):
+                        parser.set('motion_feed%02i' % index, 'feed_lgn_pw', Kmotion_setd.de_sanitise(value))
                 elif key == 'fwd':  # feed width
                     parser.set('motion_feed%02i' % index, 'feed_width', value)
                 elif key == 'fhe':  # feed height
                     parser.set('motion_feed%02i' % index, 'feed_height', value)
                 elif key == 'fna':  # feed name
-                    parser.set('motion_feed%02i' % index, 'feed_name', self.de_sanitise(value))
+                    parser.set('motion_feed%02i' % index, 'feed_name', Kmotion_setd.de_sanitise(value))
                 elif key == 'fbo':  # feed show box
-                    parser.set('motion_feed%02i' % index, 'feed_show_box', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_show_box', Kmotion_setd.num_bool(value))
                 elif key == 'ffp':  # feed fps
                     parser.set('motion_feed%02i' % index, 'feed_fps', value)
                 elif key == 'fpe':  # feed snap enabled
-                    parser.set('motion_feed%02i' % index, 'feed_snap_enabled', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_snap_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'fsn':  # feed snap interval
                     parser.set('motion_feed%02i' % index, 'feed_snap_interval', value)
                 elif key == 'ffe':  # feed smovie enabled
-                    parser.set('motion_feed%02i' % index, 'feed_smovie_enabled', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_smovie_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'fme':  # feed movie enabled
-                    parser.set('motion_feed%02i' % index, 'feed_movie_enabled', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'feed_movie_enabled', Kmotion_setd.num_bool(value))
                     
                 elif key == 'psx':  # ptz step x
                     parser.set('motion_feed%02i' % index, 'ptz_step_x', value)                
@@ -296,13 +293,13 @@ class Kmotion_setd(Process):
                     parser.set('motion_feed%02i' % index, 'ptz_track_type', value)
             
                 elif key == 'pte':  # ptz enabled
-                    parser.set('motion_feed%02i' % index, 'ptz_enabled', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'ptz_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'ptc':  # ptz calib first
-                    parser.set('motion_feed%02i' % index, 'ptz_calib_first', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'ptz_calib_first', Kmotion_setd.num_bool(value))
                 elif key == 'pts':  # ptz servo settle
                     parser.set('motion_feed%02i' % index, 'ptz_servo_settle', value)
                 elif key == 'ppe':  # ptz park enable
-                    parser.set('motion_feed%02i' % index, 'ptz_park_enabled', self.num_bool(value))
+                    parser.set('motion_feed%02i' % index, 'ptz_park_enabled', Kmotion_setd.num_bool(value))
                 elif key == 'ppd':  # ptz park delay
                     parser.set('motion_feed%02i' % index, 'ptz_park_delay', value)
                 elif key == 'ppx':  # ptz park x
@@ -390,12 +387,7 @@ class Kmotion_setd(Process):
                 if (key in RELOAD_PTZ)and(must_reload) : reload_ptz_config = True
                 
             mutex_www_parser_wr(self.kmotion_dir, parser, www_rc)
-            try:
-                mutex = Mutex(self.kmotion_dir, 'www_rc')
-                mutex.acquire()
-                sort_rc.sort_rc('%s/www/%s' % (self.kmotion_dir, www_rc))
-            finally:
-                mutex.release()
+            
             #update_feeds_cache()
             
             # has to be here, image width, height have to be written to 'www_rc'
@@ -426,11 +418,11 @@ class Kmotion_setd(Process):
         return  : none
         """
     
-        self.logger.log('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
+        self.logger('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
         parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
         image_width = parser.getint('motion_feed%02i' % feed, 'feed_width') 
         image_height = parser.getint('motion_feed%02i' % feed, 'feed_height')
-        self.logger.log('create_mask() - width: %s height: %s' % (image_width, image_height), logger.DEBUG)
+        self.logger('create_mask() - width: %s height: %s' % (image_width, image_height), logger.DEBUG)
         
         black_px = '\x00' 
         white_px = '\xFF' 
@@ -469,7 +461,7 @@ class Kmotion_setd(Process):
             print >> f_obj, '%d %d' % (image_width, image_height)
             print >> f_obj, '255'
             print >> f_obj, mask
-        self.logger.log('create_mask() - mask written', logger.DEBUG)
+        self.logger('create_mask() - mask written', logger.DEBUG)
         
         
     def run(self):
@@ -482,13 +474,13 @@ class Kmotion_setd(Process):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                 
-                self.logger.log('** CRITICAL ERROR ** crash - type: %s' 
+                self.logger('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, logger.CRIT)
-                self.logger.log('** CRITICAL ERROR ** crash - value: %s' 
+                self.logger('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, logger.CRIT)
-                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
+                self.logger('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, logger.CRIT)
-                self.logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
+                self.logger('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, logger.CRIT) 
                 time.sleep(60)
         

@@ -78,6 +78,9 @@ class Logger:
         """
         
         self.min_priority = min_priority  
+        
+    def __call__(self, msg, priority=DEBUG):
+        self.log(msg, priority)
     
         
     def log(self, msg, priority=DEBUG):

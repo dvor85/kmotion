@@ -5,23 +5,21 @@
 import os, subprocess, shlex, time, datetime, cPickle, signal, logger
 from mutex_parsers import *
 from urlparse import urlsplit
+import sample
 
 
-class rtsp2mp4():
-    
-    log_level = logger.DEBUG
+class rtsp2mp4(sample.sample):
     
     def __init__(self, kmotion_dir, feed):
-        self.logger = logger.Logger('rtsp2mp4', rtsp2mp4.log_level)
-        self.kmotion_dir = kmotion_dir
-        self.feed = int(feed)
+        sample.sample.__init__(self, kmotion_dir, feed)
+        self.logger = logger.Logger('action_rtsp2mp4', logger.DEBUG)
         
         try:
             parser = mutex_kmotion_parser_rd(kmotion_dir) 
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
         except:
-            self.logger.log('error while parsing kmotion_rc file') 
+            self.logger('error while parsing kmotion_rc file', logger.CRIT) 
     
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
         
@@ -33,13 +31,13 @@ class rtsp2mp4():
             self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
             self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
             
-            self.feed_grab_url = self.build_url(www_parser.get('motion_feed%02i' % self.feed, 'feed_grab_url'))
-            self.feed_reboot_url = self.build_url(www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'))
+            self.feed_grab_url = rtsp2mp4.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_grab_url'), self.feed_username, self.feed_password)
+            self.feed_reboot_url = rtsp2mp4.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'), self.feed_username, self.feed_password)
         except:
-            self.logger.log('error while parsing www_rc file')
+            self.logger('error while parsing www_rc file', logger.DEBUG)
             
-        
-    def build_url(self, src_url):
+    @staticmethod    
+    def add_userinfo(src_url, username, password):
         url = urlsplit(src_url)            
         params = {'scheme':url.scheme, 'hostname':url.hostname, 'path':url.path}
         if url.query == '': 
@@ -47,11 +45,11 @@ class rtsp2mp4():
         else: 
             params['query'] = '?%s' % url.query
         if url.username is None:
-            params['username'] = self.feed_username
+            params['username'] = username
         else:
             params['username'] = url.username
         if url.password is None:
-            params['password'] = self.feed_password
+            params['password'] = password
         else:
             params['password'] = url.password
         return "{scheme}://{username}:{password}@{hostname}{path}{query}".format(**params)
@@ -60,12 +58,13 @@ class rtsp2mp4():
         try:
             with open(self.event_file, 'rb') as dump:
                 pid = cPickle.load(dump)
-            trys = 2
-            while trys > 0:
+            for i in range(2):
                 if not os.path.isdir(os.path.join('/proc', str(pid))):
-                    return False
-                trys -= 1
-                time.sleep(0.5)
+                    if i == 0:
+                        time.sleep(0.5)
+                    else:
+                        return False
+                
         except:
             return False
         return True
@@ -90,16 +89,17 @@ class rtsp2mp4():
             DEVNULL = open(os.devnull, 'wb')
         
         # ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
-        ps = subprocess.Popen('while true; do sleep 10; done;', shell=True)
-        self.logger.log('start grabbing {src} to {dst} with pid={pid}'.format(**{'src':src, 'dst':dst, 'pid':ps.pid}))
+        ps = subprocess.Popen(['sleep', '1000'])
+        self.logger('start grabbing {src} to {dst} with pid={pid}'.format(**{'src':src, 'dst':dst, 'pid':ps.pid}), logger.DEBUG)
         return ps.pid
     
     def start(self):
+        sample.sample.start(self)
         try:
             dt = datetime.datetime.fromtimestamp(time.time())
             event_date = dt.strftime("%Y%m%d")
             event_time = dt.strftime("%H%M%S")
-            movie_dir = os.path.join(self.images_dbase_dir, event_date, str(self.feed), 'movie')
+            movie_dir = os.path.join(self.images_dbase_dir, event_date, '%0.2i' % self.feed, 'movie')
             
             if not self.is_grab_started():
             
@@ -118,30 +118,34 @@ class rtsp2mp4():
                 else:
                     os.unlink(dst)
         except:
-            self.logger.log('error while start')
+            self.logger('error while start', logger.CRIT)
                 
     def end(self):
+        sample.sample.end(self)
         try:
             with open(self.event_file, 'rb') as dump:
                 pid = cPickle.load(dump)
                 event_start_time = cPickle.load(dump)
                 event_start_date = cPickle.load(dump)
-            trys = 2
-            while os.path.isdir(os.path.join('/proc', str(pid))) or trys>1:
-                self.logger.log('end grabbing feed {feed}'.format(**{'feed':self.feed}))
-                if trys > 0:
-                    os.kill(pid, signal.SIGTERM)
-                else:
-                    os.kill(pid, signal.SIGKILL)
-                trys -= 1
-                time.sleep(0.5)
+            
+            for i in range(3):
+                if os.path.isdir(os.path.join('/proc', str(pid))):
+                    if i == 0:
+                        self.logger('terminate grabbing feed {feed}'.format(**{'feed':self.feed}), logger.DEBUG)
+                        os.kill(pid, signal.SIGTERM)
+                    elif i == 1:
+                        self.logger('killing grabbing feed {feed}'.format(**{'feed':self.feed}), logger.DEBUG)
+                        os.kill(pid, signal.SIGKILL)
+                    else:
+                        self.logger('problem by killing pid: {pid}'.format(**{'pid':pid}), logger.DEBUG)
+                    time.sleep(0.5)
             
             dt = datetime.datetime.fromtimestamp(time.time())
             event_end_time = dt.strftime("%H%M%S")
             
-            movie_dir = os.path.join(self.images_dbase_dir, event_start_date, str(self.feed), 'movie')
+            movie_dir = os.path.join(self.images_dbase_dir, event_start_date, '%0.2i' % self.feed, 'movie')
             dst = os.path.join(movie_dir, '%s.mp4' % event_start_time) 
-            movie_journal = os.path.join(self.images_dbase_dir, event_start_date, str(self.feed), 'movie_journal')
+            movie_journal = os.path.join(self.images_dbase_dir, event_start_date, '%0.2i' % self.feed, 'movie_journal')
             try:
                 if os.path.getsize(dst) > 0:
                     with open(movie_journal, 'r+') as f_obj:
@@ -149,11 +153,11 @@ class rtsp2mp4():
                 else:
                     os.unlink(dst)
             except:
-                self.logger.log('error: file {dst}'.format(**{'dst':dst}))
+                self.logger('error: file {dst}'.format(**{'dst':dst}), logger.CRIT)
     
             os.unlink(self.event_file)
         except:
-            self.logger.log('error while end')
+            self.logger('error while end', logger.DEBUG)
         
     
     

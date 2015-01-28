@@ -32,18 +32,16 @@ from multiprocessing import Process
 from subprocess import *
 
 
-log_level = logger.WARNING
-logger = logger.Logger('kmotion_hkd2', log_level)
+mylog = logger.Logger('kmotion_hkd2', logger.DEBUG)
 
 
 class Hkd2_Feed():
     
     def __init__(self, kmotion_dir, feed, semaphore):
         self.kmotion_dir = kmotion_dir  # the 'root' directory of kmotion
-        self.feed = feed  # the feed number 1 - 16
+        self.feed = int(feed)  # the feed number 1 - 16
         self.ramdisk_dir = ''  # the 'root' dir of the ramdisk
         self.images_dbase_dir = ''  # the 'root' dir of the images dbase
-        self.feed_enabled = True  # feed enabled 
         self.feed_snap_enabled = True  # feed snap enabled
         self.feed_snap_interval = ''  # snap interval in seconds
         self.feed_fps = ''  # frame fps
@@ -69,13 +67,12 @@ class Hkd2_Feed():
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError): 
-            logger.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
+            mylog('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
                        sys.exc_info()[1], logger.CRIT)
-            logger.log('** CRITICAL ERROR ** killing all daemons and terminating', logger.CRIT)
-            self.daemon_whip.stop()
+            mylog('** CRITICAL ERROR ** killing all daemons and terminating', logger.CRIT)
+            sys.exit()
             
         parser = mutex_www_parser_rd(self.kmotion_dir) 
-        self.feed_enabled = parser.getboolean('motion_feed%02i' % self.feed, 'feed_enabled')
         self.feed_snap_enabled = parser.getboolean('motion_feed%02i' % self.feed, 'feed_snap_enabled')
         self.feed_snap_interval = parser.getint('motion_feed%02i' % self.feed, 'feed_snap_interval')
         self.feed_fps = parser.getint('motion_feed%02i' % self.feed, 'feed_fps')
@@ -99,10 +96,10 @@ class Hkd2_Feed():
                 date, time_ = self.current_date_time()
                  
                 # if dates mismatch, its a new day 
-                if self.feed_enabled and date != self.old_date: 
+                if date != self.old_date: 
                     
                     self.old_date = date 
-                    logger.log('service_snap() - new day, feed: %s date: %s' % (self.feed, date), logger.DEBUG) 
+                    mylog('service_snap() - new day, feed: %s date: %s' % (self.feed, date), logger.DEBUG) 
                         
                     feed_dir = '%s/%s/%02i' % (self.images_dbase_dir, date, self.feed)
                     try:  # make sure 'feed_dir' exists, try in case motion creates dir
@@ -111,82 +108,81 @@ class Hkd2_Feed():
                         pass
                     
                     # update the snap and smovie fps journals 
-                    self.update_snap_journal(date, self.feed_enabled and self.feed_snap_enabled,
+                    self.update_snap_journal(date, self.feed_snap_enabled,
                                              time_, self.feed_snap_interval)
                     self.update_fps_journal(date, time_, self.feed_fps)
                     self.update_title(date)
                 
                 # process and sanitise snap timestamps
-                if self.feed_enabled: 
                     
-                    tmp_snap_dir = '%s/%02i' % (self.ramdisk_dir, self.feed) 
-                    snap_list = os.listdir(tmp_snap_dir)
-                    snap_list.sort()
+                tmp_snap_dir = '%s/%02i' % (self.ramdisk_dir, self.feed) 
+                snap_list = os.listdir(tmp_snap_dir)
+                snap_list.sort()
+                
+                # need this > 25 buffer to ensure kmotion can view jpegs before we 
+                # move or delete them
+                while (len(snap_list) >= 25):  
                     
-                    # need this > 25 buffer to ensure kmotion can view jpegs before we 
-                    # move or delete them
-                    while (len(snap_list) >= 25):  
-                        
-                        snap_date_time = snap_list[0][:-4]  # [:-4] to strip '.jpg'
-                        
-                        # if snap is disabled, delete old jpegs but keep time in sync
-                        if not self.feed_snap_enabled:
-                            logger.log('service_snap() - ditch %s/%s.jpg' 
-                                       % (tmp_snap_dir, snap_date_time), logger.DEBUG)
-                            if snap_date_time != 'last':
-                                os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
-                                feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
-                                if os.path.isfile(feed_www_jpg):
-                                    os.remove(feed_www_jpg)
-                            if snap_date_time > date + time_: 
-                                self.inc_date_time(2)
-                            snap_list = snap_list[1:]
-                            continue
-                        
-                        # if jpeg is in the past, delete it
-                        if snap_date_time < date + time_: 
-                            logger.log('service_snap() - delete %s/%s.jpg' 
-                                       % (tmp_snap_dir, snap_date_time), logger.DEBUG)
-                            if snap_date_time != 'last':
-                                os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
-                                feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
-                                if os.path.isfile(feed_www_jpg):
-                                    os.remove(feed_www_jpg)
-                            snap_list = snap_list[1:]
-                            continue
-                        
-                        # need date time update here in case 00:00 crossed
-                        date, time_ = self.current_date_time()
-                        snap_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, self.feed)
-                        
-                        # make sure 'snap_dir' exists, try in case motion creates dir
-                        if not os.path.isdir(snap_dir):
-                            try:  
-                                os.makedirs(snap_dir)
-                            except OSError:
-                                pass
-                            
-                        # if jpeg is in the future, copy but don't delete
-                        if snap_date_time > date + time_: 
-                            logger.log('service_snap() - copy %s/%s.jpg %s/%s.jpg' 
-                                       % (tmp_snap_dir, snap_date_time, snap_dir,
-                                          time_), logger.DEBUG)               
-                            shutil.copy('%s/%s.jpg' % (tmp_snap_dir, snap_date_time), '%s/%s.jpg' 
-                                      % (snap_dir, time_))
-                            self.inc_date_time(self.feed_snap_interval)
-                            
-                        
-                        # if jpeg is now, move it
-                        elif snap_date_time == date + time_:  
-                            logger.log('service_snap() - move %s/%s.jpg %s/%s.jpg' 
-                                       % (tmp_snap_dir, snap_date_time, snap_dir,
-                                          time_), logger.DEBUG)  
-                            Popen('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_), shell=True).wait()
+                    snap_date_time = snap_list[0][:-4]  # [:-4] to strip '.jpg'
+                    
+                    # if snap is disabled, delete old jpegs but keep time in sync
+                    if not self.feed_snap_enabled:
+                        mylog('service_snap() - ditch %s/%s.jpg' 
+                                   % (tmp_snap_dir, snap_date_time), logger.DEBUG)
+                        if snap_date_time != 'last':
+                            os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
                             feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
                             if os.path.isfile(feed_www_jpg):
                                 os.remove(feed_www_jpg)
-                            self.inc_date_time(self.feed_snap_interval)
-                            snap_list = snap_list[1:]
+                        if snap_date_time > date + time_: 
+                            self.inc_date_time(2)
+                        snap_list = snap_list[1:]
+                        continue
+                    
+                    # if jpeg is in the past, delete it
+                    if snap_date_time < date + time_: 
+                        mylog('service_snap() - delete %s/%s.jpg' 
+                                   % (tmp_snap_dir, snap_date_time), logger.DEBUG)
+                        if snap_date_time != 'last':
+                            os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
+                            feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
+                            if os.path.isfile(feed_www_jpg):
+                                os.remove(feed_www_jpg)
+                        snap_list = snap_list[1:]
+                        continue
+                    
+                    # need date time update here in case 00:00 crossed
+                    date, time_ = self.current_date_time()
+                    snap_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, self.feed)
+                    
+                    # make sure 'snap_dir' exists, try in case motion creates dir
+                    if not os.path.isdir(snap_dir):
+                        try:  
+                            os.makedirs(snap_dir)
+                        except OSError:
+                            pass
+                        
+                    # if jpeg is in the future, copy but don't delete
+                    if snap_date_time > date + time_: 
+                        mylog('service_snap() - copy %s/%s.jpg %s/%s.jpg' 
+                                   % (tmp_snap_dir, snap_date_time, snap_dir,
+                                      time_), logger.DEBUG)               
+                        shutil.copy('%s/%s.jpg' % (tmp_snap_dir, snap_date_time), '%s/%s.jpg' 
+                                  % (snap_dir, time_))
+                        self.inc_date_time(self.feed_snap_interval)
+                        
+                    
+                    # if jpeg is now, move it
+                    elif snap_date_time == date + time_:  
+                        mylog('service_snap() - move %s/%s.jpg %s/%s.jpg' 
+                                   % (tmp_snap_dir, snap_date_time, snap_dir,
+                                      time_), logger.DEBUG)  
+                        Popen('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_), shell=True).wait()
+                        feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
+                        if os.path.isfile(feed_www_jpg):
+                            os.remove(feed_www_jpg)
+                        self.inc_date_time(self.feed_snap_interval)
+                        snap_list = snap_list[1:]
             finally:
                 self.lock.release() 
         finally:
@@ -291,6 +287,13 @@ class Kmotion_Hkd2(Process):
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         self.max_feed = parser.getint('misc', 'max_feed')
+        
+        www_parser = mutex_www_parser_rd(self.kmotion_dir)
+        self.feed_list = []
+        for feed in range(1, self.max_feed):
+            if www_parser.has_section('motion_feed%02i' % feed) and www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
+                self.feed_list.append(feed)
+        
         self.semaphore = Semaphore(8) 
         
     def run(self):
@@ -303,28 +306,27 @@ class Kmotion_Hkd2(Process):
         """
         while True:
             try:
-                logger.log('starting daemon ...', logger.CRIT)
+                mylog('starting daemon ...', logger.CRIT)
                 self.instance_list = []  # list of Hkd2_Feed instances
-                for feed in range(1, self.max_feed):
+                for feed in self.feed_list:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed, self.semaphore))
                 while True:
+                    time.sleep(2)
                     for inst in self.instance_list:
                         Thread(target=inst.main).start()
-            
-                    time.sleep(2)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 exc_trace = traceback.extract_tb(exc_traceback)[-1]
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                  
-                logger.log('** CRITICAL ERROR ** crash - type: %s' 
+                mylog('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, logger.CRIT)
-                logger.log('** CRITICAL ERROR ** crash - value: %s' 
+                mylog('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, logger.CRIT)
-                logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
+                mylog('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, logger.CRIT)
-                logger.log('** CRITICAL ERROR ** crash - traceback: %s' 
+                mylog('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, logger.CRIT)
                 time.sleep(60)
 

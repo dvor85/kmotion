@@ -3,8 +3,7 @@ Created on 18.12.2014
 
 @author: demon
 '''
-import ConfigParser
-
+import ConfigParser, sort_rc, os
 from mutex import Mutex
 
 
@@ -18,10 +17,12 @@ def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):
         return  : 
     """
     www_rc_mutex = Mutex(kmotion_dir, 'www_rc')
+    www_rc_file = '%s/www/%s' % (kmotion_dir, www_rc)
     www_rc_mutex.acquire()
     try:
-        with open('%s/www/%s' % (kmotion_dir, www_rc), 'w') as f_obj:
+        with open(www_rc_file, 'w') as f_obj:
             parser.write(f_obj)
+        sort_rc.sort_rc(www_rc_file) 
     finally:
         www_rc_mutex.release()
 
@@ -35,10 +36,12 @@ def mutex_kmotion_parser_wr(kmotion_dir, parser):
         return  : 
     """
     kmotion_rc_mutex = Mutex(kmotion_dir, 'kmotion_rc')
+    kmotion_rc_file = os.path.join(kmotion_dir, 'kmotion_rc')
     kmotion_rc_mutex.acquire()
     try:            
-        with open('%s/kmotion_rc' % kmotion_dir, 'w') as f_obj: 
+        with open(kmotion_rc_file, 'w') as f_obj: 
             parser.write(f_obj)
+        sort_rc.sort_rc(kmotion_rc_file)
     finally:
         kmotion_rc_mutex.release()
         

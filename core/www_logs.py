@@ -30,14 +30,11 @@ from mutex import Mutex
 
 class WWWLog:
     
-
-    log_level = logger.WARNING
-    
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
         self.log_file = '%s/www/logs' % self.kmotion_dir
         kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.logger = logger.Logger('init_motion', WWWLog.log_level)
+        self.logger = logger.Logger('init_motion', logger.DEBUG)
         self.ramdisk_dir = kmotion_parser.get('dirs', 'ramdisk_dir')
         self.max_feed = kmotion_parser.getint('misc', 'max_feed')
                 
@@ -61,7 +58,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_startup_event() - adding startup event', logger.DEBUG)       
+        self.logger('add_startup_event() - adding startup event', logger.DEBUG)       
         
         # if last event did not include 'shutting down' text, either the first 
         # run or a power fail crashed the system
@@ -85,33 +82,8 @@ class WWWLog:
           
         if error_flag: 
                 
-            self.logger.log('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown', logger.DEBUG)
+            self.logger('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown', logger.DEBUG)
             
-#             # so we can scan for the latest jpeg files to get the latest times
-#             latests = []
-#             for feed in range(1, self.max_feed):
-#                 jpegs = os.listdir('%s/%02i' % (self.ramdisk_dir, feed))
-#             
-#                 if len(jpegs) > 1:  # ie we have some jpegs
-#                     jpegs.sort()
-#                     latests.append(jpegs[-2][:-4])  # skip 'latest_jpeg' file
-#           
-#             
-#                     
-#             # get the latest filename, calculate its time and date and construct an 
-#             # event string
-#             latests.sort()
-#             if len(latests) > 0:  # as long as a feed has run at some time !      
-#                 latest = latests[-1]
-#                 year = latest[:4]
-#                 month = latest[4:6]
-#                 day = latest[6:8]
-#                 hour = latest[8:10]
-#                 min_ = latest[10:12]
-#                 sec = latest[12:]
-#                 new_event = '%s/%s/%s#%s:%s:%s#Incorrect shutdown / Mains failure' % (day, month, year, hour, min_, sec)
-#                 self.add_event(new_event)
-        
         # in all cases add a starting up message
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion starting up'))
     
@@ -125,7 +97,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_shutdown_event() - adding shutdown event', logger.DEBUG)
+        self.logger('add_shutdown_event() - adding shutdown event', logger.DEBUG)
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion shutting down'))
               
     
@@ -138,7 +110,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_deletion_event() - adding deletion event', logger.DEBUG)
+        self.logger('add_deletion_event() - adding deletion event', logger.DEBUG)
         year = date[:4]
         month = date[4:6]
         day = date[6:8]
@@ -154,7 +126,7 @@ class WWWLog:
         return  : none
         """
         
-        self.logger.log('add_no_space_event() - adding deletion event', logger.DEBUG)
+        self.logger('add_no_space_event() - adding deletion event', logger.DEBUG)
         self.add_event('%s#Deleting todays data, \'images_dbase\' is too small' % time.strftime('%d/%m/%Y#%H:%M:%S'))
     
     

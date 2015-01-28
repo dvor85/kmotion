@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Copyright 2008 David Selby dave6502@googlemail.com
 
 # This file is part of kmotion.
@@ -25,10 +24,10 @@ The kmotion exe file cannot call this code directly because it may be in a
 different working directory
 """
 
-import os, sys, time, threading, signal
+import os, sys, time, threading, signal, ConfigParser
 from subprocess import *  # breaking habit of a lifetime !
-from core.mutex_parsers import *
 from core.www_logs import WWWLog
+from core.mutex_parsers import *
 from core.motion_daemon import MotionDaemon
 from core.init_core import InitCore 
 import core.logger as logger
@@ -42,12 +41,10 @@ class exit_(Exception): pass
 
 class Kmotion:
     
-    log_level = logger.DEBUG
-    
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
       
-        self.logger = logger.Logger('kmotion', Kmotion.log_level)
+        self.logger = logger.Logger('kmotion', logger.DEBUG)
         # signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         
@@ -64,12 +61,12 @@ class Kmotion:
         self.daemons.append(Kmotion_split(self.kmotion_dir))
         
     def main(self, option):
-        if option == 'end':            
-            self.end()
+        if option == 'stop':            
+            self.stop()
         elif option == 'status':
             pass
         else:
-            self.end()
+            self.stop()
             self.start()
         
     def start(self):
@@ -81,7 +78,7 @@ class Kmotion:
         return  : none
         """ 
         
-        self.logger.log('starting kmotion ...', logger.CRIT)
+        self.logger('starting kmotion ...', logger.CRIT)
         
     
         # init the ramdisk dir
@@ -99,22 +96,22 @@ class Kmotion:
     
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
-        self.logger.log('starting daemons ...', logger.DEBUG)
+        self.logger('starting daemons ...', logger.DEBUG)
         self.motion_daemon.start_motion()
         for d in self.daemons:
             d.start()
-        self.logger.log('daemons started...', logger.DEBUG)
+        self.logger('daemons started...', logger.DEBUG)
             
         purge_str = '#' * 1000 + '99999999'
         for fifo in ['fifo_settings_wr']:
             with open(os.path.join(self.kmotion_dir, 'www', fifo), 'w') as pipeout:
                 pipeout.write(purge_str)
                 
-        self.logger.log('waiting daemons ...', logger.DEBUG)    
+        self.logger('waiting daemons ...', logger.DEBUG)    
         self.wait_termination()
 
 
-    def end(self):
+    def stop(self):
         """ 
         Kill all the kmotion daemons 
     
@@ -122,15 +119,15 @@ class Kmotion:
         excepts : 
         return  : none
         """
-        self.logger.log('stopping kmotion ...', logger.CRIT)
-        self.logger.log('killing daemons ...', logger.DEBUG)
+        self.logger('stopping kmotion ...', logger.CRIT)
+        self.logger('killing daemons ...', logger.DEBUG)
 
         for pid in self.get_kmotion_pids():
             os.kill(int(pid), signal.SIGTERM) 
             
         self.motion_daemon.stop_motion()
         
-        self.logger.log('daemons killed ...', logger.DEBUG)
+        self.logger('daemons killed ...', logger.DEBUG)
         self.www_log.add_shutdown_event()
 
 

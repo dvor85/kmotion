@@ -21,13 +21,15 @@ appropreate script in 'event' if it exists.
 
 import os, sys, subprocess, time, datetime, logger, cPickle
 from mutex_parsers import *
-from grabbers.grabber import Grabber
+import actions.actions as actions
+
+STATE_START = 'start'
+STATE_END = 'end'
 
 class Events:
-    log_level = logger.WARNING
     
     def __init__(self, kmotion_dir, feed, state):        
-        self.logger = logger.Logger('event_start', Events.log_level)
+        self.logger = logger.Logger('events', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
                 
@@ -37,12 +39,12 @@ class Events:
     
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
         self.state_file = os.path.join(self.ramdisk_dir, 'states', str(self.feed))
+        self.state = state
         self.setLastState(self.state)
         
     def setLastState(self, state):
-        self.state = state
         with open(self.state_file, 'wb') as dump:
-            cPickle.dump(self.state, dump)
+            cPickle.dump(state, dump)
             
     def getLastState(self):
         try:
@@ -53,30 +55,28 @@ class Events:
         
     def main(self):
         if len(self.get_prev_instances()) == 0:
-            if self.state == 'start':
+            if self.state == STATE_START:
                 self.start()
-            elif self.state == 'end':
-                self.end()
-            elif self.state == 'lost':
-                self.lost(os.path.join(self.kmotion_dir, 'event/lost.sh'))
+            elif self.state == STATE_END:
+                self.end()  
+            else:
+                self.logger('command "{0}" not recognized'.format(self.state), logger.CRIT)         
         else:
-            self.logger.log('%s %i already running' % (os.path.basename(__file__), self.feed), logger.CRIT)
+            self.logger('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}), logger.DEBUG)
             
     def start(self):
         """ 
         Creates the appropreate file in 'ramdisk_dir/events' and execute the
         appropreate script in 'event' if it exists.
         """
-    
+        self.state = STATE_START
         if not os.path.isfile(self.event_file):
-            self.logger.log('creating: %s' % self.event_file, logger.CRIT)
+            self.logger('creating: %s' % self.event_file, logger.DEBUG)
             with open(self.event_file, 'w'):
                 pass
         
-        Grabber(self.kmotion_dir, self.feed).start()
-        time.sleep(10)
+        actions.Actions(self.kmotion_dir, self.feed).start()
         if self.getLastState() != self.state:
-            self.state = self.getLastState()
             self.end()
             
             
@@ -85,25 +85,21 @@ class Events:
         Delete the appropreate file in 'ramdisk_dir/events' and execute the
         appropreate script in 'event' if it exists.
         """
-        
-        Grabber(self.kmotion_dir, self.feed).end()
+        self.state = STATE_END
+        actions.Actions(self.kmotion_dir, self.feed).end()
      
         if os.path.isfile(self.event_file) and os.path.getsize(self.event_file) == 0:
-            self.logger.log('deleting: %s' % self.event_file, logger.CRIT)
+            self.logger('deleting: %s' % self.event_file, logger.DEBUG)
             os.unlink(self.event_file)
         
         if self.getLastState() != self.state:
-            self.state = self.getLastState()
             self.start()
             
-    def lost(self, exe_file):      
-        if os.path.isfile(exe_file):
-            self.logger.log('executing: %s' % exe_file, logger.CRIT)
-            subprocess.Popen(['nice', '-n', '20', exe_file, str(self.feed)])
+
     
         
     def get_prev_instances(self):
-        p_obj = subprocess.Popen('pgrep -f ".*%s %i.*$"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
+        p_obj = subprocess.Popen('pgrep -f ".*%s %i.*"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
         stdout = p_obj.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     
