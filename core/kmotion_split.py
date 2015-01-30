@@ -20,7 +20,7 @@ class Kmotion_split(Process):
         '''
         Process.__init__(self)
         self.kmotion_dir = kmotion_dir
-        self.logger = logger.Logger('kmotion_split', logger.DEBUG)
+        self.log = logger.Logger('kmotion_split', logger.DEBUG)
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
@@ -39,7 +39,7 @@ class Kmotion_split(Process):
             try:
                 event_file = os.path.join(self.events_dir, feed)
                 
-                self.logger('feed = %s' % (feed), logger.DEBUG)
+                self.log('feed = %s' % (feed), logger.DEBUG)
                 
                 if os.path.isfile(event_file) and (time.time() - os.path.getmtime(event_file)) >= self.max_duration:
                     events.Events(self.kmotion_dir, feed, events.STATE_START).end()
@@ -50,7 +50,7 @@ class Kmotion_split(Process):
         
         
     def run(self):
-        self.logger('starting daemon ...', logger.CRIT)
+        self.log('starting daemon ...', logger.CRIT)
         while True:
             try:
                 time.sleep(15)
@@ -64,13 +64,13 @@ class Kmotion_split(Process):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                  
-                self.logger('** CRITICAL ERROR ** crash - type: %s' 
+                self.log('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, logger.CRIT)
-                self.logger('** CRITICAL ERROR ** crash - value: %s' 
+                self.log('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, logger.CRIT)
-                self.logger('** CRITICAL ERROR ** crash - traceback: %s' 
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, logger.CRIT)
-                self.logger('** CRITICAL ERROR ** crash - traceback: %s' 
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, logger.CRIT)
                 time.sleep(60)
                 

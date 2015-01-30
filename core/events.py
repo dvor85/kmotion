@@ -19,7 +19,7 @@ Creates the appropreate file in 'ramdisk_dir/events' and execute the
 appropreate script in 'event' if it exists.
 """
 
-import os, sys, subprocess, time, datetime, logger, cPickle
+import os, sys, subprocess, time, datetime, logger,cPickle
 from mutex_parsers import *
 import actions.actions as actions
 
@@ -29,7 +29,7 @@ STATE_END = 'end'
 class Events:
     
     def __init__(self, kmotion_dir, feed, state):        
-        self.logger = logger.Logger('events', logger.DEBUG)
+        self.log = logger.Logger('events', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
                 
@@ -60,9 +60,9 @@ class Events:
             elif self.state == STATE_END:
                 self.end()  
             else:
-                self.logger('command "{0}" not recognized'.format(self.state), logger.CRIT)         
+                self.log('command "{0}" not recognized'.format(self.state), logger.CRIT)         
         else:
-            self.logger('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}), logger.DEBUG)
+            self.log('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}), logger.DEBUG)
             
     def start(self):
         """ 
@@ -71,7 +71,7 @@ class Events:
         """
         self.state = STATE_START
         if not os.path.isfile(self.event_file):
-            self.logger('creating: %s' % self.event_file, logger.DEBUG)
+            self.log('start: creating: {0}'.format(self.event_file), logger.DEBUG)
             with open(self.event_file, 'w'):
                 pass
         
@@ -88,8 +88,8 @@ class Events:
         self.state = STATE_END
         actions.Actions(self.kmotion_dir, self.feed).end()
      
-        if os.path.isfile(self.event_file) and os.path.getsize(self.event_file) == 0:
-            self.logger('deleting: %s' % self.event_file, logger.DEBUG)
+        if os.path.isfile(self.event_file):
+            self.log('end: delete {0}'.format(self.event_file), logger.DEBUG)
             os.unlink(self.event_file)
         
         if self.getLastState() != self.state:

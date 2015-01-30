@@ -29,7 +29,7 @@ from mutex_parsers import *
 class InitMotion:
     
     def __init__(self, kmotion_dir):
-        self.logger = logger.Logger('init_motion', logger.DEBUG)
+        self.log = logger.Logger('init_motion', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
@@ -112,7 +112,7 @@ quiet on
                     user_conf = f_obj2.read()
             except IOError:   
                 print >> f_obj1, '# virtual_motion_conf/motion.conf not readable - ignored'
-                self.logger('no motion.conf readable in virtual_motion_conf dir - none included in final motion.conf', logger.CRIT)
+                self.log('no motion.conf readable in virtual_motion_conf dir - none included in final motion.conf', logger.CRIT)
             else:
                 print >> f_obj1, user_conf
             
@@ -191,7 +191,7 @@ webcam_localhost on
                         user_conf = f_obj2.read()
                 except IOError:   
                     print >> f_obj1, '# virtual_motion_conf/thread%02i.conf not readable - ignored' % feed
-                    self.logger('no feed%02i.conf readable in virtual_motion_conf dir - none included in final motion.conf' % feed, logger.CRIT)
+                    self.log('no feed%02i.conf readable in virtual_motion_conf dir - none included in final motion.conf' % feed, logger.CRIT)
                 else:
                     print >> f_obj1, user_conf
                 

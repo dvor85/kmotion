@@ -28,10 +28,10 @@ import logger
 class Mutex:
     
     def __init__(self, kmotion_dir, mutex):        
-        self.logger = logger.Logger('mutex', logger.WARNING)
+        self.log = logger.Logger('mutex', logger.WARNING)
         self.kmotion_dir = kmotion_dir 
         self.mutex = mutex       
-        self.logger('init_mutex() - init mutex : %s' % self.mutex, logger.DEBUG)
+        self.log('init_mutex() - init mutex : %s' % self.mutex, logger.DEBUG)
         self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
         if not os.path.isdir(self.mutex_dir):
             os.makedirs(self.mutex_dir, 0755)

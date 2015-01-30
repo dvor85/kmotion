@@ -21,11 +21,12 @@
 Exports various methods used to initialize core configuration
 """
 
-import os, sys
+import os, sys, shelve
 from subprocess import *  # breaking habit of a lifetime !
 import logger
 from mutex_parsers import *
 from mutex import Mutex
+
 
 class InitCore:
     
@@ -52,7 +53,7 @@ class InitCore:
 
 
     def __init__(self, kmotion_dir):
-        self.logger = logger.Logger('init_core', logger.DEBUG)
+        self.log = logger.Logger('init_core', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
@@ -93,7 +94,7 @@ class InitCore:
         
         # Sets the 'func_f??_enabled' in 'www_rc' by scanning for valid files in 
         # the 'func' directory. Valid files have the format 'func<01-16>.sh'.
-        self.logger('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', logger.DEBUG)
+        self.log('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', logger.DEBUG)
         for feed in self.feed_list:
             if os.path.isfile('%s/func/func%02i.sh' % (self.kmotion_dir, feed)):
                 self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'true')
@@ -101,14 +102,14 @@ class InitCore:
                 self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'false')
         
         # copy 'msg' to 'www_rc' 
-        self.logger('update_rcs() - Copy \'msg\' to \'www_rc\'', logger.DEBUG) 
+        self.log('update_rcs() - Copy \'msg\' to \'www_rc\'', logger.DEBUG) 
         # user generated file so error trap
         try:
             with open('../msg') as f_obj:
                 msg = f_obj.read()
         except IOError:
             msg = ''
-            self.logger('update_rcs() - unable to read \'msg\'', logger.DEBUG) 
+            self.log('update_rcs() - unable to read \'msg\'', logger.DEBUG) 
             
         msg = msg.replace('\n', '<br>') 
         self.www_parser.set('system', 'msg', msg)
@@ -126,7 +127,7 @@ class InitCore:
         return  : none
         """
         
-        self.logger('init_ramdisk_dir() - creating \'states\' folder', logger.DEBUG)
+        self.log('init_ramdisk_dir() - creating \'states\' folder', logger.DEBUG)
         states_dir = os.path.join(self.ramdisk_dir, 'states')
         if not os.path.isdir(states_dir):
             os.makedirs(states_dir)
@@ -134,33 +135,42 @@ class InitCore:
         for sfile in os.listdir(states_dir):
             state_file = os.path.join(states_dir, sfile)
             if os.path.isfile(state_file):
-                self.logger('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), logger.DEBUG)
+                self.log('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), logger.DEBUG)
                 os.remove(state_file)
                     
         events_dir = os.path.join(self.ramdisk_dir, 'events')
         if not os.path.isdir(events_dir):
-            self.logger('init_ramdisk_dir() - creating \'events\' folder', logger.DEBUG) 
+            self.log('init_ramdisk_dir() - creating \'events\' folder', logger.DEBUG) 
             os.makedirs(events_dir)
             
         for efile in os.listdir(events_dir):
             event_file = os.path.join(events_dir, efile)
-            if os.path.isfile(event_file) and os.path.getsize(event_file) == 0:
-                self.logger('init_ramdisk_dir() - deleting \'%s\' file' % (event_file), logger.DEBUG)
-                os.remove(event_file)
+            try:
+                db=shelve.open(event_file)
+                try:
+                    if len(db.keys()) == 0:
+                        raise Exception('{0} is exists, but haven\'t any data. Delete it.'.format(event_file))
+                finally:
+                    db.close()
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.log('init_ramdisk_dir() - {0}'.format(exc_value), logger.DEBUG)
+                os.unlink(event_file)
+                
         
         
         for feed in self.feed_list:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)): 
                 try:
                     os.makedirs('%s/%02i' % (self.ramdisk_dir, feed))
-                    self.logger('init_ramdisk_dir() - creating \'%02i\' folder' % feed, logger.DEBUG)
+                    self.log('init_ramdisk_dir() - creating \'%02i\' folder' % feed, logger.DEBUG)
                 except OSError:
                     pass
                     
         if not os.path.isdir('%s/tmp' % self.ramdisk_dir): 
             try:
                 os.makedirs('%s/tmp' % self.ramdisk_dir)
-                self.logger('init_ramdisk_dir() - creating \'tmp\' folder', logger.DEBUG)
+                self.log('init_ramdisk_dir() - creating \'tmp\' folder', logger.DEBUG)
             except OSError:
                 pass   
             
@@ -244,9 +254,9 @@ class InitCore:
         return  : none
         """    
 
-        self.logger('gen_vhost() - Generating vhost/kmotion file', logger.DEBUG)
+        self.log('gen_vhost() - Generating vhost/kmotion file', logger.DEBUG)
         
-        self.logger('gen_vhost() - users_digest mode enabled', logger.DEBUG)
+        self.log('gen_vhost() - users_digest mode enabled', logger.DEBUG)
         LDAP_block = """
 # ** INFORMATION ** Users digest file enabled ...
 AuthName "kmotion"
@@ -266,8 +276,8 @@ AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
                     lines[i] = lines[i].replace('%LDAP_block%', LDAP_block)
                     f_obj1.write(lines[i])
         except IOError:
-            self.logger('ERROR by generating vhost/kmotion file', logger.CRIT)
-            self.logger(str(sys.exc_info()[1]), logger.CRIT)
+            self.log('ERROR by generating vhost/kmotion file', logger.CRIT)
+            self.log(str(sys.exc_info()[1]), logger.CRIT)
         
       
         

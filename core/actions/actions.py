@@ -13,10 +13,10 @@ class Actions():
         
         import logger, mutex_parsers
         
-        self.logger = logger.Logger('actions', logger.DEBUG)
+        self.log = logger.Logger('actions', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
-        self.logger('init', logger.DEBUG)
+        self.log('init', logger.DEBUG)
         self.actions = []
         try:            
             www_parser = mutex_parsers.mutex_www_parser_rd(self.kmotion_dir)
@@ -28,18 +28,30 @@ class Actions():
                 self.actions.append(action)
                             
         except:
-            self.logger('error while init', logger.DEBUG)
+            self.log('error while init', logger.DEBUG)
             
             
         
     def start(self):
-        for action in self.actions: 
-            Thread(target=action.start).start()
+        t_list = []
+        for action in self.actions:
+            t = Thread(target=action.start)
+            t_list.append(t)
+            t.start()
+            
+        for t in t_list:
+            t.join()
             
         
     def end(self):
-        for action in self.actions: 
-            Thread(target=action.end).start()
+        t_list = []
+        for action in self.actions:
+            t = Thread(target=action.end)
+            t_list.append(t)
+            t.start()
+            
+        for t in t_list:
+            t.join()
         
 
 

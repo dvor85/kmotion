@@ -32,7 +32,7 @@ from multiprocessing import Process
 from subprocess import *
 
 
-mylog = logger.Logger('kmotion_hkd2', logger.DEBUG)
+log = logger.Logger('kmotion_hkd2', logger.DEBUG)
 
 
 class Hkd2_Feed():
@@ -67,9 +67,9 @@ class Hkd2_Feed():
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError): 
-            mylog('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
+            log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
                        sys.exc_info()[1], logger.CRIT)
-            mylog('** CRITICAL ERROR ** killing all daemons and terminating', logger.CRIT)
+            log('** CRITICAL ERROR ** killing all daemons and terminating', logger.CRIT)
             sys.exit()
             
         parser = mutex_www_parser_rd(self.kmotion_dir) 
@@ -99,7 +99,7 @@ class Hkd2_Feed():
                 if date != self.old_date: 
                     
                     self.old_date = date 
-                    mylog('service_snap() - new day, feed: %s date: %s' % (self.feed, date), logger.DEBUG) 
+                    log('service_snap() - new day, feed: %s date: %s' % (self.feed, date), logger.DEBUG) 
                         
                     feed_dir = '%s/%s/%02i' % (self.images_dbase_dir, date, self.feed)
                     try:  # make sure 'feed_dir' exists, try in case motion creates dir
@@ -127,7 +127,7 @@ class Hkd2_Feed():
                     
                     # if snap is disabled, delete old jpegs but keep time in sync
                     if not self.feed_snap_enabled:
-                        mylog('service_snap() - ditch %s/%s.jpg' 
+                        log('service_snap() - ditch %s/%s.jpg' 
                                    % (tmp_snap_dir, snap_date_time), logger.DEBUG)
                         if snap_date_time != 'last':
                             os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
@@ -141,7 +141,7 @@ class Hkd2_Feed():
                     
                     # if jpeg is in the past, delete it
                     if snap_date_time < date + time_: 
-                        mylog('service_snap() - delete %s/%s.jpg' 
+                        log('service_snap() - delete %s/%s.jpg' 
                                    % (tmp_snap_dir, snap_date_time), logger.DEBUG)
                         if snap_date_time != 'last':
                             os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
@@ -164,7 +164,7 @@ class Hkd2_Feed():
                         
                     # if jpeg is in the future, copy but don't delete
                     if snap_date_time > date + time_: 
-                        mylog('service_snap() - copy %s/%s.jpg %s/%s.jpg' 
+                        log('service_snap() - copy %s/%s.jpg %s/%s.jpg' 
                                    % (tmp_snap_dir, snap_date_time, snap_dir,
                                       time_), logger.DEBUG)               
                         shutil.copy('%s/%s.jpg' % (tmp_snap_dir, snap_date_time), '%s/%s.jpg' 
@@ -174,7 +174,7 @@ class Hkd2_Feed():
                     
                     # if jpeg is now, move it
                     elif snap_date_time == date + time_:  
-                        mylog('service_snap() - move %s/%s.jpg %s/%s.jpg' 
+                        log('service_snap() - move %s/%s.jpg %s/%s.jpg' 
                                    % (tmp_snap_dir, snap_date_time, snap_dir,
                                       time_), logger.DEBUG)  
                         Popen('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_), shell=True).wait()
@@ -306,7 +306,7 @@ class Kmotion_Hkd2(Process):
         """
         while True:
             try:
-                mylog('starting daemon ...', logger.CRIT)
+                log('starting daemon ...', logger.CRIT)
                 self.instance_list = []  # list of Hkd2_Feed instances
                 for feed in self.feed_list:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed, self.semaphore))
@@ -320,13 +320,13 @@ class Kmotion_Hkd2(Process):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                  
-                mylog('** CRITICAL ERROR ** crash - type: %s' 
+                log('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, logger.CRIT)
-                mylog('** CRITICAL ERROR ** crash - value: %s' 
+                log('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, logger.CRIT)
-                mylog('** CRITICAL ERROR ** crash - traceback: %s' 
+                log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, logger.CRIT)
-                mylog('** CRITICAL ERROR ** crash - traceback: %s' 
+                log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, logger.CRIT)
                 time.sleep(60)
 

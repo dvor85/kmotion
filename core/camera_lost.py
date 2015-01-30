@@ -11,7 +11,7 @@ class CameraLost(object):
     classdocs
     '''
     def __init__(self, kmotion_dir, feed):        
-        self.logger = logger.Logger('camera_lost', logger.DEBUG)
+        self.log = logger.Logger('camera_lost', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
                 
@@ -19,11 +19,11 @@ class CameraLost(object):
         if len(self.get_prev_instances()) == 0:
             self.lost(os.path.join(self.kmotion_dir, 'feed/lost.sh'))
         else:
-            self.logger('{file} {feed} already running'.format(**{'file':os.path.basename(__file__),'feed':self.feed}), logger.CRIT)
+            self.log('{file} {feed} already running'.format(**{'file':os.path.basename(__file__),'feed':self.feed}), logger.CRIT)
             
     def lost(self, exe_file):      
         if os.path.isfile(exe_file):
-            self.logger('executing: %s' % exe_file, logger.CRIT)
+            self.log('executing: %s' % exe_file, logger.CRIT)
             subprocess.Popen(['nice', '-n', '20', exe_file, str(self.feed)])
             
     def get_prev_instances(self):

@@ -35,7 +35,7 @@ class Kmotion_setd(Process):
     def __init__(self, kmotion_dir):
         Process.__init__(self)
         self.kmotion_dir = kmotion_dir
-        self.logger = logger.Logger('kmotion_setd', logger.DEBUG)
+        self.log = logger.Logger('kmotion_setd', logger.DEBUG)
 
     def main(self):  
         """
@@ -134,7 +134,7 @@ class Kmotion_setd(Process):
         return  : none
         """
         
-        self.logger('starting daemon ...', logger.WARNING)
+        self.log('starting daemon ...', logger.WARNING)
         init_motion = InitMotion(self.kmotion_dir)
         
         reload_ptz_config = False
@@ -159,22 +159,22 @@ class Kmotion_setd(Process):
         
         while True:
             
-            self.logger('waiting on FIFO pipe data', logger.DEBUG)
+            self.log('waiting on FIFO pipe data', logger.DEBUG)
             
             with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein: 
                 data = pipein.read()
             data = data.rstrip()        
-            self.logger('kmotion FIFO pipe data: %s' % data, logger.DEBUG)
+            self.log('kmotion FIFO pipe data: %s' % data, logger.DEBUG)
             
             if len(data) < 8:
                 continue
             
             if len(data) > 7 and data[-8:] == '99999999':  # FIFO purge
-                self.logger('FIFO purge', logger.DEBUG)
+                self.log('FIFO purge', logger.DEBUG)
                 continue
     
             if int(data[-8:]) != len(data) - 13:  # filter checksum
-                self.logger('data checksum error - rejecting data', logger.CRIT)
+                self.log('data checksum error - rejecting data', logger.CRIT)
                 continue
             
     
@@ -197,7 +197,7 @@ class Kmotion_setd(Process):
                 must_reload = False
             
             
-            self.logger('kmotion_setd user: %s' % user, logger.CRIT)
+            self.log('kmotion_setd user: %s' % user, logger.CRIT)
             parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
             
             for raw_data in raws_data:
@@ -418,11 +418,11 @@ class Kmotion_setd(Process):
         return  : none
         """
     
-        self.logger('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
+        self.log('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
         parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
         image_width = parser.getint('motion_feed%02i' % feed, 'feed_width') 
         image_height = parser.getint('motion_feed%02i' % feed, 'feed_height')
-        self.logger('create_mask() - width: %s height: %s' % (image_width, image_height), logger.DEBUG)
+        self.log('create_mask() - width: %s height: %s' % (image_width, image_height), logger.DEBUG)
         
         black_px = '\x00' 
         white_px = '\xFF' 
@@ -461,7 +461,7 @@ class Kmotion_setd(Process):
             print >> f_obj, '%d %d' % (image_width, image_height)
             print >> f_obj, '255'
             print >> f_obj, mask
-        self.logger('create_mask() - mask written', logger.DEBUG)
+        self.log('create_mask() - mask written', logger.DEBUG)
         
         
     def run(self):
@@ -474,13 +474,13 @@ class Kmotion_setd(Process):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                 
-                self.logger('** CRITICAL ERROR ** crash - type: %s' 
+                self.log('** CRITICAL ERROR ** crash - type: %s' 
                            % exc_type, logger.CRIT)
-                self.logger('** CRITICAL ERROR ** crash - value: %s' 
+                self.log('** CRITICAL ERROR ** crash - value: %s' 
                            % exc_value, logger.CRIT)
-                self.logger('** CRITICAL ERROR ** crash - traceback: %s' 
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc1, logger.CRIT)
-                self.logger('** CRITICAL ERROR ** crash - traceback: %s' 
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' 
                            % exc_loc2, logger.CRIT) 
                 time.sleep(60)
         
