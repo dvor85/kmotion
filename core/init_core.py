@@ -21,9 +21,8 @@
 Exports various methods used to initialize core configuration
 """
 
-import os, sys, shelve
+import os, sys,logger
 from subprocess import *  # breaking habit of a lifetime !
-import logger
 from mutex_parsers import *
 from mutex import Mutex
 
@@ -136,7 +135,7 @@ class InitCore:
             state_file = os.path.join(states_dir, sfile)
             if os.path.isfile(state_file):
                 self.log('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), logger.DEBUG)
-                os.remove(state_file)
+                os.unlink(state_file)
                     
         events_dir = os.path.join(self.ramdisk_dir, 'events')
         if not os.path.isdir(events_dir):
@@ -145,19 +144,9 @@ class InitCore:
             
         for efile in os.listdir(events_dir):
             event_file = os.path.join(events_dir, efile)
-            try:
-                db=shelve.open(event_file)
-                try:
-                    if len(db.keys()) == 0:
-                        raise Exception('{0} is exists, but haven\'t any data. Delete it.'.format(event_file))
-                finally:
-                    db.close()
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('init_ramdisk_dir() - {0}'.format(exc_value), logger.DEBUG)
+            if os.path.isfile(event_file) and os.path.getsize(event_file) == 0:
+                self.log('delete - {0}'.format(event_file), logger.DEBUG)
                 os.unlink(event_file)
-                
-        
         
         for feed in self.feed_list:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)): 

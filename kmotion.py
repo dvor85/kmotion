@@ -44,7 +44,7 @@ class Kmotion:
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
       
-        self.logger = logger.Logger('kmotion', logger.DEBUG)
+        self.log = logger.Logger('kmotion', logger.DEBUG)
         # signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         
@@ -78,7 +78,7 @@ class Kmotion:
         return  : none
         """ 
         
-        self.logger('starting kmotion ...', logger.CRIT)
+        self.log('starting kmotion ...', logger.CRIT)
         
     
         # init the ramdisk dir
@@ -96,18 +96,18 @@ class Kmotion:
     
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
-        self.logger('starting daemons ...', logger.DEBUG)
+        self.log('starting daemons ...', logger.DEBUG)
         self.motion_daemon.start_motion()
         for d in self.daemons:
             d.start()
-        self.logger('daemons started...', logger.DEBUG)
+        self.log('daemons started...', logger.DEBUG)
             
         purge_str = '#' * 1000 + '99999999'
         for fifo in ['fifo_settings_wr']:
             with open(os.path.join(self.kmotion_dir, 'www', fifo), 'w') as pipeout:
                 pipeout.write(purge_str)
                 
-        self.logger('waiting daemons ...', logger.DEBUG)    
+        self.log('waiting daemons ...', logger.DEBUG)    
         self.wait_termination()
 
 
@@ -119,20 +119,20 @@ class Kmotion:
         excepts : 
         return  : none
         """
-        self.logger('stopping kmotion ...', logger.CRIT)
-        self.logger('killing daemons ...', logger.DEBUG)
+        self.log('stopping kmotion ...', logger.CRIT)
+        self.log('killing daemons ...', logger.DEBUG)
 
         for pid in self.get_kmotion_pids():
             os.kill(int(pid), signal.SIGTERM) 
             
         self.motion_daemon.stop_motion()
         
-        self.logger('daemons killed ...', logger.DEBUG)
+        self.log('daemons killed ...', logger.DEBUG)
         self.www_log.add_shutdown_event()
 
 
     def get_kmotion_pids(self):
-        p_objs = Popen('pgrep -f ".*%s.*"' % os.path.basename(__file__), shell=True, stdout=PIPE)  
+        p_objs = Popen('pgrep -f "^python.*%s.*"' % os.path.basename(__file__), shell=True, stdout=PIPE)  
         stdout = p_objs.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     

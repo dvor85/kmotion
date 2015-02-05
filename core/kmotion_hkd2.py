@@ -32,7 +32,7 @@ from multiprocessing import Process
 from subprocess import *
 
 
-log = logger.Logger('kmotion_hkd2', logger.DEBUG)
+log = logger.Logger('kmotion_hkd2', logger.WARNING)
 
 
 class Hkd2_Feed():

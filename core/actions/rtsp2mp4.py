@@ -22,7 +22,8 @@ class rtsp2mp4(sample.sample):
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
         except:
-            self.log('error while parsing kmotion_rc file', logger.CRIT) 
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            self.log('init - error {type}: {value} while parsing kmotion_rc file'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT) 
     
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
         
@@ -35,15 +36,14 @@ class rtsp2mp4(sample.sample):
             self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
             
             self.feed_grab_url = rtsp2mp4.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, '%s_grab_url' % self.key), self.feed_username, self.feed_password)
-            self.feed_reboot_url = rtsp2mp4.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'), self.feed_username, self.feed_password)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('init - error {0}: {1}'.format(exc_type, exc_value), logger.CRIT)            
+            self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)            
         
             
     @staticmethod    
     def add_userinfo(src_url, username, password):
-        url = urlsplit(src_url)            
+        url = urlsplit(src_url)  
         params = {'scheme':url.scheme, 'hostname':url.hostname, 'path':url.path}
         if url.query == '': 
             params['query'] = '' 
@@ -57,7 +57,11 @@ class rtsp2mp4(sample.sample):
             params['password'] = password
         else:
             params['password'] = url.password
-        return "{scheme}://{username}:{password}@{hostname}{path}{query}".format(**params)
+        if url.port is None:
+            params['port'] = ''
+        else:
+            params['port'] = ':%i' % url.port 
+        return "{scheme}://{username}:{password}@{hostname}{port}{path}{query}".format(**params)
     
     def is_grab_started(self):
         try:
@@ -93,8 +97,8 @@ class rtsp2mp4(sample.sample):
         except ImportError:
             DEVNULL = open(os.devnull, 'wb')
         
-        # ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
-        ps = subprocess.Popen(['sleep', '1000'])
+        ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
+        #ps = subprocess.Popen(['sleep', '1000'])
         self.log('start grabbing {src} to {dst} with pid={pid}'.format(**{'src':src, 'dst':dst, 'pid':ps.pid}), logger.DEBUG)
         return ps.pid
     
@@ -132,7 +136,7 @@ class rtsp2mp4(sample.sample):
                         os.unlink(dst)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('start - error {0}: {1}'.format(exc_type, exc_value), logger.CRIT)
+            self.log('start - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
                 
     def end(self):
         sample.sample.end(self)
@@ -159,7 +163,7 @@ class rtsp2mp4(sample.sample):
             movie_journal = os.path.join(self.images_dbase_dir, data['event_date'], '%0.2i' % self.feed, 'movie_journal')
             if os.path.isfile(dst):
                 if os.path.getsize(dst) > 0:
-                    with open(movie_journal, 'r+') as f_obj:
+                    with open(movie_journal, 'a+') as f_obj:
                         f_obj.write('$%s' % event_end_time)
                 else:
                     os.unlink(dst)
@@ -167,7 +171,7 @@ class rtsp2mp4(sample.sample):
                 
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('end - error {0}: {1}'.format(exc_type, exc_value), logger.DEBUG)
+            self.log('end - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
         
     
     

@@ -24,7 +24,7 @@ class Kmotion_split(Process):
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
-        self.max_duration = 15
+        self.max_duration = 180
         self.semaphore = threading.Semaphore(8)
         self.locks = {}
         
