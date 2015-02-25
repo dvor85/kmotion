@@ -98,7 +98,7 @@ class rtsp2mp4(sample.sample):
             DEVNULL = open(os.devnull, 'wb')
         
         ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
-        #ps = subprocess.Popen(['sleep', '1000'])
+        # ps = subprocess.Popen(['sleep', '1000'])
         self.log('start grabbing {src} to {dst} with pid={pid}'.format(**{'src':src, 'dst':dst, 'pid':ps.pid}), logger.DEBUG)
         return ps.pid
     
@@ -143,17 +143,17 @@ class rtsp2mp4(sample.sample):
         try:
             with closing(shelve.open(self.event_file)) as db:
                 data = db.pop(self.key)
-            for i in range(3):
+            for i in range(4):
                 if os.path.isdir(os.path.join('/proc', str(data['pid']))):
-                    if i == 0:
-                        self.log('terminate grabbing feed {feed}'.format(**{'feed':self.feed}), logger.DEBUG)
+                    if i < 2:
+                        self.log('terminate grabbing feed {feed} with {pid}'.format(**{'feed':self.feed, 'pid': data['pid']}), logger.DEBUG)
                         os.kill(data['pid'], signal.SIGTERM)
-                    elif i == 1:
-                        self.log('killing grabbing feed {feed}'.format(**{'feed':self.feed}), logger.DEBUG)
-                        os.kill(data['pid'], signal.SIGKILL)
                     else:
-                        self.log('problem by killing pid: {pid}'.format(**{'pid':data['pid']}), logger.DEBUG)
-                    time.sleep(0.5)
+                        self.log('killing grabbing feed {feed} with {pid}'.format(**{'feed':self.feed, 'pid': data['pid']}), logger.DEBUG)
+                        os.kill(data['pid'], signal.SIGKILL)
+                else:                
+                    break
+                time.sleep(0.5)
             
             dt = datetime.datetime.fromtimestamp(time.time())
             event_end_time = dt.strftime("%H%M%S")

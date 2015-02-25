@@ -75,9 +75,9 @@ class Events:
             with open(self.event_file, 'w'):
                 pass
         
-        actions.Actions(self.kmotion_dir, self.feed).start()
-        if self.getLastState() != self.state:
-            self.end()
+            actions.Actions(self.kmotion_dir, self.feed).start()
+            if self.getLastState() != self.state:
+                self.end()
             
             
     def end(self):
