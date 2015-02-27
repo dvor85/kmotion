@@ -27,7 +27,7 @@ class CameraLost:
         
     @staticmethod    
     def add_userinfo(src_url, username, password):
-        url = urlsplit(src_url)  
+        url = urlsplit(src_url) 
         params = {'scheme':url.scheme, 'hostname':url.hostname, 'path':url.path}
         if url.query == '': 
             params['query'] = '' 
@@ -104,7 +104,7 @@ class CameraLost:
         
             
     def get_prev_instances(self):
-        p_obj = subprocess.Popen('pgrep -f "^python.*%s %i$"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
+        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
         stdout = p_obj.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     

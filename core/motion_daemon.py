@@ -2,11 +2,11 @@
 @author: demon
 '''
 from threading import Thread
-import logger,os,time
+import logger, os, time
 from subprocess import *
 from init_motion import InitMotion
 
-class MotionDaemon():
+class MotionDaemon:
     '''
     classdocs
     '''

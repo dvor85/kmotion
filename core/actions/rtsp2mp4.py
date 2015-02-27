@@ -2,10 +2,9 @@
 @author: demon
 '''
 
-import os, sys, subprocess, shlex, time, datetime, shelve, signal, logger
+import os, sys, subprocess, shlex, time, datetime, signal, logger
 from mutex_parsers import *
 from urlparse import urlsplit
-from contextlib import closing
 import sample
 
 
@@ -61,23 +60,24 @@ class rtsp2mp4(sample.sample):
             params['port'] = ''
         else:
             params['port'] = ':%i' % url.port 
-        return "{scheme}://{username}:{password}@{hostname}{port}{path}{query}".format(**params)
+        return "{scheme}://{username}:{password}@{hostname}{port}{path}{query}".format(**params)    
     
-    def is_grab_started(self):
+    def get_grabber_pids(self):
         try:
-            with closing(shelve.open(self.event_file), 'r') as db:
-                pid = db[self.key]['pid']
-            for i in range(2):
-                if not os.path.isdir(os.path.join('/proc', str(pid))):
-                    if i == 0:
-                        time.sleep(0.5)
-                    else:
-                        return False
-                
+            p_obj = subprocess.Popen('pgrep -f "^avconv.+{src}.*"'.format(**{'src': self.feed_grab_url}), stdout=subprocess.PIPE, shell=True)
+            stdout = p_obj.communicate()[0]
+            return stdout.splitlines()
         except:
-            return False
-        return True
+            return []    
         
+    def get_cmdline(self, pid):
+        cmdline_file = os.path.join('/proc', str(pid), 'cmdline')
+        if os.path.isfile(cmdline_file):
+            with open(cmdline_file, 'r') as f_obj:
+                cmdline = f_obj.read()
+                return cmdline.replace('\x00', ' ')
+        else:
+            return '' 
         
     def start_grab(self, src, dst):
         if self.sound:
@@ -106,72 +106,48 @@ class rtsp2mp4(sample.sample):
         sample.sample.start(self)
         try:
             dt = datetime.datetime.fromtimestamp(time.time())
-            data = {}
-            data['event_date'] = dt.strftime("%Y%m%d")
-            data['event_time'] = dt.strftime("%H%M%S")
-            movie_dir = os.path.join(self.images_dbase_dir, data['event_date'], '%0.2i' % self.feed, 'movie')
+            event_date = dt.strftime("%Y%m%d")
+            event_time = dt.strftime("%H%M%S")
+            movie_dir = os.path.join(self.images_dbase_dir, event_date, '%0.2i' % self.feed, 'movie')
             
-            if not self.is_grab_started():
+            if len(self.get_grabber_pids()) == 0:
             
                 if not os.path.isdir(movie_dir):
                     os.makedirs(movie_dir)   
                     
-                dst = os.path.join(movie_dir, '%s.mp4' % data['event_time'])        
-        
-                data['pid'] = self.start_grab(self.feed_grab_url, dst) 
+                dst = os.path.join(movie_dir, '%s.mp4' % event_time)   
+                     
+                self.start_grab(self.feed_grab_url, dst) 
                 
-                if data['pid'] != '' and os.path.isdir(os.path.join('/proc', str(data['pid']))):
-                    try:
-                        db = shelve.open(self.event_file)
-                    except:
-                        os.unlink(self.event_file)
-                        db = shelve.open(self.event_file)
-                    try:
-                        db[self.key] = data
-                    finally:
-                        db.close()
-                        
-                else:
-                    if os.path.isfile(dst):
-                        os.unlink(dst)
+                if len(self.get_grabber_pids()) == 0 and os.path.isfile(dst):
+                    os.unlink(dst)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             self.log('start - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
                 
     def end(self):
         sample.sample.end(self)
-        try:
-            with closing(shelve.open(self.event_file)) as db:
-                data = db.pop(self.key)
-            for i in range(4):
-                if os.path.isdir(os.path.join('/proc', str(data['pid']))):
-                    if i < 2:
-                        self.log('terminate grabbing feed {feed} with {pid}'.format(**{'feed':self.feed, 'pid': data['pid']}), logger.DEBUG)
-                        os.kill(data['pid'], signal.SIGTERM)
+        for pid in self.get_grabber_pids():
+            try:
+                dst = shlex.split(self.get_cmdline(pid))[-1]
+                os.kill(int(pid), signal.SIGTERM)
+            
+                dt = datetime.datetime.fromtimestamp(time.time())
+                event_end_time = dt.strftime("%H%M%S")
+                
+                movie_dir = os.path.dirname(dst)                
+                movie_journal = os.path.abspath(os.path.join(movie_dir, '..', 'movie_journal'))
+                
+                if os.path.isfile(dst):
+                    if os.path.getsize(dst) > 0:
+                        with open(movie_journal, 'a+') as f_obj:
+                            f_obj.write('$%s' % event_end_time)
                     else:
-                        self.log('killing grabbing feed {feed} with {pid}'.format(**{'feed':self.feed, 'pid': data['pid']}), logger.DEBUG)
-                        os.kill(data['pid'], signal.SIGKILL)
-                else:                
-                    break
-                time.sleep(0.5)
-            
-            dt = datetime.datetime.fromtimestamp(time.time())
-            event_end_time = dt.strftime("%H%M%S")
-            
-            movie_dir = os.path.join(self.images_dbase_dir, data['event_date'], '%0.2i' % self.feed, 'movie')
-            dst = os.path.join(movie_dir, '%s.mp4' % data['event_time']) 
-            movie_journal = os.path.join(self.images_dbase_dir, data['event_date'], '%0.2i' % self.feed, 'movie_journal')
-            if os.path.isfile(dst):
-                if os.path.getsize(dst) > 0:
-                    with open(movie_journal, 'a+') as f_obj:
-                        f_obj.write('$%s' % event_end_time)
-                else:
-                    os.unlink(dst)
-                
-                
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('end - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+                        os.unlink(dst)
+                time.sleep(1)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.log('end - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
         
     
     

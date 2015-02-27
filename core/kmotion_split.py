@@ -37,11 +37,10 @@ class Kmotion_split(Process):
         try:
             lock.acquire()
             try:
-                event_file = os.path.join(self.events_dir, feed)
-                
-                self.log('feed = %s' % (feed), logger.DEBUG)
+                event_file = os.path.join(self.events_dir, feed)              
                 
                 if os.path.isfile(event_file) and (time.time() - os.path.getmtime(event_file)) >= self.max_duration:
+                    self.log('split feed %s' % (feed), logger.DEBUG)
                     events.Events(self.kmotion_dir, feed, events.STATE_START).end()
             finally:
                 lock.release()

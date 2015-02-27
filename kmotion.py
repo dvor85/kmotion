@@ -25,12 +25,12 @@ different working directory
 """
 
 import os, sys, time, threading, signal, ConfigParser
+import core.logger as logger
 from subprocess import *  # breaking habit of a lifetime !
-from core.www_logs import WWWLog
 from core.mutex_parsers import *
+from core.www_logs import WWWLog
 from core.motion_daemon import MotionDaemon
 from core.init_core import InitCore 
-import core.logger as logger
 from core.kmotion_hkd1 import Kmotion_Hkd1
 from core.kmotion_hkd2 import Kmotion_Hkd2
 from core.kmotion_setd import Kmotion_setd
@@ -132,7 +132,7 @@ class Kmotion:
 
 
     def get_kmotion_pids(self):
-        p_objs = Popen('pgrep -f "^python.*%s.*"' % os.path.basename(__file__), shell=True, stdout=PIPE)  
+        p_objs = Popen('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True, stdout=PIPE)  
         stdout = p_objs.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     

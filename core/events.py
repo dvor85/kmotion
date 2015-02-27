@@ -1,23 +1,5 @@
 #!/usr/bin/env python
-# This file is part of kmotion.
 
-# kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# kmotion is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
-
-"""
-Creates the appropreate file in 'ramdisk_dir/events' and execute the
-appropreate script in 'event' if it exists.
-"""
 
 import os, sys, subprocess, time, datetime, logger, cPickle
 from mutex_parsers import *
@@ -75,9 +57,9 @@ class Events:
             with open(self.event_file, 'w'):
                 pass
         
-            actions.Actions(self.kmotion_dir, self.feed).start()
-            if self.getLastState() != self.state:
-                self.end()
+        actions.Actions(self.kmotion_dir, self.feed).start()
+        if self.getLastState() != self.state:
+            self.end()
             
             
     def end(self):
@@ -99,7 +81,7 @@ class Events:
     
         
     def get_prev_instances(self):
-        p_obj = subprocess.Popen('pgrep -f "^python.*%s %i.*"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
+        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i.*"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
         stdout = p_obj.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     
