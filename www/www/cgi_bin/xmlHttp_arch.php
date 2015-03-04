@@ -134,54 +134,27 @@ function movie_journal_data($images_dbase_dir, $date_, $feed, $fps_time, $fps) {
     // """
     
     $coded_str = '';
-    $journal_file = sprintf('%s/%s/%02d/movie_journal', $images_dbase_dir, $date_, $feed); 
-	        
-    if (is_file($journal_file)) {
-        $journal = explode("$",file_get_contents($journal_file));  
-		
-        $movies=scandir(sprintf('%s/%s/%02d/movie',$images_dbase_dir, $date_, $feed));
-	unset($movies[0],$movies[1]);
-	//var_dump($journal);
-	//var_dump($movies);exit;				
-        foreach ($movies as $filemovie) {
-			$movie_ext=strrchr($filemovie,'.');
-            $movie=substr($filemovie,0,strrpos($filemovie,'.'));
-            //if (strlen($movie)>8) continue;
-            if (!preg_match("/^\d{6}$/i",$movie)) continue;
-			
-			
-			$jor=trim(array_shift($journal));
-			//var_dump($movie." - ".$jor." : ".(int)strcmp($movie,$jor)); 
-			//echo "$jor";
-                while (($movie >= $jor)&&(count($journal)>0)) {
-            	    
-		    $jor=trim(array_shift($journal));
-		    //var_dump($movie." - ".$jor );
-		}
-	    if ($jor=="") continue;
-            // # -2 seconds off movie end time to account for motion delay in executing 'on_movie_end'
-            //var_dump($movie, " - ", $jor);continue;
-            //var_dump(substr($jor,0,2)." ".substr($jor,2,4)." ".substr($jor,4,2));
-            //$movie_end_tm = mktime(substr($jor,0,2), substr($jor,2,2), substr($jor,4,2),0,0,0);
-            //$movie_end_tm -= 2;
-            //$movie_end = date('His',$movie_end_tm);
-            $movie_end=$jor;
-            //$movie_tm = mktime(substr($movie,0,2), substr($movie,2,2), substr($movie,4,2),0,0,0);
-            
-            // # check for - or 0 movie length
-            if ($movie_end <= $movie) continue;
-            
-            $fps_latest = 0; //# scan for correct fps time slot
-            for ($i=0;$i<count($fps_time);$i++) {
-                if  ($movie < $fps_time[$i]) break;
-                $fps_latest = $fps[$i];
-            }        
-            $coded_str .= sprintf('$%s#%s#%s#%s', $movie, $fps_latest, $movie_end, $movie_ext);
-		}
+    $movies_dir = sprintf('%s/%s/%02d/movie',$images_dbase_dir, $date_, $feed);
+    $movies=scandir($movies_dir);
+    unset($movies[0],$movies[1]);
+    foreach ($movies as $filemovie) {
+	$movie_ext=strrchr($filemovie,'.');
+	$movie=substr($filemovie,0,strrpos($filemovie,'.'));
+	
+	if (!preg_match("/^\d{6}$/i",$movie)) continue;
+	$movie_end_s = filemtime($movies_dir."/".$filemovie);
+        if ((time() - $movie_end_s) > 2) {
+            $movie_end = date("His", $movie_end_s);
+	    $fps_latest = 0; //# scan for correct fps time slot
+	    for ($i=0;$i<count($fps_time);$i++) {
+		if  ($movie < $fps_time[$i]) break;
+		$fps_latest = $fps[$i];
+	    }
+	    $coded_str .= sprintf('$%s#%s#%s#%s', $movie, $fps_latest, $movie_end, $movie_ext);
+        }
     }   
-//var_dump( $coded_str);
     return $coded_str;
-}        
+} 
 
 function smovie_journal_data($images_dbase_dir, $date, $feed, $fps_time, $fps) {
     // """   

@@ -132,18 +132,9 @@ class rtsp2mp4(sample.sample):
                 dst = shlex.split(self.get_cmdline(pid))[-1]
                 os.kill(int(pid), signal.SIGTERM)
             
-                dt = datetime.datetime.fromtimestamp(time.time())
-                event_end_time = dt.strftime("%H%M%S")
-                
-                movie_dir = os.path.dirname(dst)                
-                movie_journal = os.path.abspath(os.path.join(movie_dir, '..', 'movie_journal'))
-                
-                if os.path.isfile(dst):
-                    if os.path.getsize(dst) > 0:
-                        with open(movie_journal, 'a+') as f_obj:
-                            f_obj.write('$%s' % event_end_time)
-                    else:
-                        os.unlink(dst)
+                if os.path.isfile(dst) and not os.path.getsize(dst) > 0:
+                    os.unlink(dst)
+                        
                 time.sleep(1)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()

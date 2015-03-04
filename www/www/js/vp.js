@@ -67,7 +67,7 @@ var video_player = function(params) {
 	var canplay=checkVideo(getFileExtension(params.name));
 	
 	if (canplay=="html5") {
-		document.getElementById(params.id).innerHTML = '<video id="html5player" width="'+params.width+'px" height="'+params.height+'px" autoplay controls ></video>';			
+		document.getElementById(params.id).innerHTML = '<video id="html5player" width="'+params.width+'px" height="'+params.height+'px" autoplay controls muted></video>';			
 		
 		var html5player = document.getElementById('html5player');
 		html5player.innerHTML = "<p><a href=\""+document.URL+params.name+"\" target='_blank'>DOWNLOAD: "+params.name.split(/(\\|\/)/g).pop()+"</a></p>";		
