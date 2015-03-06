@@ -19,8 +19,8 @@ def main(src):
         with open(os.path.join(dst_dir, 'last'), 'w') as f_obj:
             f_obj.write(dst)
     
-
-main(sys.argv[1])
+if __name__ == "__main__":
+    main(sys.argv[1])
 
 
 

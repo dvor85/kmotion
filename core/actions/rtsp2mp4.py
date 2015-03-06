@@ -29,8 +29,8 @@ class rtsp2mp4(sample.sample):
         try:
             www_parser = mutex_www_parser_rd(self.kmotion_dir)
             self.sound = www_parser.getboolean('motion_feed%02i' % self.feed, '%s_sound' % self.key)
-            self.feed_kbs = www_parser.get('motion_feed%02i' % self.feed, 'feed_kbs')
             self.recode = www_parser.getboolean('motion_feed%02i' % self.feed, '%s_recode' % self.key)
+            self.feed_kbs = www_parser.get('motion_feed%02i' % self.feed, 'feed_kbs')            
             self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
             self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
             
@@ -98,7 +98,6 @@ class rtsp2mp4(sample.sample):
             DEVNULL = open(os.devnull, 'wb')
         
         ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
-        # ps = subprocess.Popen(['sleep', '1000'])
         self.log('start grabbing {src} to {dst} with pid={pid}'.format(**{'src':src, 'dst':dst, 'pid':ps.pid}), logger.DEBUG)
         return ps.pid
     

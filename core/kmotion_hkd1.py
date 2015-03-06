@@ -1,20 +1,4 @@
 #!/usr/bin/env python
-# Copyright 2008 David Selby dave6502@googlemail.com
-
-# This file is part of kmotion.
-
-# kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# kmotion is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Checks the size of the images directory deleteing the oldest directorys first 
@@ -47,7 +31,6 @@ class Kmotion_Hkd1(Process):
         
         try:  # try - except because kmotion_rc is a user changeable file
             self.version = parser.get('version', 'string')
-            self.max_feed = parser.getint('misc', 'max_feed')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
             # 2**30 = 1GB
@@ -61,9 +44,15 @@ class Kmotion_Hkd1(Process):
         
         www_parser = mutex_www_parser_rd(self.kmotion_dir)
         self.feed_list = []
-        for feed in range(1, self.max_feed):
-            if www_parser.has_section('motion_feed%02i' % feed) and www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
-                self.feed_list.append(feed)
+        for section in www_parser.sections():
+            try:
+                if 'motion_feed' in section:
+                    feed = int(section.replace('motion_feed',''))
+                    if www_parser.getboolean(section, 'feed_enabled'):
+                        self.feed_list.append(feed)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
         
     def run(self):
         """

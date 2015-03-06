@@ -47,10 +47,7 @@ class Events:
             self.log('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}), logger.DEBUG)
             
     def start(self):
-        """ 
-        Creates the appropreate file in 'ramdisk_dir/events' and execute the
-        appropreate script in 'event' if it exists.
-        """
+
         self.state = STATE_START
         if not os.path.isfile(self.event_file):
             self.log('start: creating: {0}'.format(self.event_file), logger.DEBUG)
@@ -63,10 +60,7 @@ class Events:
             
             
     def end(self):
-        """
-        Delete the appropreate file in 'ramdisk_dir/events' and execute the
-        appropreate script in 'event' if it exists.
-        """
+
         self.state = STATE_END
         actions.Actions(self.kmotion_dir, self.feed).end()
      

@@ -1,31 +1,11 @@
 #!/usr/bin/env python
 
-# Copyright 2008 David Selby dave6502@googlemail.com
-
-# This file is part of kmotion.
-
-# kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# kmotion is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 Exports various methods used to initialize core configuration
 """
 
-import os, sys,logger
-from subprocess import *  # breaking habit of a lifetime !
+import os, sys,logger,subprocess
 from mutex_parsers import *
-from mutex import Mutex
-
 
 class InitCore:
     
@@ -65,9 +45,15 @@ class InitCore:
         self.title = self.kmotion_parser.get('version', 'title')
         
         self.feed_list = []
-        for feed in range(1, self.max_feed):
-            if self.www_parser.has_section('motion_feed%02i' % feed) and self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
-                self.feed_list.append(feed)
+        for section in self.www_parser.sections():
+            try:
+                if 'motion_feed' in section:
+                    feed = int(section.replace('motion_feed',''))
+                    if self.www_parser.getboolean(section, 'feed_enabled'):
+                        self.feed_list.append(feed)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
     
         self.update_rcs()
         
@@ -91,29 +77,29 @@ class InitCore:
             print >> f_obj, 'var ramdisk_dir="%s";' % self.ramdisk_dir
         
         
-        # Sets the 'func_f??_enabled' in 'www_rc' by scanning for valid files in 
-        # the 'func' directory. Valid files have the format 'func<01-16>.sh'.
-        self.log('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', logger.DEBUG)
-        for feed in self.feed_list:
-            if os.path.isfile('%s/func/func%02i.sh' % (self.kmotion_dir, feed)):
-                self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'true')
-            else:
-                self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'false')
-        
-        # copy 'msg' to 'www_rc' 
-        self.log('update_rcs() - Copy \'msg\' to \'www_rc\'', logger.DEBUG) 
-        # user generated file so error trap
-        try:
-            with open('../msg') as f_obj:
-                msg = f_obj.read()
-        except IOError:
-            msg = ''
-            self.log('update_rcs() - unable to read \'msg\'', logger.DEBUG) 
-            
-        msg = msg.replace('\n', '<br>') 
-        self.www_parser.set('system', 'msg', msg)
-        
-        mutex_www_parser_wr(self.kmotion_dir, self.www_parser)
+#         # Sets the 'func_f??_enabled' in 'www_rc' by scanning for valid files in 
+#         # the 'func' directory. Valid files have the format 'func<01-16>.sh'.
+#         self.log('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', logger.DEBUG)
+#         for feed in self.feed_list:
+#             if os.path.isfile('%s/func/func%02i.sh' % (self.kmotion_dir, feed)):
+#                 self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'true')
+#             else:
+#                 self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'false')
+#         
+#         # copy 'msg' to 'www_rc' 
+#         self.log('update_rcs() - Copy \'msg\' to \'www_rc\'', logger.DEBUG) 
+#         # user generated file so error trap
+#         try:
+#             with open('../msg') as f_obj:
+#                 msg = f_obj.read()
+#         except IOError:
+#             msg = ''
+#             self.log('update_rcs() - unable to read \'msg\'', logger.DEBUG) 
+#             
+#         msg = msg.replace('\n', '<br>') 
+#         self.www_parser.set('system', 'msg', msg)
+#         
+#         mutex_www_parser_wr(self.kmotion_dir, self.www_parser)
         
   
     def init_ramdisk_dir(self):
@@ -208,28 +194,28 @@ class InitCore:
         fifo_func = '%s/www/fifo_func' % self.kmotion_dir
         if not os.path.exists(fifo_func):
             # os.mkfifo(fifo_func)
-            call(['mkfifo', fifo_func])
+            subprocess.call(['mkfifo', fifo_func])
         os.chown(fifo_func, uid, gid)
         os.chmod(fifo_func, 0660)
         
         fifo_settings = '%s/www/fifo_settings_wr' % self.kmotion_dir
         if not os.path.exists(fifo_settings):
             # os.mkfifo(fifo_settings)
-            call(['mkfifo', fifo_settings])
+            subprocess.call(['mkfifo', fifo_settings])
         os.chown(fifo_settings, uid, gid)
         os.chmod(fifo_settings, 0660)
         
         fifo_ptz = '%s/www/fifo_ptz' % self.kmotion_dir
         if not os.path.exists(fifo_ptz):
             # os.mkfifo(fifo_ptz)
-            call(['mkfifo', fifo_ptz])
+            subprocess.call(['mkfifo', fifo_ptz])
         os.chown(fifo_ptz, uid, gid)
         os.chmod(fifo_ptz, 0660)
     
         fifo_ptz_preset = '%s/www/fifo_ptz_preset' % self.kmotion_dir
         if not os.path.exists(fifo_ptz_preset):
             # os.mkfifo(fifo_ptz_preset)
-            call(['mkfifo', fifo_ptz_preset])
+            subprocess.call(['mkfifo', fifo_ptz_preset])
         os.chown(fifo_ptz_preset, uid, gid)
         os.chmod(fifo_ptz_preset, 0660)
     

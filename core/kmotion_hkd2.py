@@ -23,13 +23,12 @@ generating a 'sanitized' snap sequence. Also updates journals. On SIGHUP
 force a config re-read.
 """
 
-import os, sys, time, signal, shutil, ConfigParser, traceback
+import os, sys, time, signal, shutil, traceback
 import logger
 from mutex_parsers import *
 from mutex import Mutex
 from threading import Thread , Semaphore, Lock
 from multiprocessing import Process
-from subprocess import *
 
 
 log = logger.Logger('kmotion_hkd2', logger.WARNING)
@@ -163,21 +162,17 @@ class Hkd2_Feed():
                             pass
                         
                     # if jpeg is in the future, copy but don't delete
+                    p = {'src':os.path.join(tmp_snap_dir, '%s.jpg' % snap_date_time),
+                         'dst':os.path.join(snap_dir, '%s.jpg' % time_)}
                     if snap_date_time > date + time_: 
-                        log('service_snap() - copy %s/%s.jpg %s/%s.jpg' 
-                                   % (tmp_snap_dir, snap_date_time, snap_dir,
-                                      time_), logger.DEBUG)               
-                        shutil.copy('%s/%s.jpg' % (tmp_snap_dir, snap_date_time), '%s/%s.jpg' 
-                                  % (snap_dir, time_))
+                        log('service_snap() - copy {src} to {dst}'.format(**p), logger.DEBUG)               
+                        shutil.copy(**p)
                         self.inc_date_time(self.feed_snap_interval)
-                        
-                    
                     # if jpeg is now, move it
-                    elif snap_date_time == date + time_:  
-                        log('service_snap() - move %s/%s.jpg %s/%s.jpg' 
-                                   % (tmp_snap_dir, snap_date_time, snap_dir,
-                                      time_), logger.DEBUG)  
-                        Popen('mv %s/%s.jpg %s/%s.jpg' % (tmp_snap_dir, snap_date_time, snap_dir, time_), shell=True).wait()
+                    elif snap_date_time == date + time_:
+                                                
+                        log('service_snap() - move {src} to {dst}'.format(**p), logger.DEBUG) 
+                        shutil.move(**p)
                         feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
                         if os.path.isfile(feed_www_jpg):
                             os.remove(feed_www_jpg)
@@ -286,13 +281,18 @@ class Kmotion_Hkd2(Process):
         self.kmotion_dir = kmotion_dir
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-        self.max_feed = parser.getint('misc', 'max_feed')
         
         www_parser = mutex_www_parser_rd(self.kmotion_dir)
         self.feed_list = []
-        for feed in range(1, self.max_feed):
-            if www_parser.has_section('motion_feed%02i' % feed) and www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
-                self.feed_list.append(feed)
+        for section in www_parser.sections():
+            try:
+                if 'motion_feed' in section:
+                    feed = int(section.replace('motion_feed', ''))
+                    if www_parser.getboolean(section, 'feed_enabled'):
+                        self.feed_list.append(feed)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
         
         self.semaphore = Semaphore(8) 
         

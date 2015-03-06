@@ -1,19 +1,5 @@
 #!/usr/bin/env python
 
-# This file is part of kmotion.
-
-# kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# kmotion is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Exports various methods used to initialize motion configuration. These methods
@@ -21,7 +7,7 @@ have been moved to this seperate module to reduce issues when the motion API
 changes. All changes should be in just this module.
 """
 
-import os
+import os,sys
 import logger
 from mutex_parsers import *
 
@@ -36,12 +22,17 @@ class InitMotion:
         
         self.images_dbase_dir = self.kmotion_parser.get('dirs', 'images_dbase_dir')     
         self.ramdisk_dir = self.kmotion_parser.get('dirs', 'ramdisk_dir')
-        self.max_feed = self.kmotion_parser.getint('misc', 'max_feed')
         
         self.feed_list = []
-        for feed in range(1, self.max_feed):
-            if self.www_parser.has_section('motion_feed%02i' % feed) and self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_enabled'):
-                self.feed_list.append(feed)
+        for section in self.www_parser.sections():
+            try:
+                if 'motion_feed' in section:
+                    feed = int(section.replace('motion_feed',''))
+                    if self.www_parser.getboolean(section, 'feed_enabled'):
+                        self.feed_list.append(feed)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
                 
     def init_motion_out(self):
         """
@@ -69,7 +60,7 @@ class InitMotion:
         motion_conf_dir = os.path.join(self.kmotion_dir, 'core/motion_conf')
         if not os.path.isdir(motion_conf_dir):
             os.makedirs(motion_conf_dir)
-        # delete all files in motion_conf skipping .svn directories
+        # delete all files in motion_conf
         for del_file in [del_file for del_file in os.listdir(motion_conf_dir) if os.path.isfile(os.path.join(motion_conf_dir, del_file))]:
             os.remove(os.path.join(motion_conf_dir, del_file))
         
@@ -173,11 +164,7 @@ webcam_localhost on
                     print >> f_obj1, 'mask_file %s/core/masks/mask%0.2d.pgm' % (self.kmotion_dir, feed)  
                     
                 # framerate,
-                if (self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_smovie_enabled') or 
-                    self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_movie_enabled')):
-                    print >> f_obj1, 'framerate %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_fps')
-                else:
-                    print >> f_obj1, 'framerate 3'  # default for feed updates
+                print >> f_obj1, 'framerate 3'  # default for feed updates
                 
                 print >> f_obj1, '''
 # ------------------------------------------------------------------------------
@@ -223,18 +210,9 @@ snapshot_interval 1
                 if self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_show_box'): 
                     print >> f_obj1, 'locate on'
                      
-                # ptz enabled, if 'ptz_track_type' == 9, useing plugins, disable here
-                if self.www_parser.getboolean('motion_feed%02i' % feed, 'ptz_enabled') and self.www_parser.getint('motion_feed%02i' % feed, 'ptz_track_type') < 9: 
-                    print >> f_obj1, 'track_type %s' % self.www_parser.get('motion_feed%02i' % feed, 'ptz_track_type')
-                    
                 # always on for feed updates
-                if (self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_smovie_enabled')):
-                    print >> f_obj1, 'output_normal on'
-                    print >> f_obj1, 'jpeg_filename %s/%%Y%%m%%d/%0.2d/smovie/%%H%%M%%S/%%q' % (self.images_dbase_dir, feed)
-                else:
-                    print >> f_obj1, 'output_normal off'
-                    print >> f_obj1, 'jpeg_filename %s/%%Y%%m%%d/%0.2d/snap/%%H%%M%%S' % (self.images_dbase_dir, feed)
-        
+                print >> f_obj1, 'output_normal off'
+                print >> f_obj1, 'jpeg_filename %s/%%Y%%m%%d/%0.2d/snap/%%H%%M%%S' % (self.images_dbase_dir, feed)
                     
                 print >> f_obj1, '' 
                 
