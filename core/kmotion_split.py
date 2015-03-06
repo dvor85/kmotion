@@ -20,7 +20,7 @@ class Kmotion_split(Process):
         '''
         Process.__init__(self)
         self.kmotion_dir = kmotion_dir
-        self.log = logger.Logger('kmotion_split', logger.DEBUG)
+        self.log = logger.Logger('split', logger.DEBUG)
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')

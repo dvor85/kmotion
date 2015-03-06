@@ -34,7 +34,7 @@ class WWWLog:
         self.kmotion_dir = kmotion_dir
         self.log_file = '%s/www/logs' % self.kmotion_dir
         kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.log = logger.Logger('init_motion', logger.DEBUG)
+        self.log = logger.Logger('www_logs', logger.DEBUG)
         self.ramdisk_dir = kmotion_parser.get('dirs', 'ramdisk_dir')
         self.max_feed = kmotion_parser.getint('misc', 'max_feed')
                 

@@ -35,7 +35,7 @@ class Kmotion_setd(Process):
     def __init__(self, kmotion_dir):
         Process.__init__(self)
         self.kmotion_dir = kmotion_dir
-        self.log = logger.Logger('kmotion_setd', logger.DEBUG)
+        self.log = logger.Logger('setd', logger.DEBUG)
 
     def main(self):  
         """

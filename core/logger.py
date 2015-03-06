@@ -54,14 +54,14 @@ class Logger:
         # to syslog, it  must be one of ... EMERG, ALERT, CRIT, ERR, WARNING, 
         # NOTICE, INFO, DEBUG
         self.case = {EMERG: syslog.LOG_EMERG,
-                            ALERT: syslog.LOG_ALERT,
-                            CRIT: syslog.LOG_CRIT,
-                            ERR: syslog.LOG_ERR,
-                            WARNING: syslog.LOG_WARNING,
-                            NOTICE: syslog.LOG_NOTICE,
-                            INFO: syslog.LOG_INFO,
-                            DEBUG: syslog.LOG_DEBUG}
-        self.ident = ident
+                     ALERT: syslog.LOG_ALERT,
+                     CRIT: syslog.LOG_CRIT,
+                     ERR: syslog.LOG_ERR,
+                     WARNING: syslog.LOG_WARNING,
+                     NOTICE: syslog.LOG_NOTICE,
+                     INFO: syslog.LOG_INFO,
+                     DEBUG: syslog.LOG_DEBUG}
+        self.ident = 'kmotion_%s' % ident
         self.min_priority = min_priority       
     
         

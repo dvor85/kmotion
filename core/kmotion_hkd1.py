@@ -18,7 +18,7 @@ class Kmotion_Hkd1(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
-        self.log = logger.Logger('kmotion_hkd1', logger.DEBUG)
+        self.log = logger.Logger('hkd1', logger.DEBUG)
         self.images_dbase_dir = ''  # the 'root' directory of the images dbase
         self.kmotion_dir = kmotion_dir
         self.max_size_gb = 0  # max size permitted for the images dbase

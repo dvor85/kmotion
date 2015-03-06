@@ -29,7 +29,7 @@ class Kmotion:
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
       
-        self.log = logger.Logger('kmotion', logger.DEBUG)
+        self.log = logger.Logger('main', logger.DEBUG)
         # signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         

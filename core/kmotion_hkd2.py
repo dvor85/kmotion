@@ -31,7 +31,7 @@ from threading import Thread , Semaphore, Lock
 from multiprocessing import Process
 
 
-log = logger.Logger('kmotion_hkd2', logger.WARNING)
+log = logger.Logger('hkd2', logger.WARNING)
 
 
 class Hkd2_Feed():
@@ -293,6 +293,7 @@ class Kmotion_Hkd2(Process):
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
+        self.feed_list.sort()
         
         self.semaphore = Semaphore(8) 
         

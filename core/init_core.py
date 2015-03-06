@@ -54,6 +54,7 @@ class InitCore:
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
+        self.feed_list.sort()
     
         self.update_rcs()
         
