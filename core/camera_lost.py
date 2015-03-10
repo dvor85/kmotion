@@ -50,6 +50,7 @@ class CameraLost:
     def main(self):
         if len(self.get_prev_instances()) == 0:            
             need_reboot = True
+            self.restart_thread(0)
             time.sleep(60)
             for t in range(600):
                 try:
@@ -68,8 +69,8 @@ class CameraLost:
                     
             if need_reboot:
                 self.reboot_camera() 
-                
-            self.restart_thread()
+                self.restart_thread(0)
+            
         else:
             self.log('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}), logger.CRIT)
     
@@ -88,21 +89,20 @@ class CameraLost:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             self.log('error {type}: {value} while reboot {feed}'.format(**{'type':exc_type, 'value': exc_value, 'feed':self.feed}), logger.CRIT)
             
-    def restart_thread(self):
+    def restart_thread(self, thread):
         try:
-            res = urllib.urlopen("http://localhost:8080/{feed}/action/restart".format(**{'feed':self.feed}))
+            res = urllib.urlopen("http://localhost:8080/{thread}/action/restart".format(**{'thread':thread}))
             try:
                 if res.getcode() == 200:
-                    self.log('restart thread {0} success'.format(self.feed), logger.DEBUG) 
+                    self.log('restart thread {thread} success'.format(**{'thread':thread}), logger.DEBUG) 
                 else:
-                    self.log('restart thread {0} with status code {1}'.format(self.feed, res.getcode()), logger.DEBUG)
+                    self.log('restart thread {thread} with status code {code}'.format({'thread':thread, 'code':res.getcode()}), logger.DEBUG)
             finally:
                 res.close() 
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('error {type}: {value} while restart thread {feed}'.format(**{'type':exc_type, 'value': exc_value, 'feed':self.feed}), logger.CRIT)
-        
-            
+            self.log('error {type}: {value} while restart thread {thread}'.format(**{'type':exc_type, 'value': exc_value, 'thread':thread}), logger.CRIT)
+    
     def get_prev_instances(self):
         p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
         stdout = p_obj.communicate()[0]
