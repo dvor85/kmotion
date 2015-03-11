@@ -40,7 +40,6 @@ class InitCore:
         self.ramdisk_dir = self.kmotion_parser.get('dirs', 'ramdisk_dir')
         self.images_dbase_dir = self.kmotion_parser.get('dirs', 'images_dbase_dir')
         self.port = self.kmotion_parser.get('misc', 'port')
-        self.max_feed = self.kmotion_parser.getint('misc', 'max_feed')
         self.version = self.kmotion_parser.get('version', 'string')
         self.title = self.kmotion_parser.get('version', 'title')
         
@@ -72,37 +71,12 @@ class InitCore:
         
         config_js = '%s/www/www/js/config.js' % self.kmotion_dir
         with open(config_js, 'w') as f_obj:
-            print >> f_obj, 'var max_feed=%d;' % self.max_feed
+            print >> f_obj, 'var max_feed=%d;' % (self.feed_list[-1]+1)
             print >> f_obj, 'var version="%s";' % self.version
             print >> f_obj, 'var title="%s";' % self.title
             print >> f_obj, 'var ramdisk_dir="%s";' % self.ramdisk_dir
         
         
-#         # Sets the 'func_f??_enabled' in 'www_rc' by scanning for valid files in 
-#         # the 'func' directory. Valid files have the format 'func<01-16>.sh'.
-#         self.log('update_rcs() - Setting the \'func_f??_enabled\' in \'www_rc\'', logger.DEBUG)
-#         for feed in self.feed_list:
-#             if os.path.isfile('%s/func/func%02i.sh' % (self.kmotion_dir, feed)):
-#                 self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'true')
-#             else:
-#                 self.www_parser.set('system', 'func_f%02i_enabled' % feed, 'false')
-#         
-#         # copy 'msg' to 'www_rc' 
-#         self.log('update_rcs() - Copy \'msg\' to \'www_rc\'', logger.DEBUG) 
-#         # user generated file so error trap
-#         try:
-#             with open('../msg') as f_obj:
-#                 msg = f_obj.read()
-#         except IOError:
-#             msg = ''
-#             self.log('update_rcs() - unable to read \'msg\'', logger.DEBUG) 
-#             
-#         msg = msg.replace('\n', '<br>') 
-#         self.www_parser.set('system', 'msg', msg)
-#         
-#         mutex_www_parser_wr(self.kmotion_dir, self.www_parser)
-        
-  
     def init_ramdisk_dir(self):
         """
         Init the ramdisk setting up the kmotion, events and tmp folders.

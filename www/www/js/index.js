@@ -1519,7 +1519,8 @@ KM.update_feeds = function () {
 			cams+=c+',';
 		}
 	}*/
-	for (var c=1;c<KM.www_rc.display_cameras[KM.www_rc.display_select].length;c++) {
+	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
+	for (var c=1;c<num_feeds;c++) {
 		if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][c]]) {
 			cams+=KM.www_rc.display_cameras[KM.www_rc.display_select][c]+',';
 		}
@@ -2109,7 +2110,7 @@ KM.initial_display_refresh = function (callback, session_id) {
     //
 
     var refreshed = []; // feeds refreshed, to stop duplicate refreshes
-    var num_feeds = KM.www_rc.display_cameras[KM.www_rc.display_select].length;
+    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
     var camera_ptr = 0;
     KM.update_feeds();
 
@@ -2183,7 +2184,7 @@ KM.text_refresh = function () {
     // returns :
     //
 
-    var num_feeds = KM.www_rc.display_cameras[KM.www_rc.display_select].length;
+    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
     var feed, text_color;
     for (var i = 1; i < num_feeds; i++) {
         text_color = KM.WHITE;
@@ -2263,7 +2264,8 @@ KM.display_live_normal = function () {
 
     // exit if no feeds enabled, else 100% CPU useage
     var no_feeds = true;
-    for (var i = 1; i < KM.www_rc.display_cameras[KM.www_rc.display_select].length; i++) {
+	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
+    for (var i = 1; i < num_feeds; i++) {
         if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][i]]) no_feeds = false;
     }
     if (no_feeds) return; // no feeds
@@ -2283,7 +2285,7 @@ KM.display_live_normal = function () {
 	// returns:
 	//
 
-	var num_feeds = KM.www_rc.display_cameras[KM.www_rc.display_select].length;
+	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
 	var now = new Date();
 	var bw_start_time = now.getTime();
 	var delay;
@@ -2458,7 +2460,8 @@ KM.display_live_full = function () {
 
     // exit if no feeds enabled, else 100% CPU useage
     var no_feeds = true;
-    for (var i = 1; i < KM.www_rc.display_cameras[KM.www_rc.display_select].length; i++) {
+	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
+    for (var i = 1; i < num_feeds; i++) {
         if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][i]]) no_feeds = false;
     }
     if (no_feeds) return; // no feeds
@@ -2478,7 +2481,7 @@ KM.display_live_full = function () {
 	// returns:
 	//
 
-	var num_feeds = KM.www_rc.display_cameras[KM.www_rc.display_select].length;
+	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
 	var now = new Date();
 	var bw_start_time = now.getTime();
 	var full_start_time = 0;
