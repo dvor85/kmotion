@@ -1,12 +1,12 @@
-Listen %port%
-NameVirtualHost *:%port%
+Listen {port}
+NameVirtualHost *:{port}
 # http://httpd.apache.org/docs/2.0/misc/security_tips.html
 
-<VirtualHost *:%port%>
+<VirtualHost *:{port}>
 
     ServerName kmotion
     ServerAdmin webmaster@localhost
-    DocumentRoot %www_dir%
+    DocumentRoot {www_dir}
     Options -Indexes
     #UserDir disabled root 
     
@@ -15,10 +15,10 @@ NameVirtualHost *:%port%
     Deny from All
     </Directory>
 
-    <Directory %www_dir%>
+    <Directory {www_dir}>
         # secure login ...
         AuthType Basic
-        %LDAP_block%
+        {LDAP_block}
         Require valid-user
 	
         AllowOverride None
@@ -26,11 +26,11 @@ NameVirtualHost *:%port%
         allow from all
     </Directory>
     
-    Alias /images_dbase/ %images_dbase_dir%/
-    <Directory %images_dbase_dir%/>
+    Alias /images_dbase/ {images_dbase_dir}/
+    <Directory {images_dbase_dir}/>
         # secure login ...
         AuthType Basic
-        %LDAP_block%
+        {LDAP_block}
         Require valid-user
 	
         AllowOverride None
@@ -38,11 +38,11 @@ NameVirtualHost *:%port%
         allow from all
     </Directory>
 
-    Alias /kmotion_ramdisk/ %ramdisk_dir%/
-    <Directory %ramdisk_dir%/>
+    Alias /kmotion_ramdisk/ {ramdisk_dir}/
+    <Directory {ramdisk_dir}/>
         # secure login ...
         AuthType Basic
-        %LDAP_block%
+        {LDAP_block}
         Require valid-user
 	
         AllowOverride None
@@ -50,22 +50,16 @@ NameVirtualHost *:%port%
         allow from all
     </Directory>
     
-    Alias /virtual_ramdisk/ %ramdisk_dir%/
-    <Directory %ramdisk_dir%/>
-        # secure login ...
-        AuthType Basic
-        %LDAP_block%
-        Require valid-user
-	
-        AllowOverride None
-        Order allow,deny
-        allow from all
-    </Directory>
+    WSGIScriptAlias /ajax {wsgi_scripts}/ajax.py
+	<Directory {wsgi_scripts}>
+  		Order allow,deny
+  		Allow from all
+	</Directory>
 
     # Possible values include: debug, info, notice, warn, error, crit,
-    LogLevel warn
+    LogLevel debug
 
-    ErrorLog %logs_dir%/error_kmotion.log
-    #CustomLog %logs_dir%/access_kmotion.log combined
+    ErrorLog {logs_dir}/error_kmotion.log
+    #CustomLog {logs_dir}/access_kmotion.log combined
     
 </VirtualHost>

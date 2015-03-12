@@ -207,26 +207,26 @@ class InitCore:
         self.log('gen_vhost() - Generating vhost/kmotion file', logger.DEBUG)
         
         self.log('gen_vhost() - users_digest mode enabled', logger.DEBUG)
-        LDAP_block = """
-# ** INFORMATION ** Users digest file enabled ...
-AuthName "kmotion"
-AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
+        self.LDAP_block = """
+        # ** INFORMATION ** Users digest file enabled ...
+        AuthName "kmotion"
+        AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
+
+        self.www_dir = '%s/www/www' % self.kmotion_dir
+        self.logs_dir = '%s/www/apache_logs' % self.kmotion_dir
+        self.wsgi_scripts = '%s/www/wsgi' % self.kmotion_dir
         
         try:
+            vhost_dir = os.path.join(self.kmotion_dir,'www/vhosts')
+            if not os.path.isdir(vhost_dir):
+                os.makedirs(vhost_dir)
             with open('%s/www/vhosts/kmotion' % self.kmotion_dir, 'w') as f_obj1:
-                with open('%s/www/templates/vhosts_template' % self.kmotion_dir) as f_obj2:
-                    lines = f_obj2.readlines()
-            
-                for i in range(len(lines)):
-                    lines[i] = lines[i].replace('%images_dbase_dir%', self.images_dbase_dir)
-                    lines[i] = lines[i].replace('%ramdisk_dir%', self.ramdisk_dir)
-                    lines[i] = lines[i].replace('%www_dir%', '%s/www/www' % self.kmotion_dir)
-                    lines[i] = lines[i].replace('%logs_dir%', '%s/www/apache_logs' % self.kmotion_dir)
-                    lines[i] = lines[i].replace('%port%', self.port)
-                    lines[i] = lines[i].replace('%LDAP_block%', LDAP_block)
-                    f_obj1.write(lines[i])
+                with open('%s/www/templates/vhosts_template' % self.kmotion_dir, 'r') as f_obj2:
+                    template = f_obj2.read()
+                    f_obj1.write(template.format(**self.__dict__))
+                
         except IOError:
-            self.log('ERROR by generating vhost/kmotion file', logger.CRIT)
+            self.log('ERROR by generating vhosts/kmotion file', logger.CRIT)
             self.log(str(sys.exc_info()[1]), logger.CRIT)
         
       
@@ -234,7 +234,7 @@ AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     print kmotion_dir
-    print InitCore(kmotion_dir).set_uid_gid_named_pipes(os.getuid(), os.getgid())
+    InitCore(kmotion_dir).gen_vhost()
     
     
 
