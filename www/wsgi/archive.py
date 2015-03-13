@@ -21,7 +21,7 @@ class Archive():
         
     def main(self):
         if self.func == 'avail':
-            return self.date_feed_avail_data(self.params['feeds'])
+            return self.date_feed_avail_data(self.params['feeds'][0].split(','))
         elif self.func == 'index':
             return self.journal_data(escape(self.params['date'][0]), int(escape(self.params['feed'][0])))
         
@@ -29,18 +29,13 @@ class Archive():
     def date_feed_avail_data(self, feeds):
 
         date_feed_obj = {}       
-                
         dates = [i for i in os.listdir(self.images_dbase_dir) if len(i) == 8] 
         dates.sort()
         for date in dates:
-            
-            # feeds = [i for i in os.listdir(os.path.join(self.images_dbase_dir, date)) if (len(i) == 2)] 
-            # feeds.sort()
-            
             try:
+                feeds_obj = {}
                 for feed in feeds:
                     try:
-                        feeds_obj = {}
                         feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % int(feed))
                         if os.path.isdir(feed_dir):
                             title = 'Camera %s' % feed 
@@ -50,11 +45,12 @@ class Archive():
                             feeds_obj[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir , 'movie')),
                                                'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
                                                'title': title}
-                    
-                        date_feed_obj[date] = feeds_obj    
+                            
                     except:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
-                        print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})        
+                        print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
+                        
+                date_feed_obj[date] = feeds_obj        
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
@@ -80,7 +76,7 @@ class Archive():
         
         snaps_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, feed)
         if os.path.isdir(snaps_dir):
-            snaps = [m.replace(self.images_dbase_dir, '/images_dbase/') for m in os.listdir(snaps_dir)]
+            snaps = [os.path.normpath(m.replace(self.images_dbase_dir, '/images_dbase/')) for m in os.listdir(snaps_dir)]
             snaps.sort()
             journal['snaps'] = snaps
              

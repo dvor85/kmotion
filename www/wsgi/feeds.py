@@ -13,7 +13,7 @@ class Feeds():
     def main(self):
         
         dfeeds = {}
-        cams = self.params['feeds']
+        feeds = self.params['feeds'][0].split(',')
         events = os.listdir(os.path.join(self.ramdisk_dir,'events'))
         dfeeds['events'] = events
                             
@@ -24,7 +24,7 @@ class Feeds():
 #             username, password = data.decode('base64').split(':', 1)
         
         latest = {}
-        for feed in cams:
+        for feed in feeds:
             jpg_list = os.listdir('%s/%02i' % (self.ramdisk_dir, int(feed)))
             jpg_list.sort()
             if len(jpg_list)>0:
