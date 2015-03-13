@@ -52,6 +52,12 @@ NameVirtualHost *:{port}
     
     WSGIScriptAlias /ajax {wsgi_scripts}/ajax.py
 	<Directory {wsgi_scripts}>
+		# secure login ...
+        AuthType Basic
+        {LDAP_block}
+        Require valid-user
+        
+        AllowOverride None
   		Order allow,deny
   		Allow from all
 	</Directory>
