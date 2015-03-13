@@ -35,7 +35,15 @@ INFO = 'INFO'
 DEBUG = 'DEBUG'
 
 class Logger:
-
+    
+    EMERG = EMERG
+    ALERT = ALERT
+    CRIT = CRIT
+    ERR = ERR
+    WARNING = WARNING
+    NOTICE = NOTICE
+    INFO = INFO
+    DEBUG = DEBUG
     
     def __init__(self, ident, min_priority):
         """ 

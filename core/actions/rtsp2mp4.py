@@ -2,7 +2,7 @@
 @author: demon
 '''
 
-import os, sys, subprocess, shlex, time, datetime, signal, logger
+import os, sys, subprocess, shlex, time, datetime, signal
 from mutex_parsers import *
 from urlparse import urlsplit
 import sample
@@ -13,10 +13,14 @@ class rtsp2mp4(sample.sample):
         
     def __init__(self, kmotion_dir, feed):
         sample.sample.__init__(self, kmotion_dir, feed)
+        
+        sys.path.append(kmotion_dir)
+        import core.logger as logger
         self.log = logger.Logger('action_rtsp2mp4', logger.DEBUG)
         self.key = 'rtsp2mp4'
         
         try:
+            from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd 
             parser = mutex_kmotion_parser_rd(kmotion_dir) 
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
@@ -98,7 +102,7 @@ class rtsp2mp4(sample.sample):
             DEVNULL = open(os.devnull, 'wb')
         
         ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
-        self.log('start grabbing {src} to {dst} with pid={pid}'.format(**{'src':src, 'dst':dst, 'pid':ps.pid}), logger.DEBUG)
+        self.log('start grabbing {src} to {dst} with pid={pid}'.format(**{'src':src, 'dst':dst, 'pid':ps.pid}), self.log.DEBUG)
         return ps.pid
     
     def start(self):
@@ -122,7 +126,7 @@ class rtsp2mp4(sample.sample):
                     os.unlink(dst)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('start - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+            self.log('start - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), self.log.CRIT)
                 
     def end(self):
         sample.sample.end(self)
@@ -137,7 +141,7 @@ class rtsp2mp4(sample.sample):
                 time.sleep(1)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('end - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+                self.log('end - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), self.log.CRIT)
         
     
     

@@ -1,20 +1,5 @@
 #!/usr/bin/env python
 
-# This file is part of kmotion.
-
-# kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# kmotion is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 Update the 'logs' file with events and check for any incorrect shutdowns. If 
 found add an incorrect shutdown warning to the 'logs' file. Implement a mutex
@@ -25,7 +10,6 @@ The 'logs' file has the format: $date#time#text$date ...
 
 import os, time
 import logger
-from mutex_parsers import *
 from mutex import Mutex
 
 class WWWLog:
@@ -33,10 +17,7 @@ class WWWLog:
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
         self.log_file = '%s/www/logs' % self.kmotion_dir
-        kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.log = logger.Logger('www_logs', logger.DEBUG)
-        self.ramdisk_dir = kmotion_parser.get('dirs', 'ramdisk_dir')
-        self.max_feed = kmotion_parser.getint('misc', 'max_feed')
                 
         if not os.path.isfile(self.log_file):
             with open(self.log_file, 'w') as f_obj:
