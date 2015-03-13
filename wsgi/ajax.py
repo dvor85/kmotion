@@ -1,29 +1,29 @@
-import sys,os
-from wsgiref.simple_server import make_server
-from cgi import parse_qs, escape
+import sys, os
+from cgi import escape
 
 def application(environ, start_response): 
-    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     sys.path.append(kmotion_dir) 
-    from www.wsgi.archive import Archive
-    from www.wsgi.feeds import Feeds
-    from www.wsgi.loads import Loads
-    from www.wsgi.logs import Logs
-    from www.wsgi.outs import Outs 
     
     try:
-        status = '200 OK' 
-        path_info = escape(environ['PATH_INFO'])
+        status = '200 OK'
         body = ''
+        
+        path_info = escape(environ['PATH_INFO'])        
         if path_info == '/archive':
+            from wsgi.archive import Archive
             body = Archive(kmotion_dir, environ).main()
         elif path_info == '/feeds':
+            from wsgi.feeds import Feeds
             body = Feeds(kmotion_dir, environ).main()
         elif path_info == '/loads':
+            from wsgi.loads import Loads
             body = Loads(kmotion_dir, environ).main()
         elif path_info == '/logs':
+            from wsgi.logs import Logs
             body = Logs(kmotion_dir, environ).main()
         elif path_info == '/outs':
+            from wsgi.outs import Outs
             body = Outs(kmotion_dir, environ).main()
         
     except:
@@ -36,7 +36,7 @@ def application(environ, start_response):
     return [body]
     
 if __name__ == '__main__':
-
+    from wsgiref.simple_server import make_server
     httpd = make_server('', 8080, application)
     print "Serving on port 8080..."
     httpd.serve_forever()

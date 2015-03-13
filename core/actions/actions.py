@@ -11,15 +11,14 @@ class Actions():
     def __init__(self, kmotion_dir, feed):
         sys.path.append(kmotion_dir)
         
-        import core.logger as logger
-        from core.mutex_parsers import mutex_www_parser_rd
-        
+        import core.logger as logger        
         self.log = logger.Logger('actions_list', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         self.log('init', logger.DEBUG)
         self.actions_list = []
-        try:            
+        try:
+            from core.mutex_parsers import mutex_www_parser_rd            
             www_parser = mutex_www_parser_rd(self.kmotion_dir)
             self.feed_actions = set(www_parser.get('motion_feed%02i' % self.feed, 'feed_actions').split(' ')) 
             

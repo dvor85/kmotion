@@ -14,15 +14,8 @@ www/feeds_cache
 www/www/js/config.js
 images_dbase/
 virtual_motion_conf/*
-event/*
-!event/discrete.sh
-!event/jpg2flv
-!event/lost.sh
-!event/rtsp2flv
-!event/rtsp2mp4
-!event/start.sh
-!event/stop.sh
 kmotion_rc
 tar.cmd
 .project
 .pydevproject
+/gitpush

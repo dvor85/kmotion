@@ -212,9 +212,9 @@ class InitCore:
         AuthName "kmotion"
         AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
 
-        self.www_dir = '%s/www/www' % self.kmotion_dir
-        self.logs_dir = '%s/www/apache_logs' % self.kmotion_dir
-        self.wsgi_scripts = '%s/www/wsgi' % self.kmotion_dir
+        self.www_dir = os.path.join(self.kmotion_dir, 'www/www') 
+        self.logs_dir = os.path.join(self.kmotion_dir,'www/apache_logs')
+        self.wsgi_scripts = os.path.join(self.kmotion_dir,'wsgi')
         
         try:
             vhost_dir = os.path.join(self.kmotion_dir,'www/vhosts')
