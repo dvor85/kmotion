@@ -5217,7 +5217,6 @@ KM.display_logs = function () {
 
 	var button_width = backdrop_width / 7;
 
-
     document.getElementById('main_display').innerHTML = '' +
 
     '<div class="title" style="width:'+backdrop_width+'px;">' +
@@ -5234,7 +5233,7 @@ KM.display_logs = function () {
 
     function show_logs(dblob) {
         // show the logs
-        var events = dblob.split('$');
+        var events = JSON.parse(dblob).split('\n');
         events.pop(); // remove the 'ck' line
         var log_html = '';
         for (var i = 1; i < events.length; i++) {
@@ -5271,15 +5270,14 @@ KM.display_logs = function () {
                 // final integrity check - if this data gets corrupted we are
                 // in a world of hurt ...
                 // 'dblob.substr(dblob.length - 4)' due to IE bug !
-                if (parseInt(dblob.substr(dblob.length - 8), 10) === dblob.length - 12 &&
-                KM.session_id.current === session_id) {
+                if (KM.session_id.current === session_id) {
                     got_logs = true;
-		    KM.cull_timeout_ids(KM.LOGS);
+					KM.cull_timeout_ids(KM.LOGS);
                     show_logs(dblob);
                 }
             }
         };
-        xmlHttp.open('GET', '/cgi_bin/xmlHttp_logs.php' + '?rnd=' + new Date().getTime(), true);
+        xmlHttp.open('GET', '/ajax/logs' + '?rnd=' + new Date().getTime(), true);
         xmlHttp.send(null);
     }
 

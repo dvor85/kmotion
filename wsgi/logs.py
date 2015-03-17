@@ -1,5 +1,5 @@
-import os, sys, time, random, json
-from cgi import parse_qs, escape
+import os, sys, json
+from cgi import parse_qs
 
 class Logs():
     def __init__(self, kmotion_dir, environ):
@@ -13,7 +13,7 @@ class Logs():
         logs_mutex = Mutex(self.kmotion_dir, 'logs')
         logs_mutex.acquire()
         try:                       
-            with open('%s/www/logs' % self.kmotion_dir) as f_obj:
+            with open(os.path.join(self.kmotion_dir, 'www/logs')) as f_obj:
                 data = f_obj.read()
         finally:
             logs_mutex.release()

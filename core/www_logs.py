@@ -123,10 +123,10 @@ class WWWLog:
             mutex = Mutex(self.kmotion_dir, 'logs')
             mutex.acquire()
             with open(self.log_file, 'r+') as f_obj:
-                events = f_obj.read().split('$')
+                events = f_obj.read().split('\n')
                 if len(events) > 500:  # truncate logs
                     events.pop()
-                events = '$' + new_event + '$'.join(events)
+                events = '\n' + new_event + '\n'.join(events)
                 f_obj.seek(0)
                 f_obj.write(events)
                 f_obj.truncate()
