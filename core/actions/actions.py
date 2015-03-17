@@ -2,7 +2,7 @@
 @author: demon
 '''
 
-import sys, os
+import sys
 from threading import Thread
 
 
@@ -29,8 +29,7 @@ class Actions():
                             
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT) 
-            
+            self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
             
         
     def start(self):

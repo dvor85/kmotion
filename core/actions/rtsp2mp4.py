@@ -3,7 +3,6 @@
 '''
 
 import os, sys, subprocess, shlex, time, datetime, signal
-from mutex_parsers import *
 from urlparse import urlsplit
 import sample
 
@@ -14,7 +13,6 @@ class rtsp2mp4(sample.sample):
     def __init__(self, kmotion_dir, feed):
         sample.sample.__init__(self, kmotion_dir, feed)
         
-        sys.path.append(kmotion_dir)
         import core.logger as logger
         self.log = logger.Logger('action_rtsp2mp4', logger.DEBUG)
         self.key = 'rtsp2mp4'
