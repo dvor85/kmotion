@@ -7722,6 +7722,7 @@ KM.conf_load_html = function() {
 	
 	var config_html = document.getElementById('config_html');	
 	var MAX_PX = config_html.clientWidth*0.9;
+	var dbase = {}
 
     config_html.innerHTML = '<br>' +
 
@@ -7794,38 +7795,22 @@ KM.conf_load_html = function() {
         }
     }
 
-    function update_all(dblob) {
-        // parse the passed data blob and create dbase object
-        var dbase = {};
-        var dblob_secs = dblob.split("$");
-
-        // i = 1 because datablob starts with a $
-        for (var i = 1; i < dblob_secs.length; i++) {
-            var key = dblob_secs[i].substr(0, 2);
-
-            // special case for string values else parseFloat
-            if (key === 'bx' || key === 'sr' || key === 'up') {
-                dbase[key] = dblob_secs[i].substr(3);
-            } else {
-                dbase[key] = parseFloat(dblob_secs[i].substr(3), 10);
-            }
-        }
+    function update_all() {
 		try {
-			update_text(dbase);
-			update_bars(dbase);
+			update_text();
+			update_bars();
 		} catch (e) {			
             KM.kill_timeout_ids(KM.CONFIG_LOOP);        
 		}
     }
 
-    function update_text(dbase) {
-        document.getElementById('server_info').innerHTML = dbase.bx + ' ' +
-        dbase.sr + ' Uptime ' + dbase.up;
+    function update_text() {
+        document.getElementById('server_info').innerHTML = dbase.uname + ' Uptime ' + dbase.up;
         document.getElementById('memory_title').innerHTML = 'Memory ' + dbase.mt + 'k';
         document.getElementById('swap_title').innerHTML = 'Swap ' + dbase.st + 'k';
     }
 
-    function update_bars(dbase) {
+    function update_bars() {
         // load average 1 min
         document.getElementById('bar_value1').innerHTML = dbase.l1;
         var tmp = Math.min(dbase.l1, 1.5);
@@ -7867,7 +7852,7 @@ KM.conf_load_html = function() {
         document.getElementById('bar_fground6').style.width = tmp + 'px';
 
         // memory system
-        var non_app = dbase.mf + dbase.mb + dbase.mc;
+        var non_app = parseInt(dbase.mf) + parseInt(dbase.mb) + parseInt(dbase.mc);
         var app = dbase.mt - non_app;
         document.getElementById('bar_value7').innerHTML = app + 'k';
         tmp = (app / dbase.mt) * MAX_PX;
@@ -7907,16 +7892,14 @@ KM.conf_load_html = function() {
                 if (xmlHttp.readyState === 4) {
                     xmlHttp.onreadystatechange = null; // plug memory leak
                     var dblob = xmlHttp.responseText.trim();
-                    // final integrity check - if this data gets corrupted we are
-                    // in a world of hurt ...
-                    // 'dblob.substr(dblob.length - 4)' due to IE bug !
-                    if (parseInt(dblob.substr(dblob.length - 4), 10) === dblob.length - 8 &&
-                    KM.session_id.current === session_id) {
-                        update_all(dblob);
+					dbase = JSON.parse(dblob);
+                    
+                    if (KM.session_id.current === session_id) {
+                        update_all();
                     }
                 }
             };
-            xmlHttp.open('GET', '/cgi_bin/xmlHttp_load.php' + '?rnd=' + new Date().getTime(), true);
+            xmlHttp.open('GET', '/ajax/loads' + '?rnd=' + new Date().getTime(), true);
             xmlHttp.send(null);
         }
 
