@@ -5656,28 +5656,26 @@ KM.conf_error_daemon = function (session_id) {
                 // in a world of hurt ...
                 // 'data.substr(data.length - 4)' due to IE bug !
                 // possibly large string so 6 digit checksum
-                if (parseInt(data.substr(data.length - 8), 10) === data.length - 12 &&
-                KM.session_id.current === session_id) {
-                    KM.config.error_str = data.substr(0, data.length - 12);
-
-		    // scan the string looking for errors
-		    var error_lines = KM.config.error_str.split("\n");
-		    var error_flag = false;
-		    for (var i = 0; i < error_lines.length; i++) {
-			if (error_lines[i].search(KM.config.error_search_str) !== -1) {
-			    error_flag = true;
-			}
-		    }
-		    if (error_flag) {
-			KM.conf_highlight_error_button(); // control the 'server error' button
-		    } else {
-			//KM.conf_disable_error_button();
-		    }
-		}
-	    }
-	};
-	xmlHttp.open('GET', '/cgi_bin/xmlHttp_out.php' + '?rnd=' + new Date().getTime(), true);
-	xmlHttp.send(null);
+                if (KM.session_id.current === session_id) {
+                    KM.config.error_str = JSON.parse(data);
+					// scan the string looking for errors
+					var error_lines = KM.config.error_str.split("\n");
+					var error_flag = false;
+					for (var i = 0; i < error_lines.length; i++) {
+						if (error_lines[i].search(KM.config.error_search_str) !== -1) {
+							error_flag = true;
+						}
+					}
+					if (error_flag) {
+						KM.conf_highlight_error_button(); // control the 'server error' button
+					} else {
+						//KM.conf_disable_error_button();
+					}
+				}
+			}	
+		};
+		xmlHttp.open('GET', '/ajax/outs' + '?rnd=' + new Date().getTime(), true);
+		xmlHttp.send(null);
     }
 
     function reload() {
@@ -5685,7 +5683,7 @@ KM.conf_error_daemon = function (session_id) {
         // check for current session id
         if (KM.session_id.current === session_id) {
             KM.cull_timeout_ids(KM.ERROR_DAEMON);
-            KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 1000));
+            KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 2000));
 			//if (KM.config.error_str!="")
 			//	KM.kill_timeout_ids(KM.ERROR_DAEMON);
 			//KM.conf_error_html();

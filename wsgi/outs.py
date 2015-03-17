@@ -1,5 +1,5 @@
-import os, sys, time, random, json
-from cgi import parse_qs, escape
+import os, sys, json
+from cgi import parse_qs
 
 class Outs():
     def __init__(self, kmotion_dir, environ):
@@ -9,7 +9,7 @@ class Outs():
         self.params = parse_qs(self.environ['QUERY_STRING'])
         
     def main(self):        
-        with open('%s/www/motion_out' % self.kmotion_dir) as f_obj:
+        with open(os.path.join(self.kmotion_dir, 'www/motion_out')) as f_obj:
             data = f_obj.read()
     
         return json.dumps(data)
