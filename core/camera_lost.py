@@ -20,6 +20,18 @@ class CameraLost:
         www_parser = mutex_www_parser_rd(self.kmotion_dir)
         self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
         self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
+        self.feed_list = []
+        for section in www_parser.sections():
+            try:
+                if 'motion_feed' in section:
+                    feed = int(section.replace('motion_feed', ''))
+                    if www_parser.getboolean(section, 'feed_enabled'):
+                        self.feed_list.append(feed)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
+        self.feed_list.sort()
+        self.feed_thread = self.feed_list.index(self.feed) + 1
         
         self.reboot_url = CameraLost.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'), self.feed_username, self.feed_password)
         self.feed_url = CameraLost.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_url'), self.feed_username, self.feed_password)
@@ -50,7 +62,7 @@ class CameraLost:
     def main(self):
         if len(self.get_prev_instances()) == 0:            
             need_reboot = True
-            self.restart_thread(0)
+            self.restart_thread(self.feed_thread)
             time.sleep(60)
             for t in range(600):
                 try:
@@ -69,7 +81,7 @@ class CameraLost:
                     
             if need_reboot:
                 self.reboot_camera() 
-                self.restart_thread(0)
+                self.restart_thread(self.feed_thread)
             
         else:
             self.log('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}), logger.CRIT)
@@ -91,17 +103,17 @@ class CameraLost:
             
     def restart_thread(self, thread):
         try:
-            res = urllib.urlopen("http://localhost:8080/{thread}/action/restart".format(**{'thread':thread}))
+            res = urllib.urlopen("http://localhost:8080/{feed_thread}/action/restart".format(**{'feed_thread':thread}))
             try:
                 if res.getcode() == 200:
-                    self.log('restart thread {thread} success'.format(**{'thread':thread}), logger.DEBUG) 
+                    self.log('restart feed_thread {feed_thread} success'.format(**{'feed_thread':thread}), logger.DEBUG) 
                 else:
-                    self.log('restart thread {thread} with status code {code}'.format({'thread':thread, 'code':res.getcode()}), logger.DEBUG)
+                    self.log('restart feed_thread {feed_thread} with status code {code}'.format({'feed_thread':thread, 'code':res.getcode()}), logger.DEBUG)
             finally:
                 res.close() 
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('error {type}: {value} while restart thread {thread}'.format(**{'type':exc_type, 'value': exc_value, 'thread':thread}), logger.CRIT)
+            self.log('error {type}: {value} while restart feed_thread {feed_thread}'.format(**{'type':exc_type, 'value': exc_value, 'feed_thread':thread}), logger.CRIT)
     
     def get_prev_instances(self):
         p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' % (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
