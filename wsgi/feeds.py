@@ -14,7 +14,9 @@ class Feeds():
         
         dfeeds = {}
         feeds = self.params['feeds'][0].split(',')
-        events = os.listdir(os.path.join(self.ramdisk_dir,'events'))
+        #events = [f for f in os.listdir(os.path.join(self.ramdisk_dir, 'events')) if f in feeds]
+        events = os.listdir(os.path.join(self.ramdisk_dir, 'events'))
+        events.sort()
         dfeeds['events'] = events
                             
 #         auth = self.environ['HTTP_AUTHORIZATION']
@@ -25,11 +27,21 @@ class Feeds():
         
         latest = {}
         for feed in feeds:
-            jpg_list = os.listdir('%s/%02i' % (self.ramdisk_dir, int(feed)))
+            feed = int(feed)
+            jpg_dir = os.path.join(self.ramdisk_dir, '%02i' % feed, 'www')
+            if os.path.isdir(jpg_dir):
+                jpg_list = os.listdir(jpg_dir)
+            if len(jpg_list) == 0:
+                jpg_dir = os.path.join(self.ramdisk_dir, '%02i' % feed)
+                jpg_list = os.listdir(jpg_dir)
             jpg_list.sort()
-            if len(jpg_list)>0:
-                latest[feed] = jpg_list[-1]
+            while len(jpg_list) > 0: 
+                ljpg = os.path.join(jpg_dir, jpg_list.pop())                
+                if os.path.isfile(ljpg) and ljpg.endswith('.jpg'):
+                    latest[feed] = os.path.normpath(ljpg.replace(self.ramdisk_dir, '/kmotion_ramdisk/'))
+                    break
         
+        latest['length'] = len(latest)
         dfeeds['latest'] = latest
         
         return json.dumps(dfeeds)

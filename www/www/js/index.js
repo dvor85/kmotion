@@ -45,11 +45,10 @@ KM.LOGS         = 6;
 KM.CONFIG_LOOP  = 7;
 KM.MISC_JUMP    = 8;
 
-KM.server = {
+KM.feeds = {
     latest_jpegs:  [],
     latest_events: [],
-    feed_caches:   [],
-    servo_state: 0
+    feed_caches:   []
 };
 
 KM.browser = {
@@ -1479,7 +1478,7 @@ KM.update_feeds = function () {
 
     // A function that get the latest jpeg filenames and event status from
     // the server with an 'xmlHttp' call then splits the returned data and
-    // stores it in 'KM.server.latest_jpegs' and 'KM.server.latest_events'.
+    // stores it in 'KM.feeds.latest_jpegs' and 'KM.feeds.latest_events'.
     //
     // expects :
     //
@@ -1491,45 +1490,27 @@ KM.update_feeds = function () {
     xmlHttp.onreadystatechange = function () {
 	if (xmlHttp.readyState === 4) {
 	    xmlHttp.onreadystatechange = null; // plug memory leak
-	    // split the data
-	    var dblob = xmlHttp.responseText.trim();
-	    // array of latest jpeg filenames: index 1 - 16
-	    //KM.server.latest_jpegs = dblob.split("#");
-		var latest_jpegs_tmp=dblob.split("#");
-		for (var j=0;j<latest_jpegs_tmp.length-2;j++) {
-			KM.server.latest_jpegs[latest_jpegs_tmp[j].split('=')[0]]=latest_jpegs_tmp[j].split('=')[1];
-		}
-
-	    // *NOTE* index 17 holds the 'servo_state' and index 18
-	    // holds the 'latest_events', just ignore them !
-
-	    KM.server.servo_state = latest_jpegs_tmp[latest_jpegs_tmp.length-2];
-	    // array of latest events: index 0 - length
-	    if (latest_jpegs_tmp[latest_jpegs_tmp.length-1] !== undefined) {
-		var tmp = latest_jpegs_tmp[latest_jpegs_tmp.length-1].split("$");
-		tmp.sort();
-		KM.server.latest_events = tmp;
+	    var jdata = JSON.parse(xmlHttp.responseText);
+		KM.feeds.latest_jpegs = jdata.latest;
+		KM.feeds.latest_events = jdata.events;
 	    }
-	}
     };
-	var cams='';
+	var feeds='';
 
-	/*for (var c=1;c<KM.www_rc.feed_enabled.length;c++) {
-		if (KM.www_rc.feed_enabled[c]) {
-			cams+=c+',';
-		}
-	}*/
 	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
 	for (var c=1;c<num_feeds;c++) {
 		if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][c]]) {
-			cams+=KM.www_rc.display_cameras[KM.www_rc.display_select][c]+',';
+			feeds+=KM.www_rc.display_cameras[KM.www_rc.display_select][c]+',';
 		}
 	}
-	cams=cams.slice(0,-1);
+	feeds=feeds.slice(0,-1);
 
-
-    xmlHttp.open('GET', '/cgi_bin/xmlHttp_feeds.php' + '?cams='+cams+'&rdd='+encodeURIComponent(ramdisk_dir)+'&rnd=' + new Date().getTime(), true);
-    xmlHttp.send(null);
+	if (feeds.length>0) {
+		xmlHttp.open('GET', '/ajax/feeds' + '?feeds='+feeds+'&rdd='+encodeURIComponent(ramdisk_dir)+'&rnd=' + new Date().getTime(), true);
+		xmlHttp.send(null);
+	} else {
+                xmlHttp.onreadystatechange = null; // plug memory leak  
+        }
 };
 
 
@@ -1547,6 +1528,7 @@ KM.feed_cache = function (feed) {
 
     var cache_jpeg = [];
     var cache_count = 0;
+	var max_cache_count = 5;
 
     var prev_now = 0;
 
@@ -1554,9 +1536,9 @@ KM.feed_cache = function (feed) {
     var latest_jpeg = '';
     var latest_jpeg_time = 0;
     var jpeg_load_time = 0;
-    var latest_servo_state = 0;
+    //var latest_servo_state = 0;
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < max_cache_count; i++) {
         cache_jpeg[i] = new Image();
     }
     return {
@@ -1564,7 +1546,7 @@ KM.feed_cache = function (feed) {
 	get_jpeg: function (callback, session_id) {
 
 	    // A function that always downloads the latest feeds jpeg as defined
-	    // in 'KM.server.latest_jpegs' for this instance, when downloaded it
+	    // in 'KM.feeds.latest_jpegs' for this instance, when downloaded it
 	    // calls the callback object and passes status information.
 	    //
 	    // expects :
@@ -1580,55 +1562,45 @@ KM.feed_cache = function (feed) {
 
 	    KM.cull_timeout_ids(KM.FEED_CACHE);
 	    cache_count++; // caching jpegs as a browser workaround
-	    cache_count = (cache_count > 4)?0:cache_count;
-	    latest_jpeg = KM.server.latest_jpegs[feed];
+	    cache_count = (cache_count < max_cache_count)?cache_count:0;
+	    latest_jpeg = KM.feeds.latest_jpegs[feed];
 
 	    // null jpeg
 	    if (latest_jpeg === '' || latest_jpeg === undefined) {
-		KM.update_feeds();
-		KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback('null', feed, NOT_SAME, session_id); }, 1));
-		return;
+			KM.update_feeds();
+			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback('null', feed, NOT_SAME, session_id); }, 1));
+			return;
 	    }
 
 	    // same as last jpeg
 	    if (last_jpeg === latest_jpeg) {
-		KM.update_feeds();
-		KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback(latest_jpeg, feed, SAME, session_id); }, 500));
-		return;
+			KM.update_feeds();
+			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback(latest_jpeg, feed, SAME, session_id); }, 500));
+			return;
 	    }
 	    last_jpeg = latest_jpeg;
 
 	    cache_jpeg[cache_count].onerror = function () {
-		KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback('null', feed, NOT_SAME, session_id); }, 1));
+			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback('null', feed, NOT_SAME, session_id); }, 1));
 	    };
 
 	    cache_jpeg[cache_count].onload = function () {
-		KM.kill_timeout_ids(KM.FEED_CACHE);
-		var now = new Date();
-		latest_jpeg_time = now.getTime();
+			KM.kill_timeout_ids(KM.FEED_CACHE);
+			var now = new Date();
+			latest_jpeg_time = now.getTime();
 
-		var delay = 0;
-		if (latest_servo_state !== KM.server.servo_state) {
-		    delay = KM.www_rc.ptz_servo_settle[feed] * 1000 + 1;
-		    // re-enable the live mode ptz buttons
-		    KM.add_timeout_id(KM.BUTTON_BAR, setTimeout(function () {KM.enable_ptz_buttons(); }, delay));
-		    // re-enable the ptz config ptz buttons
-		    KM.add_timeout_id(KM.BUTTON_BAR, setTimeout(function () {KM.conf_ptz_ungrey_LUDR(); }, delay));
-		    latest_servo_state = KM.server.servo_state;
-		}
-
-		delay = 500;
-		now = new Date().getTime();
-		delay = Math.max(delay - (now - prev_now), 1);
-		prev_now = now;
-		/*/if (KM.www_rc.low_cpu) {
-		    now = new Date().getTime();
-		    var target_ms = (KM.browser.browser_SP)?(1000):(1000);
-		    delay = Math.max(target_ms - (now - prev_now), 1);
-		    prev_now = now;
-		}
-		*/
-		KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback(latest_jpeg, feed, NOT_SAME, session_id); }, delay));
+			var delay = 500;
+			now = new Date().getTime();
+			delay = Math.max(delay - (now - prev_now), 1);
+			prev_now = now;
+			/*/if (KM.www_rc.low_cpu) {
+				now = new Date().getTime();
+				var target_ms = (KM.browser.browser_SP)?(1000):(1000);
+				delay = Math.max(target_ms - (now - prev_now), 1);
+				prev_now = now;
+			}
+			*/
+			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback(latest_jpeg, feed, NOT_SAME, session_id); }, delay));
 	    };
 	    KM.update_feeds();		
 	    cache_jpeg[cache_count].src = latest_jpeg;
@@ -1650,9 +1622,9 @@ KM.feed_cache = function (feed) {
 	    var now = new Date();
 	    var diff = now.getTime() - latest_jpeg_time;
 	    if (diff < 20 * 1000 && latest_jpeg !== '' && latest_jpeg !== undefined) {
-		return latest_jpeg;
+			return latest_jpeg;
 	    } else {
-		return 'null';
+			return 'null';
 	    }
 	}
     };
@@ -1670,18 +1642,18 @@ KM.feed_cache_setup = function () {
     //
 
     for (var feed = 1; feed < max_feed; feed++) {
-        KM.server.feed_caches[feed] = KM.feed_cache(feed);
+        KM.feeds.feed_caches[feed] = KM.feed_cache(feed);
     }
 };
 
 KM.get_jpeg = function (feed, callback, session_id) {
     // function 'get_jpeg'
-	KM.server.feed_caches[feed].get_jpeg(callback, session_id);
+	KM.feeds.feed_caches[feed].get_jpeg(callback, session_id);
 };
 
 KM.check_jpeg_20sec_cache = function (feed) {
     // function 'check_jpeg_20sec_cache'
-	return KM.server.feed_caches[feed].check_jpeg_20sec_cache();
+	return KM.feeds.feed_caches[feed].check_jpeg_20sec_cache();
 };
 
 
@@ -1770,7 +1742,7 @@ KM.init_display_grid = function (display_select) {
 	    }
 	    text_color = KM.BLUE;
 	    // color the text, illusion of speed :)
-	    if (KM.item_in_array(feed, KM.server.latest_events)) {
+	    if (KM.item_in_array(feed, KM.feeds.latest_events)) {
 		text_color = KM.RED;
 	    }
 	    text = KM.www_rc.feed_name[feed];
@@ -2191,7 +2163,7 @@ KM.text_refresh = function () {
         feed = KM.www_rc.display_cameras[KM.www_rc.display_select][i];
         if (KM.www_rc.feed_enabled[feed]) {
             text_color = KM.BLUE;
-            if (KM.item_in_array(feed, KM.server.latest_events)) {
+            if (KM.item_in_array(feed, KM.feeds.latest_events)) {
                 text_color = KM.RED;
             }
         }
@@ -2325,7 +2297,7 @@ KM.display_live_normal = function () {
 			    KM.text_refresh();
 			    display_loop = false;
 				delay = 1000;
-				if (KM.server.latest_events.length > 1) delay = 1;
+				if (KM.feeds.latest_events.length > 1) delay = 1;
 				KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(); }, delay));
 			    return;
 			}
@@ -2377,7 +2349,7 @@ KM.display_live_normal = function () {
 		    }
 
 		// end of event 'run', reset
-		events = KM.server.latest_events;
+		events = KM.feeds.latest_events;
 		events_ptr = 1;
 		display_loop = true;
 		continue;
@@ -2536,7 +2508,7 @@ KM.display_live_full = function () {
 	    if (session_id_normal !== KM.session_id.current) return;
 
 	    KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
-	    events = KM.server.latest_events;
+	    events = KM.feeds.latest_events;
 
 	    if (events.length > 1) { // jump to full screen and exit
 		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {init_full(); }, 1));
@@ -2675,7 +2647,7 @@ KM.display_live_full = function () {
 	    }
 
 	    // end of display 'run', reset
-	    events = KM.server.latest_events;
+	    events = KM.feeds.latest_events;
 	    events_ptr = 1;
 	    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_full(); }, 1));
 	}
