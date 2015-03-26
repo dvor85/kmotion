@@ -45,11 +45,8 @@ KM.LOGS         = 6;
 KM.CONFIG_LOOP  = 7;
 KM.MISC_JUMP    = 8;
 
-KM.feeds = {
-    latest_jpegs:  [],
-    latest_events: [],
-    feed_caches:   []
-};
+KM.latest_events = [];
+
 
 KM.browser = {
     browser_FF: false,      // browser is firefox
@@ -68,15 +65,14 @@ KM.menu_bar_buttons = {
     function_selected:   0,     // the function selected
     display_sec_enabled: false, // enabled sections ...
     camera_sec_enabled:  false,
-    func_sec_enabled:    false,
-    ptz_sec_enabled:     false
+    func_sec_enabled:    false
 };
 
 
 
 KM.live = {
-    last_camera_select: 0, // the last camera selected
-    ptz_feed:           0  // ptz active feed
+    last_camera_select: 0 // the last camera selected
+
 };
 
 
@@ -85,9 +81,6 @@ KM.config = {
     pwd_change: false, // the password has changed
     camera:          1, // the current camera
     mask:           '', // the current expanded mask string
-    ptz_current_x:   0, // calculated abs position
-    ptz_current_y:   0,
-    sched_pastebin: '',
     error_str:      '', // the error string
     error_search_str: /failed|error/i
 };
@@ -127,55 +120,7 @@ KM.www_rc = {
     feed_snap_interval:  KM.fill_arr(['pad'], max_feed, 0),
     feed_fps:      KM.fill_arr(['pad'], max_feed, 0),
 
-    // schedule and schedule exception config
-    sched_except: ['pad', 0, 0, 0, 0, 0, 0, 0],
-    sched_tline1: ['pad', '', '', '', '', '', '', '', ''],
-    sched_tline2: ['pad', '', '', '', '', '', '', '', ''],
-    sched_tline3: ['pad', '', '', '', '', '', '', '', ''],
-    sched_tline4: ['pad', '', '', '', '', '', '', '', ''],
-    sched_tline5: ['pad', '', '', '', '', '', '', '', ''],
-    sched_tline6: ['pad', '', '', '', '', '', '', '', ''],
-    sched_tline7: ['pad', '', '', '', '', '', '', '', ''],
 
-    except_tline1_dates: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline2_dates: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline3_dates: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline4_dates: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline5_dates: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline6_dates: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline7_dates: ['pad', '', '', '', '', '', '', '', ''],
-
-    except_tline1: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline2: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline3: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline4: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline5: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline6: ['pad', '', '', '', '', '', '', '', ''],
-    except_tline7: ['pad', '', '', '', '', '', '', '', ''],
-
-    // PTZ misc config
-    ptz_enabled: KM.fill_arr(['pad'],max_feed, false),
-    ptz_calib_first: KM.fill_arr(['pad'],max_feed, false),
-    ptz_servo_settle: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_step_x: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_step_y: KM.fill_arr(['pad'], max_feed, 0),
-
-    // PTZ park config
-    ptz_park_enabled: KM.fill_arr(['pad'],max_feed, false),
-    ptz_track_type: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_park_delay: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_park_x: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_park_y: KM.fill_arr(['pad'], max_feed, 0),
-
-    // PTZ preset config
-    ptz_preset1_x: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_preset1_y: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_preset2_x: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_preset2_y: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_preset3_x: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_preset3_y: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_preset4_x: KM.fill_arr(['pad'], max_feed, 0),
-    ptz_preset4_y: KM.fill_arr(['pad'], max_feed, 0),
 
     // display cameras
     display_cameras: [],
@@ -193,12 +138,7 @@ KM.www_rc = {
     archive_button_enabled: true,
     logs_button_enabled:    true,
     config_button_enabled:  true,
-    func_button_enabled:    true,
-    msg_button_enabled:     true,
-    panic_button_enabled:   false,
-    audible_button_enabled: false,
-    about_button_enabled:   true,
-    logout_button_enabled:  true,
+    
 
     // function buttons enabled config
     func_enabled: KM.fill_arr(['pad'],max_feed, false),
@@ -551,129 +491,7 @@ KM.load_settings = function (callback) {
 		    KM.www_rc.feed_movie_enabled[index] = (parseInt(value, 10) === 1);
 		    break;
 
-		case 'psx': // ptz step x
-		    KM.www_rc.ptz_step_x[index] = parseInt(value, 10);
-		    break;
-		case 'psy': // ptz step y
-		    KM.www_rc.ptz_step_y[index] = parseInt(value, 10);
-		    break;
-		case 'ptt': // ptz track type (driver)
-		    KM.www_rc.ptz_track_type[index] = parseInt(value, 10);
-		    break;
-		case 'pte': // ptz enabled
-		    KM.www_rc.ptz_enabled[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'ptc': // ptz calib first
-		    KM.www_rc.ptz_calib_first[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'pts': // ptz server settle
-		    KM.www_rc.ptz_servo_settle[index] = parseFloat(value, 10);
-		    break;
-		case 'ppe': // ptz park enabled
-		    KM.www_rc.ptz_park_enabled[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'ppd': // ptz park delay
-		    KM.www_rc.ptz_park_delay[index] = parseInt(value, 10);
-		    break;
-		case 'ppx': // ptz park x
-		    KM.www_rc.ptz_park_x[index] = parseInt(value, 10);
-		    break;
-		case 'ppy': // ptz park y
-		    KM.www_rc.ptz_park_y[index] = parseInt(value, 10);
-		    break;
-		case 'p1x': // ptz preset 1 x
-		    KM.www_rc.ptz_preset1_x[index] = parseInt(value, 10);
-		    break;
-		case 'p1y': // ptz preset 1 y
-		    KM.www_rc.ptz_preset1_y[index] = parseInt(value, 10);
-		    break;
-		case 'p2x': // ptz preset 2 x
-		    KM.www_rc.ptz_preset2_x[index] = parseInt(value, 10);
-		    break;
-		case 'p2y': // ptz preset 2 y
-		    KM.www_rc.ptz_preset2_y[index] = parseInt(value, 10);
-		    break;
-		case 'p3x': // ptz preset 3 x
-		    KM.www_rc.ptz_preset3_x[index] = parseInt(value, 10);
-		    break;
-		case 'p3y': // ptz preset 3 y
-		    KM.www_rc.ptz_preset3_y[index] = parseInt(value, 10);
-		    break;
-		case 'p4x': // ptz preset 4 x
-		    KM.www_rc.ptz_preset4_x[index] = parseInt(value, 10);
-		    break;
-		case 'p4y': // ptz preset 4 y
-		    KM.www_rc.ptz_preset4_y[index] = parseInt(value, 10);
-		    break;
-
-		case 'sex': // schedule exception
-		    KM.www_rc.sched_except[index] = parseInt(value, 10);
-		    break;
-		case 'st1': // schedule time line 1
-		    KM.www_rc.sched_tline1[index] = value;
-		    break;
-		case 'st2': // schedule time line 2
-		    KM.www_rc.sched_tline2[index] = value;
-		    break;
-		case 'st3': // schedule time line 3
-		    KM.www_rc.sched_tline3[index] = value;
-		    break;
-		case 'st4': // schedule time line 4
-		    KM.www_rc.sched_tline4[index] = value;
-		    break;
-		case 'st5': // schedule time line 5
-		    KM.www_rc.sched_tline5[index] = value;
-		    break;
-		case 'st6': // schedule time line 6
-		    KM.www_rc.sched_tline6[index] = value;
-		    break;
-		case 'st7': // schedule time line 7
-		    KM.www_rc.sched_tline7[index] = value;
-		    break;
-
-		case 'ed1': // exception time line 1 dates
-		    KM.www_rc.except_tline1_dates[index] = value;
-		    break;
-		case 'ed2': // exception time line 2 dates
-		    KM.www_rc.except_tline2_dates[index] = value;
-		    break;
-		case 'ed3': // exception time line 3 dates
-		    KM.www_rc.except_tline3_dates[index] = value;
-		    break;
-		case 'ed4': // exception time line 4 dates
-		    KM.www_rc.except_tline4_dates[index] = value;
-		    break;
-		case 'ed5': // exception time line 5 dates
-		    KM.www_rc.except_tline5_dates[index] = value;
-		    break;
-		case 'ed6': // exception time line 6 dates
-		    KM.www_rc.except_tline6_dates[index] = value;
-		    break;
-		case 'ed7': // exception time line 7 dates
-		    KM.www_rc.except_tline7_dates[index] = value;
-		    break;
-
-		case 'et1': // exception time line 1
-		    KM.www_rc.except_tline1[index] = value;
-		    break;
-		case 'et2': // exception time line 2
-		    KM.www_rc.except_tline2[index] = value;
-		    break;
-		case 'et3': // exception time line 3
-		    KM.www_rc.except_tline3[index] = value;
-		    break;
-		case 'et4': // exception time line 4
-		    KM.www_rc.except_tline4[index] = value;
-		    break;
-		case 'et5': // exception time line 5
-		    KM.www_rc.except_tline5[index] = value;
-		    break;
-		case 'et6': // exception time line 6
-		    KM.www_rc.except_tline6[index] = value;
-		    break;
-		case 'et7': // exception time line 7
-		    KM.www_rc.except_tline7[index] = value;
-		    break;
+		
 
 		case 'dif': // display feeds
 		    var feeds = value.split(",");
@@ -1050,78 +868,6 @@ KM.blink_camera_func_button = function (button) {
 };
 
 
-KM.enable_ptz_buttons = function () {
-
-    // A function that intelligently enables the PTZ buttons
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    if (KM.menu_bar_buttons.function_selected === 1) {
-	KM.menu_bar_buttons.ptz_sec_enabled = false;
-	// if full screen
-	if (KM.www_rc.ptz_enabled[KM.www_rc.display_cameras[1][1]] && KM.www_rc.display_select === 1) {
-	    KM.live.ptz_feed = KM.www_rc.display_cameras[1][1];
-	    KM.menu_bar_buttons.ptz_sec_enabled = true;
-	} else {
-	    // if multi screen but feed selected
-	    if (KM.www_rc.ptz_enabled[KM.live.last_camera_select] && KM.live.last_camera_select !== 0) {
-		KM.live.ptz_feed = KM.live.last_camera_select;
-		KM.menu_bar_buttons.ptz_sec_enabled = true;
-	    }
-	}
-	var ptz_button_display="none";
-	for (var i = 1; i < 5; i++) {
-	    if (KM.menu_bar_buttons.ptz_sec_enabled) {
-		document.getElementById('p' + i).style.color = KM.BLUE;
-		ptz_button_display="block";
-	    } else {
-		document.getElementById('p' + i).style.color = KM.GREY;
-	    }
-	}
-	document.getElementById("ptz_button_display").style.display=ptz_button_display;
-    }
-};
-
-KM.update_ptz_buttons = KM.enable_ptz_buttons;
-    // update ptz buttons
-
-
-KM.ptz_button_lockdown = function (button) {
-
-    // A function that blinks PTZ button 'button' then disables PTZ buttons
-    //
-    // expects :
-    // 'button' ... the button to blink
-    //
-    // returns :
-    //
-
-    KM.menu_bar_buttons.ptz_sec_enabled = false;
-    document.getElementById('p' + button).style.color = KM.RED;
-    KM.add_timeout_id(KM.BUTTON_BAR, setTimeout(function () {KM.disable_ptz_buttons(); }, 250));
-
-};
-
-
-KM.disable_ptz_buttons = function () {
-
-    // A function that disables the PTZ buttons
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    for (var i = 1; i < 5; i++) {
-        document.getElementById('p' + i).style.color = KM.GREY;
-    }
-    KM.menu_bar_buttons.ptz_sec_enabled = false;
-    document.getElementById("ptz_button_display").style.display="none";
-};
-
 
 KM.enable_function_buttons = function (button) {
 
@@ -1135,9 +881,7 @@ KM.enable_function_buttons = function (button) {
     //
 
     var buttons = ['pad', 'pad', 'archive_button_enabled',
-    'logs_button_enabled', 'config_button_enabled', 'func_button_enabled',
-    'msg_button_enabled', 'panic_button_enabled', 'audible_button_enabled',
-    'about_button_enabled',  'logout_button_enabled'];
+    'logs_button_enabled', 'config_button_enabled'];
 
 	var misc_function_display="none";
 
@@ -1197,15 +941,10 @@ KM.display_button_clicked = function (button) {
         KM.update_display_buttons(button);
         KM.www_rc.display_select = button;
         KM.live.last_camera_select = 0;
-        KM.update_ptz_buttons();
-        if (KM.www_rc.full_screen) {
-            KM.display_live_full();
-        } else {
-            KM.display_live_normal();
-        }
+        KM.display_live_normal();
+
     }
 };
-
 
 KM.camera_func_button_clicked = function (button) {
 
@@ -1222,40 +961,15 @@ KM.camera_func_button_clicked = function (button) {
         KM.blink_camera_func_button(button);
         if (KM.menu_bar_buttons.camera_sec_enabled) {
             KM.live.last_camera_select = button;
-            KM.update_ptz_buttons();
             if (KM.www_rc.display_select === 1) {
                 // if '1' change view directly as a special case
                 KM.www_rc.display_cameras[1][1] =  button;
                 KM.live.last_camera_select = 0;
-                KM.update_ptz_buttons();
-                if (KM.www_rc.full_screen) {
-                    KM.display_live_full();
-                } else {
-                    KM.display_live_normal();
-                }
+                KM.display_live_normal();
+               
             }
-        } else {
-            KM.exe_script('/cgi_bin/xmlHttp_func.php', button);
+        
         }
-    }
-};
-
-
-KM.ptz_button_clicked = function (button) {
-
-    // A function that intelligently processs a PTZ button being clicked
-    // and highlights button 'button'
-    //
-    // expects :
-    // 'button' ... the button to highlight
-    //
-    // returns :
-    //
-
-    if (KM.menu_bar_buttons.ptz_sec_enabled) {
-        KM.ptz_button_lockdown(button);
-        // coded format crf<feed 2 digit>b<button 2 digit>$
-        KM.exe_script('/cgi_bin/xmlHttp_ptz.php', 'crf' + KM.pad_out2(KM.live.ptz_feed) + 'b' + KM.pad_out2(button) + '$');
     }
 };
 
@@ -1275,84 +989,33 @@ KM.function_button_clicked = function (button) {
         KM.update_function_buttons(button);
         KM.menu_bar_buttons.function_selected = button;
 
-	switch (button) {
-	case 1: // 'live button'
-		document.onkeydown=null; //stop memory leak
-	    KM.enable_display_buttons(KM.www_rc.display_select);
-	    KM.enable_camera_buttons();
-	    KM.enable_ptz_buttons();
-	    if (KM.www_rc.full_screen) {
-		KM.display_live_full();
-	    } else {
-		KM.display_live_normal();
-	    }
-	    break;
+        switch (button) {
+            case 1: // 'live button'
+                document.onkeydown=null; //stop memory leak
+                KM.enable_display_buttons(KM.www_rc.display_select);
+                KM.enable_camera_buttons();	    
+                KM.display_live_normal();
+                break;
 
-	case 2: // 'archive button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.display_archive();
-		current_play_accel=4;
-	    break;
+            case 2: // 'archive button'
+                KM.disable_display_buttons();
+                KM.disable_camera_buttons();
+                KM.display_archive();
+                current_play_accel=4;
+                break;
 
-	case 3: // 'log button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.display_logs();
-	    break;
+            case 3: // 'log button'
+                KM.disable_display_buttons();
+                KM.disable_camera_buttons();
+                KM.display_logs();
+                break;
 
-	case 4: // 'config button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.display_config();
-	    break;
-
-	case 5: // 'func button'
-	    KM.disable_display_buttons();
-	    KM.enable_func_buttons();
-	    KM.disable_ptz_buttons();
-	    break;
-
-	case 6: // 'msg button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.display_msg();
-	    break;
-
-	case 7: // 'panic button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.display_about();
-	    break;
-
-
-	case 8: // 'Audible button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.display_about();
-	    break;
-
-	case 9: // 'about button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.display_about();
-	    break;
-
-	case 10: // 'logout button'
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    KM.disable_ptz_buttons();
-	    KM.logout_button_clicked();
-	    break;
-
-	}
+            case 4: // 'config button'
+                KM.disable_display_buttons();
+                KM.disable_camera_buttons();
+                KM.display_config();
+                break;
+        }
     }
 };
 
@@ -1474,7 +1137,7 @@ live display
 **************************************************************************** */
 
 
-KM.update_feeds = function () {
+KM.update_events = function () {
 
     // A function that get the latest jpeg filenames and event status from
     // the server with an 'xmlHttp' call then splits the returned data and
@@ -1491,170 +1154,33 @@ KM.update_feeds = function () {
 	if (xmlHttp.readyState === 4) {
 	    xmlHttp.onreadystatechange = null; // plug memory leak
 	    var jdata = JSON.parse(xmlHttp.responseText);
-		KM.feeds.latest_jpegs = jdata.latest;
-		KM.feeds.latest_events = jdata.events;
+		//KM.feeds.latest_jpegs = jdata.latest;
+        //KM.update_jpegs();
+		KM.latest_events = jdata.events;
 	    }
     };
-	var feeds='';
 
-	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
+    xmlHttp.open('GET', '/ajax/feeds' + '?rdd='+encodeURIComponent(ramdisk_dir)+'&rnd=' + new Date().getTime(), true);
+    xmlHttp.send(null);
+	
+};
+
+KM.get_jpeg = function (feed) {
+    return  '/kmotion_ramdisk/'+KM.pad_out2(feed)+'/last.jpg?'+Math.random();
+}
+
+KM.update_jpegs = function () {
+    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
+    var feed = 0;
 	for (var c=1;c<num_feeds;c++) {
 		if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][c]]) {
-			feeds+=KM.www_rc.display_cameras[KM.www_rc.display_select][c]+',';
+			feed=KM.www_rc.display_cameras[KM.www_rc.display_select][c];
+            document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
 		}
 	}
-	feeds=feeds.slice(0,-1);
-
-	if (feeds.length>0) {
-		xmlHttp.open('GET', '/ajax/feeds' + '?feeds='+feeds+'&rdd='+encodeURIComponent(ramdisk_dir)+'&rnd=' + new Date().getTime(), true);
-		xmlHttp.send(null);
-	} else {
-                xmlHttp.onreadystatechange = null; // plug memory leak  
-        }
-};
-
-
-KM.feed_cache = function (feed) {
-
-    // A closure that downloads and stores jpegs in a feeds cache. It exports
-    // various 'methods', These 'methods' provide different ways of accessing
-    // and refreshing the feeds cache.
-
-    // 'SAME' and 'NOT_SAME' reflect the status of the returned 'jpeg' ie if it
-    // is the same as the last returned jpeg or not.
-
-    var SAME = true;
-    var NOT_SAME = false;
-
-    var cache_jpeg = [];
-    var cache_count = 0;
-	var max_cache_count = 5;
-
-    var prev_now = 0;
-
-    var last_jpeg = '';
-    var latest_jpeg = '';
-    var latest_jpeg_time = 0;
-    var jpeg_load_time = 0;
-    //var latest_servo_state = 0;
-
-    for (var i = 0; i < max_cache_count; i++) {
-        cache_jpeg[i] = new Image();
-    }
-    return {
-
-	get_jpeg: function (callback, session_id) {
-
-	    // A function that always downloads the latest feeds jpeg as defined
-	    // in 'KM.feeds.latest_jpegs' for this instance, when downloaded it
-	    // calls the callback object and passes status information.
-	    //
-	    // expects :
-	    // 'callback'    ... the callback object
-	    // 'session_id'  ... the 'session_id'
-	    //
-	    // returns :
-	    // 'latest_jpeg' ... jpeg name or 'null' if none avaliable
-	    // 'feed'        ... the feed number for this instance
-	    // 'same'        ... bool if same as late jpeg
-	    // 'session_id'  ... the 'session_id'
-	    //
-
-	    KM.cull_timeout_ids(KM.FEED_CACHE);
-	    cache_count++; // caching jpegs as a browser workaround
-	    cache_count = (cache_count < max_cache_count)?cache_count:0;
-	    latest_jpeg = KM.feeds.latest_jpegs[feed];
-
-	    // null jpeg
-	    if (latest_jpeg === '' || latest_jpeg === undefined) {
-			KM.update_feeds();
-			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback('null', feed, NOT_SAME, session_id); }, 1));
-			return;
-	    }
-
-	    // same as last jpeg
-	    if (last_jpeg === latest_jpeg) {
-			KM.update_feeds();
-			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback(latest_jpeg, feed, SAME, session_id); }, 500));
-			return;
-	    }
-	    last_jpeg = latest_jpeg;
-
-	    cache_jpeg[cache_count].onerror = function () {
-			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback('null', feed, NOT_SAME, session_id); }, 1));
-	    };
-
-	    cache_jpeg[cache_count].onload = function () {
-			KM.kill_timeout_ids(KM.FEED_CACHE);
-			var now = new Date();
-			latest_jpeg_time = now.getTime();
-
-			var delay = 500;
-			now = new Date().getTime();
-			delay = Math.max(delay - (now - prev_now), 1);
-			prev_now = now;
-			/*/if (KM.www_rc.low_cpu) {
-				now = new Date().getTime();
-				var target_ms = (KM.browser.browser_SP)?(1000):(1000);
-				delay = Math.max(target_ms - (now - prev_now), 1);
-				prev_now = now;
-			}
-			*/
-			KM.add_timeout_id(KM.FEED_CACHE, setTimeout(function () {callback(latest_jpeg, feed, NOT_SAME, session_id); }, delay));
-	    };
-	    KM.update_feeds();		
-	    cache_jpeg[cache_count].src = latest_jpeg;
-	},
-
-	check_jpeg_20sec_cache: function () {
-
-	    // A function that checks the cache for this instance. If the cache
-	    // is less than 20 secs old returns the cached jpeg filename.
-	    // This function does __NOT__ attempt to download a new jpeg and so
-	    // is guaranteed to return immediately.
-	    //
-	    // expects :
-	    //
-	    // returns :
-	    // 'latest_jpeg' ... jpeg name or 'null' if none avaliable
-	    //
-
-	    var now = new Date();
-	    var diff = now.getTime() - latest_jpeg_time;
-	    if (diff < 20 * 1000 && latest_jpeg !== '' && latest_jpeg !== undefined) {
-			return latest_jpeg;
-	    } else {
-			return 'null';
-	    }
-	}
-    };
-};
-
-
-KM.feed_cache_setup = function () {
-
-    // A function that sets a list of 16 'feed_cache' 'instances', one for each
-    // feed
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    for (var feed = 1; feed < max_feed; feed++) {
-        KM.feeds.feed_caches[feed] = KM.feed_cache(feed);
-    }
-};
-
-KM.get_jpeg = function (feed, callback, session_id) {
-    // function 'get_jpeg'
-	KM.feeds.feed_caches[feed].get_jpeg(callback, session_id);
-};
-
-KM.check_jpeg_20sec_cache = function (feed) {
-    // function 'check_jpeg_20sec_cache'
-	return KM.feeds.feed_caches[feed].check_jpeg_20sec_cache();
-};
+    KM.text_refresh();
+    
+}
 
 
 KM.init_display_grid = function (display_select) {
@@ -1732,25 +1258,14 @@ KM.init_display_grid = function (display_select) {
 	var feed = KM.www_rc.display_cameras[display_num][html_count];
 
 	if (KM.www_rc.feed_enabled[feed]) {
-	    jpeg = bcam_jpeg;
-	    // code to use cached images if available. This code gives the illusion
-	    // of speed set against a slight breakdown in modularity.
-	    var cached_jpeg = KM.check_jpeg_20sec_cache(feed);
-
-	    if (cached_jpeg !== 'null') {
-		jpeg = cached_jpeg;
-	    }
-	    text_color = KM.BLUE;
-	    // color the text, illusion of speed :)
-	    if (KM.item_in_array(feed, KM.feeds.latest_events)) {
-		text_color = KM.RED;
-	    }
+	    jpeg = bcam_jpeg;	    
+	    text_color = KM.BLUE;	    
 	    text = KM.www_rc.feed_name[feed];
 	}
 	text = feed + ' : ' + text;
 
 	if (html_count>max_feed-1) return;
-	var l1 = '<img id="image_' + html_count + '" ';
+	var l1 = '<img id="image_' + feed + '" ';
 	var l2 = 'style="position:absolute; ';
 	var l3 = 'left:' + left + 'px; ';
 	var l4 = 'top:' + top + 'px; ';
@@ -1761,7 +1276,7 @@ KM.init_display_grid = function (display_select) {
 	var l9 = 'alt="">';
 	html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9;
 
-	var l10 = '<span id="text_' + html_count + '"; ';
+	var l10 = '<span id="text_' + feed + '"; ';
 	var l11 = 'style="position:absolute; ';
 	var l12 = 'left:' + (left + text_left) + 'px; ';
 	var l13 = 'top:' +  (top + text_top) + 'px;';
@@ -2065,87 +1580,6 @@ KM.init_display_grid = function (display_select) {
     }
 };
 
-
-KM.initial_display_refresh = function (callback, session_id) {
-
-    // A closure that initialises the display, loading feed jpegs that are not
-    // avaliable from the cache. Any jpegs that are avaliable from the cache
-    // will already be displayed by the 'KM.init_display_grid' code. This
-    // breaks modularity but increases speed :) When finished it calls the
-    // callback object.
-    //
-    // expects:
-    // 'callback'   ... the callback object
-    // 'session_id' ... the current session id
-    //
-    // returns:
-    //
-
-    var refreshed = []; // feeds refreshed, to stop duplicate refreshes
-    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
-    var camera_ptr = 0;
-    KM.update_feeds();
-
-    // scans the 20sec cache and updates 'refreshed'
-    var feed, jpeg;
-    for (var i = 1; i < num_feeds; i++) {
-	feed = KM.www_rc.display_cameras[KM.www_rc.display_select][i];
-	jpeg = KM.check_jpeg_20sec_cache(feed);
-
-	if (KM.www_rc.feed_enabled[feed] && jpeg !== 'null') {
-	    refreshed[refreshed.length] = feed;
-	}
-    }
-    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {load_rest(); }, 1));
-
-
-    function load_rest() {
-
-	// A function that loads all feed jpegs not in 'refreshed' - its a
-	// coding dance :)
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-        camera_ptr++;
-        if (camera_ptr < num_feeds) {
-            var feed = KM.www_rc.display_cameras[KM.www_rc.display_select][camera_ptr];
-            if (KM.www_rc.feed_enabled[feed] && !KM.item_in_array(feed, refreshed)) {
-                KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {KM.get_jpeg(feed, load_rest_callback, session_id); }, 1));
-                return;
-            }
-            KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {load_rest(); }, 1));
-            return;
-        }
-        KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {callback(session_id); }, 1));
-    }
-
-
-    function load_rest_callback(jpeg, feed, same, session_id) {
-
-	// A function that is called by 'get_jpeg' when jpeg avaliable
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-        // called by 'get_jpeg' when jpeg avaliable
-        if (session_id !== KM.session_id.current) return;
-	//KM.update_feeds();
-        if (jpeg !== 'null') { // ignore the 'same' variable
-			try {
-				document.getElementById('image_' + camera_ptr).src = jpeg;
-			} catch (e) {}
-        } 
-        KM.text_refresh();
-        KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {load_rest(); }, 1));
-    }
-};
-
-
 KM.text_refresh = function () {
 
     // A function that refresh the display text colors, 'white' for feed
@@ -2163,7 +1597,7 @@ KM.text_refresh = function () {
         feed = KM.www_rc.display_cameras[KM.www_rc.display_select][i];
         if (KM.www_rc.feed_enabled[feed]) {
             text_color = KM.BLUE;
-            if (KM.item_in_array(feed, KM.feeds.latest_events)) {
+            if (KM.item_in_array(feed, KM.latest_events)) {
                 text_color = KM.RED;
             }
         }
@@ -2200,13 +1634,11 @@ KM.camera_jpeg_clicked = function (camera) {
         KM.www_rc.display_cameras[KM.www_rc.display_select][camera];
         KM.www_rc.display_select = 1;
         KM.update_display_buttons(1);
-        KM.update_ptz_buttons();
+        
     }
-    if (KM.www_rc.full_screen) {
-        KM.display_live_full();
-    } else {
-        KM.display_live_normal();
-    }
+   
+    KM.display_live_normal();
+   
 };
 
 
@@ -2234,529 +1666,36 @@ KM.display_live_normal = function () {
     KM.set_main_display_size(); // in case user has 'zoomed' browser view
     KM.init_display_grid(KM.www_rc.display_select);
 
-    // exit if no feeds enabled, else 100% CPU useage
+    // exit if no feeds enabled, else 100% CPU usage
     var no_feeds = true;
 	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
     for (var i = 1; i < num_feeds; i++) {
-        if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][i]]) no_feeds = false;
+        if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][i]]) {
+            no_feeds = false;
+        }
     }
     if (no_feeds) return; // no feeds
-
-    // quickly populate the grid with fresh or cached images
-    var callback = display_live_normal2;
-    KM.initial_display_refresh(callback, KM.session_id.current);
-
-
-    function display_live_normal2(session_id) {
-
-	// A function that resets the closure variables
-	//
-	// expects:
-	// 'session_id' ... the current session id
-	//
-	// returns:
-	//
-
-	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
-	var now = new Date();
-	var bw_start_time = now.getTime();
-	var delay;
-
-	var events = [];         // a snapshot of the motion events list
-	var events_ptr = 1;      // a pointer into 'events', starts at 1 due to
-				 // javascrips split crazyness
-
-	var refreshed = [];      // feeds refreshed, to stop duplicate refreshes
-	var camera_ptr = 0;      // a pointer into the camera list
-	var display_loop = true; // a 'toggle' between display loop and interleave loop
-
-	var jpegs = ['', '', '', '', ''];
-	var jpeg_ptr = 0;        // jpeg name caching else browser gets confused!
-	refresh();
-
-
-	function refresh() {
-
-	    // A function that performs the main refresh loop, complex by
-	    // necessity
-	    //
-	    // expects:
-	    //
-	    // returns:
-	    //
-
-	    // refresh the grid display
-	    while (session_id === KM.session_id.current) {
-		KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
-		if (display_loop || !KM.www_rc.interleave) {
-
-		    // display loop
-		    if (KM.www_rc.low_bandwidth) { // low bandwidth code, refresh display
-			now = new Date();          // every 15 mins only
-			if (now.getTime() - bw_start_time < 15 * 60 * 1000) {
-			    KM.text_refresh();
-			    display_loop = false;
-				delay = 1000;
-				if (KM.feeds.latest_events.length > 1) delay = 1;
-				KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(); }, delay));
-			    return;
-			}
-		    }
-
-		    camera_ptr++;
-		    if (camera_ptr < num_feeds) {
-			var feed = KM.www_rc.display_cameras[KM.www_rc.display_select][camera_ptr];
-
-			// check that the feed is enabled, its not in the events array
-			// since interleave takes care of it and check it has not
-			// already been 'refreshed' to trap multiple views of same feed.
-			// These are taken care of by 'refresh_callback'.
-			if (KM.www_rc.feed_enabled[feed] &&
-			(!KM.item_in_array(feed, events) || !KM.www_rc.interleave) &&
-			!KM.item_in_array(feed, refreshed)) {
-			    display_loop = false;
-			    refreshed[refreshed.length] = feed;
-			    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {KM.get_jpeg(feed, refresh_callback, session_id); }, 1));
-			    return;
-			}
-
-			// if invalid, flip to interleave loop
-			display_loop = false;
-			continue;
-		    }
-
-		    // end of display 'run', reset
-		    camera_ptr = 0;
-		    refreshed.length = 0; // zero the 'refreshed' array
-		    now = new Date();     // reset 'clock' for low bandwidth option
-		    bw_start_time = now.getTime();
-		    continue;
-
-		} else {
-
-		    // interleave loop
-		    if (events_ptr < events.length) {
-			var feed = events[events_ptr];
-			events_ptr++;
-
-			// if 'feed' is not in 'display', skip getting the jpeg
-			if (KM.item_in_array(feed, KM.www_rc.display_cameras[KM.www_rc.display_select])) {
-			    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {KM.get_jpeg(feed, refresh_callback, session_id); }, 1));
-			    return;
-			} else {
-			    continue;
-			}
-		    }
-
-		// end of event 'run', reset
-		events = KM.feeds.latest_events;
-		events_ptr = 1;
-		display_loop = true;
-		continue;
-		}
-	    }
-	}
-
-
-	function refresh_callback(jpeg, feed, same, session_id) {
-
-	    // A function that is called by 'get_jpeg' when jpeg avaliable
-	    //
-	    // expects:
-	    // 'jpeg'       ... the jpeg name
-	    // 'feed'       ... the feed number
-	    // 'same'       ... bool if same as last jpeg
-	    // 'session_id' ... the session id
-	    //
-	    // returns:
-	    //
-
-	    if (session_id !== KM.session_id.current) return;
-
-	    if (jpeg === 'null') {
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(); }, 1));
-		return;
-	    }
-
-	    if (same) {
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(); }, 1));
-		return;
-	    }
-
-	    jpeg_ptr++;
-	    jpeg_ptr = (jpeg_ptr > 4)?0:jpeg_ptr;
-	    jpegs[jpeg_ptr] = jpeg;
-
-	    // check for multiple views of same feed, if found refresh them all
-	    for (var i = 1; i < num_feeds; i++) {
-		if (KM.www_rc.display_cameras[KM.www_rc.display_select][i] === feed) {
-			try {
-				document.getElementById('image_' + i).src = jpegs[jpeg_ptr];
-			} catch (e) {}
-		}
-	    }
-
-	    KM.text_refresh();
-	    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(); }, 1));
-	}
-    }
-};
-
-
-/* ****************************************************************************
-Live display - Live code (full screen on motion)
-
-Code to constantly refreshes the display grid loading feed jpegs and displaying
-them. If motion is detected goto full screen mode.
-**************************************************************************** */
-
-
-KM.display_live_full = function () {
-
-    // A closure that constantly refreshes the display grid loading feed jpegs
-    // and displaying them. If motion is detected goto full screen mode. If
-    // selected enable low bandwidth mode.
-    //
-    // Going full screen in the middle of updateing the grid is messy and a bit
-    // of a hack. If it wasn't such a nice feature I would drop support for it.
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    // always start with grid display
-    KM.set_main_display_size(); // in case user has 'zoomed' browser view
-    KM.session_id.current++;
-    KM.init_display_grid(KM.www_rc.display_select);
-
-    // exit if no feeds enabled, else 100% CPU useage
-    var no_feeds = true;
-	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
-    for (var i = 1; i < num_feeds; i++) {
-        if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][i]]) no_feeds = false;
-    }
-    if (no_feeds) return; // no feeds
-
-    // quickly populate the grid with fresh or cached images
-    var callback = display_live_full2;
-    KM.initial_display_refresh(callback, KM.session_id.current);
-
-
-    function display_live_full2(session_id) {
-
-	// A function that resets the closure variables
-	//
-	// expects:
-	// 'session_id' ... the current session id
-	//
-	// returns:
-	//
-
-	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
-	var now = new Date();
-	var bw_start_time = now.getTime();
-	var full_start_time = 0;
-
-	var events = [];         // a snapshot of the motion events list
-	var events_ptr = 0;      // a pointer into 'events'
-
-	var session_id_normal = session_id;
-	var session_id_full = 0;
-
-	var refreshed = [];      // feeds refreshed, to stop duplicate refreshes
-	var camera_ptr = 0;      // a pointer into the camera list
-
-	var jpegs = ['', '', '', '', ''];
-	var jpeg_ptr = 0;        // jpeg name caching else browser gets confused!
-	refresh_normal();
-
-
-	function init_normal() {
-
-	    // A function that init's the 'normal' grid
-	    //
-	    // expects:
-	    //
-	    // returns:
-	    //
-
-	    // init back into normal grid mode from full screen
-	    KM.session_id.current++;
-	    session_id_normal = KM.session_id.current;
-
-	    KM.enable_display_buttons(KM.www_rc.display_select);
-	    KM.enable_camera_buttons();
-
-	    KM.init_display_grid(KM.www_rc.display_select);
-	    var callback = refresh_normal;
-	    KM.initial_display_refresh(callback, KM.session_id.current);
-	}
-
-
-	function refresh_normal() {
-
-	    // A function that performs the main 'normal' refresh loop, complex
-	    // by necessity
-	    //
-	    // expects:
-	    //
-	    // returns:
-	    //
-
-	    // refresh the grid display
-	    if (session_id_normal !== KM.session_id.current) return;
-
-	    KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
-	    events = KM.feeds.latest_events;
-
-	    if (events.length > 1) { // jump to full screen and exit
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {init_full(); }, 1));
-		return;
-	    }
-
-	    if (KM.www_rc.low_bandwidth) { // low bandwidth code, refresh display every
-		now = new Date(); // 15 mins only, any events and loop jumps to full screen
-		if (now.getTime() - bw_start_time < 15 * 60 * 1000) {
-		    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_normal(); }, 1000));
-		    return;
-		}
-	    }
-
-	    camera_ptr++;
-	    if (camera_ptr < num_feeds) {
-		var feed = KM.www_rc.display_cameras[KM.www_rc.display_select][camera_ptr];
-		// check that the feed is enabled, and check it has not
-		// already been 'refreshed' to trap multiple views of same feed.
-		// These are taken care of by 'refresh_callback_normal'.
-		if (KM.www_rc.feed_enabled[feed] &&
-		!KM.item_in_array(feed, refreshed)) {
-		    refreshed[refreshed.length] = feed;
-		    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {KM.get_jpeg(feed, refresh_callback_normal, session_id_normal); }, 1));
-		    return;
-		}
-		    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_normal(); }, 1));
-		    return;
-	    }
-
-	    // end of display 'run', reset
-	    camera_ptr = 0;
-	    refreshed.length = 0; // zero the 'refreshed' array
-	    now = new Date();     // reset 'clock' for low bandwidth option
-	    bw_start_time = now.getTime();
-	    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_normal(); }, 1));
-	}
-
-
-	function refresh_callback_normal(jpeg, feed, same, session_id) {
-
-	    // A function that is called by 'get_jpeg' when jpeg avaliable
-	    //
-	    // expects:
-	    // 'jpeg'       ... the jpeg name
-	    // 'feed'       ... the feed number
-	    // 'same'       ... bool if same as last jpeg
-	    // 'session_id' ... the session id
-	    //
-	    // returns:
-	    //
-
-	    if (session_id !== KM.session_id.current) return;
-	    KM.update_feeds();
-
-	    if (jpeg === 'null') {
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_normal(); }, 1));
-		return;
-	    }
-
-	    if (same) {
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_normal(); }, 1));
-		return;
-	    }
-
-	    jpeg_ptr++;
-	    jpeg_ptr = (jpeg_ptr > 4)?0:jpeg_ptr;
-	    jpegs[jpeg_ptr] = jpeg;
-
-	    // check for multiple views of same feed, if found refresh them all
-	    for (var i = 1; i < num_feeds; i++) {
-		if (KM.www_rc.display_cameras[KM.www_rc.display_select][i] === feed) {
-			try {
-				document.getElementById('image_' + i).src = jpegs[jpeg_ptr];
-			} catch (e) {}
-		}
-	    }
-	    KM.text_refresh();
-	    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_normal(); }, 1));
-	}
-
-
-	function init_full() {
-
-	    // A function that init's the 'full screen' grid
-	    //
-	    // expects:
-	    //
-	    // returns:
-	    //
-
-	    // init into full screen mode from normal grid
-	    KM.session_id.current++;
-	    session_id_full = KM.session_id.current;
-
-	    KM.disable_display_buttons();
-	    KM.disable_camera_buttons();
-	    events_ptr = 1;
-	    init_display_single(events[events_ptr]);
-
-	    now = new Date();
-	    full_start_time = now.getTime();
-	    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_full(); }, 1));
-	}
-
-
-	function refresh_full() {
-
-	    // A function that performs the main 'full screen' refresh loop,
-	    // complex by necessity
-	    //
-	    // expects:
-	    //
-	    // returns:
-	    //
-
-	    // refresh the full screen display
-	    if (session_id_full !== KM.session_id.current) return;
-
-	    KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
-	    if (events.length === 1) { // jump to normal screen mode
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {init_normal(); }, 1));
-		return;
-	    }
-
-	    now = new Date(); // show full screen event for a few seconds
-	    if (now.getTime() - full_start_time > 5 * 1000) {
-		full_start_time = now.getTime();
-		events_ptr++;
-	    }
-
-	    if (events_ptr < events.length) {
-		var feed = events[events_ptr];
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {KM.get_jpeg(feed, refresh_callback_full, session_id_full); }, 1));
-		return;
-	    }
-
-	    // end of display 'run', reset
-	    events = KM.feeds.latest_events;
-	    events_ptr = 1;
-	    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_full(); }, 1));
-	}
-
-
-	function refresh_callback_full(jpeg, feed, same, session_id) {
-
-	    // A function that is called by 'get_jpeg' when jpeg avaliable
-	    //
-	    // expects:
-	    // 'jpeg'       ... the jpeg name
-	    // 'feed'       ... the feed number
-	    // 'same'       ... bool if same as last jpeg
-	    // 'session_id' ... the session id
-	    //
-	    // returns:
-	    //
-
-	    if (session_id !== KM.session_id.current) return;
-
-	    if (jpeg === 'null') {
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_full(); }, 1));
-		return;
-	    }
-
-	    if (same) {
-		KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_full(); }, 200));
-		return;
-	    }
-
-	    jpeg_ptr++;
-	    jpeg_ptr = (jpeg_ptr > 4)?0:jpeg_ptr;
-	    jpegs[jpeg_ptr] = jpeg;
-		try {
-			document.getElementById('image_1').src = jpegs[jpeg_ptr];
-		} catch (e) {}
-	    var text = KM.www_rc.feed_name[feed];
-	    document.getElementById('text_1').innerHTML = feed + ' : ' + text;
-	    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh_full(); }, 1));
-	}
-
-
-	function init_display_single (feed) {
-
-	    // A function to initialise the full screen display assigning jpeg
-	    // and text id's. Does not use feed cache to initialise with cached
-	    // jpegs to avoid image jumping.called by 'get_jpeg' when jpeg
-	    // avaliable
-	    //
-	    // expects:
-	    // 'feed'       ... the feed number
-	    //
-	    // returns:
-	    //
-
-	    var PADDING = 3;  // padding between camera displays
-
-	    var html = '';
-	    var jpeg = bcam_jpeg;
-	    var	bcam_jpeg = 'images/bcam.png';
-
-	    // calculates and sets the top and left margins plus the width
-	    // and height of the display area while keeping to a 1.33 aspect ratio
-	    // PADDING * 2 for outer borders
-	    var scaled_width = KM.browser.main_display_width - PADDING * 2;
-	    var scaled_height = KM.browser.main_display_height - PADDING * 2;
-
-	    // calculate the scaled size keeping aspect ratio 384 / 288 = 1.33
-		var scale=KM.browser.main_display_width / KM.browser.main_display_height;
-		if (scale > 2) {
-			scale=2;
-		} else if (scale < 1) {
-			scale=1;
-		}
-	    if ((scaled_width / scaled_height) < scale) {
-		scaled_height = scaled_width / scale;
-	    } else {
-		scaled_width = scaled_height * scale;
-	    }
-	    var left_margin = ((KM.browser.main_display_width - scaled_width) / 2);
-	    var top_margin = PADDING;
-	    var jpeg_width = scaled_width;
-	    var jpeg_height = scaled_height;
-
-	    var text = KM.www_rc.feed_name[feed];
-	    text = feed + ' : ' + text;
-
-	    var l1 = '<img id="image_1" ';
-	    var l2 = 'style="position:absolute; ';
-	    var l3 = 'left:' + left_margin + 'px; ';
-	    var l4 = 'top:' + top_margin + 'px; ';
-	    var l5 = 'width:' + jpeg_width + 'px; ';
-	    var l6 = 'height:' + jpeg_height + 'px;" ';
-	    var l7 = 'src="images/bcam.png";';
-	    var l8 = 'alt="">';
-	    html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8;
-
-	    var l10 = '<span id="text_1"; ';
-	    var l11 = 'style="position:absolute; ';
-	    var l12 = 'left:' + (left_margin + 10) + 'px; ';
-	    var l13 = 'top:' +  (top_margin + 10) + 'px;';
-	    var l14 = 'font-weight: bold;';
-	    var l15 = 'color:' + KM.RED;
-	    var l16 = '">' + text + '</span>';
-	    html = html + l10 + l11 + l12 + l13 + l14 + l15 + l16;
-
-	    document.getElementById('main_display').innerHTML = html;
-	}
-    }
+    refresh(KM.session_id.current);   
+
+        function refresh(session_id) {
+
+            // A function that performs the main refresh loop, complex by
+            // necessity
+            //
+            // expects:
+            //
+            // returns:
+            //
+
+            // refresh the grid display
+            
+            KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
+            if (KM.session_id.current === session_id) {
+                KM.update_events();
+                KM.update_jpegs();            
+                KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000));
+            }
+        }
 };
 
 
@@ -5292,12 +4231,8 @@ KM.conf_config_track = function() {
     var pw_modified =         false;
     var mask_modified =       KM.fill_arr(['pad'], false, max_feed);
     var feed_modified =       KM.fill_arr(['pad'], false, max_feed);
-    var ptz_misc_modified =   KM.fill_arr(['pad'], false, max_feed);
-    var ptz_en_tt_modified =  KM.fill_arr(['pad'], false, max_feed);
-    var sched_modified =      ['pad', false, false, false, false, false,
-        false, false, false];
-    var except_modified =     ['pad', false, false, false, false];
-    var warning_msg = false;
+
+
 
     var coded_str = '';
 
@@ -5335,39 +4270,14 @@ KM.conf_config_track = function() {
 	    warning_msg = true;
 	},
 
-	// the ptz enable or track types have been modified
-	ptz_en_tt_modified: function(i) {
-	    ptz_en_tt_modified[i] = true;
-	    warning_msg = true;
-	},
 
-	// the ptz misc options have been modified
-	ptz_misc_modified: function(i) {
-	    ptz_misc_modified[i] = true;
-	},
-
-	// the schedules have been modified
-	sched_modified: function(i) {
-	    sched_modified[i] = true;
-	},
-
-	// the schedule exceptions have been modified
-	except_modified: function(i) {
-	    except_modified[i] = true;
-	},
 
 	reset: function() {
 	    misc_modified =       false;
 	    pw_modified =         false;
 	    mask_modified =       KM.fill_arr(['pad'], false, max_feed),
-	    feed_modified =       KM.fill_arr(['pad'], false, max_feed),
-	    ptz_misc_modified =   KM.fill_arr(['pad'], false, max_feed),
-	    ptz_en_tt_modified =  KM.fill_arr(['pad'], false, max_feed),
-	    sched_modified =      ['pad', false, false, false, false, false,
-            false, false, false];
-	    except_modified =     ['pad', false, false, false, false];
+	    feed_modified =       KM.fill_arr(['pad'], false, max_feed), 	    
 	    display_modified =    false; // the 'display select' and color theme
-	    warning_msg = false;
 	    coded_str = '';
 	},
 
@@ -5402,11 +4312,6 @@ KM.conf_config_track = function() {
 		coded_str += '$hbb:' + bool_num(KM.www_rc.hide_button_bar);
 		// secure config
 		coded_str += '$sec:' + bool_num(KM.www_rc.secure);
-	    }
-
-	    if (pw_modified) {
-		// config password hash
-		coded_str += '$coh:' + KM.www_rc.config_hash;
 	    }
 
 	    for (var i = 1; i < max_feed; i++) {
@@ -5469,115 +4374,9 @@ KM.conf_config_track = function() {
 		coded_str += '$dis:' + KM.www_rc.display_select;
 	    }
 
-	    for (var i = 1; i < max_feed; i++) {
-		if (ptz_en_tt_modified[i] === true) {
-		    // ptz enabled
-		    coded_str += '$pte' + i + ':' + bool_num(KM.www_rc.ptz_enabled[i]);
-		    // enable or track type modified
-		    coded_str += '$ptt' + i + ':' + KM.www_rc.ptz_track_type[i];
-		}
-	    }
 
-	    for (var i = 1; i < max_feed; i++) {
-		if (ptz_misc_modified[i] === true) {
-		    // ptz step x
-		    coded_str += '$psx' + i + ':' + KM.www_rc.ptz_step_x[i];
-		    // ptz step y
-		    coded_str += '$psy' + i + ':' + KM.www_rc.ptz_step_y[i];
-		    // ptz calibrate first
-		    coded_str += '$ptc' + i + ':' + bool_num(KM.www_rc.ptz_calib_first[i]);
-		    // ptz servo settle
-		    coded_str += '$pts' + i + ':' + KM.www_rc.ptz_servo_settle[i];
-		    // ptz park enabled
-		    coded_str += '$ppe' + i + ':' + bool_num(KM.www_rc.ptz_park_enabled[i]);
-		    // ptz park delay
-		    coded_str += '$ppd' + i + ':' + KM.www_rc.ptz_park_delay[i];
-		    // ptz park x
-		    coded_str += '$ppx' + i + ':' + KM.www_rc.ptz_park_x[i];
-		    // ptz park y
-		    coded_str += '$ppy' + i + ':' + KM.www_rc.ptz_park_y[i];
-		    // ptz preset 1 x
-		    coded_str += '$p1x' + i + ':' + KM.www_rc.ptz_preset1_x[i];
-		    // ptz preset 1 y
-		    coded_str += '$p1y' + i + ':' + KM.www_rc.ptz_preset1_y[i];
-		    // ptz preset 2 x
-		    coded_str += '$p2x' + i + ':' + KM.www_rc.ptz_preset2_x[i];
-		    // ptz preset 2 y
-		    coded_str += '$p2y' + i + ':' + KM.www_rc.ptz_preset2_y[i];
-		    // ptz preset 3 x
-		    coded_str += '$p3x' + i + ':' + KM.www_rc.ptz_preset3_x[i];
-		    // ptz preset 3 y
-		    coded_str += '$p3y' + i + ':' + KM.www_rc.ptz_preset3_y[i];
-		    // ptz preset 4 x
-		    coded_str += '$p4x' + i + ':' + KM.www_rc.ptz_preset4_x[i];
-		    // ptz preset 4 y
-		    coded_str += '$p4y' + i + ':' + KM.www_rc.ptz_preset4_y[i];
-		}
-	    }
 
-	    for (var i = 1; i < 8; i++) {
-		if (ptz_misc_modified[i] === true) {
-		    // ptz step x
-		    coded_str += '$psx' + i + ':' + KM.www_rc.ptz_step_x[i];
-		    // ptz step y
-		    coded_str += '$psy' + i + ':' + KM.www_rc.ptz_step_y[i];
-		}
-	    }
 
-	    for (var i = 1; i < 8; i++) {
-		if (sched_modified[i] === true) {
-		    // schedule exception
-		    coded_str += '$sex' + i + ':' + KM.www_rc.sched_except[i];
-		    // schedule time line 1
-		    coded_str += '$st1' + i + ':' + KM.www_rc.sched_tline1[index];
-		    // schedule time line 2
-		    coded_str += '$st2' + i + ':' + KM.www_rc.sched_tline2[index];
-		    // schedule time line 3
-		    coded_str += '$st3' + i + ':' + KM.www_rc.sched_tline3[index];
-		    // schedule time line 4
-		    coded_str += '$st4' + i + ':' + KM.www_rc.sched_tline4[index];
-		    // schedule time line 5
-		    coded_str += '$st5' + i + ':' + KM.www_rc.sched_tline5[index];
-		    // schedule time line 6
-		    coded_str += '$st6' + i + ':' + KM.www_rc.sched_tline6[index];
-		    // schedule time line 7
-		    coded_str += '$st7' + i + ':' + KM.www_rc.sched_tline7[index];
-		}
-	    }
-
-	    for (var i = 1; i < 4; i++) {
-		if (except_modified[i] === true) {
-		    // exception time line 1 dates
-		    coded_str += '$ed1' + i + ':' + KM.www_rc.except_tline1_dates[index];
-		    // exception time line 2 dates
-		    coded_str += '$ed2' + i + ':' + KM.www_rc.except_tline2_dates[index];
-		    // exception time line 3 dates
-		    coded_str += '$ed3' + i + ':' + KM.www_rc.except_tline3_dates[index];
-		    // exception time line 4 dates
-		    coded_str += '$ed4' + i + ':' + KM.www_rc.except_tline4_dates[index];
-		    // exception time line 5 dates
-		    coded_str += '$ed5' + i + ':' + KM.www_rc.except_tline5_dates[index];
-		    // exception time line 6 dates
-		    coded_str += '$ed6' + i + ':' + KM.www_rc.except_tline6_dates[index];
-		    // exception time line 7 dates
-		    coded_str += '$ed7' + i + ':' + KM.www_rc.except_tline7_dates[index];
-
-		    // exception time line 1
-		    coded_str += '$et1' + i + ':' + KM.www_rc.except_tline1[index];
-		    // exception time line 2
-		    coded_str += '$et2' + i + ':' + KM.www_rc.except_tline2[index];
-		    // exception time line 3
-		    coded_str += '$et3' + i + ':' + KM.www_rc.except_tline3[index];
-		    // exception time line 4
-		    coded_str += '$et4' + i + ':' + KM.www_rc.except_tline4[index];
-		    // exception time line 5
-		    coded_str += '$et5' + i + ':' + KM.www_rc.except_tline5[index];
-		    // exception time line 6
-		    coded_str += '$et6' + i + ':' + KM.www_rc.except_tline6[index];
-		    // exception time line 7
-		    coded_str += '$et7' + i + ':' + KM.www_rc.except_tline7[index];
-		}
-	    }
 
 	    var coded_len = coded_str.length;
 	    var zero_pad = '00000000'.substring(0, 8 - (coded_len + '').length);
@@ -5680,67 +4479,9 @@ KM.display_config = function () {
     // returns:
     //
 
-    if (KM.www_rc.secure) {
-        KM.conf_loggin_html();
-    } else {
-        KM.conf_backdrop_html();
-    }
-};
+    
+    KM.conf_backdrop_html();
 
-
-KM.conf_loggin_html = function() {
-
-    // A function that shows the config login screen.
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.session_id.current++;
-    // awkward hacks to keep consistant interface across browsers
-    var title_str = 'title_FF';
-    if (KM.browser.browser_OP) title_str = 'title_OP';
-    if (KM.browser.browser_IE) title_str = 'title_IE';
-
-    document.getElementById('main_display').innerHTML = '' +
-    '<div id="' + title_str + '">' +
-        '<span class="italic">kmotion</span>: Config' +
-    '</div>' +
-    '<div class="divider">' +
-        '<img src="images/divider_xl.png" alt="" />' +
-    '</div><br>' +
-    '<form  name="login" onSubmit="return false">' +
-    '<div class="sub_title">' +
-        'Password ' +
-        '<input type="password" name="password" size="20" />&nbsp;' +
-        '<input type="button" OnClick="KM.conf_login_validate_pw();" value="Submit">' +
-    '</div>' +
-    '</form>';
-    document.login.password.focus();
-};
-
-
-KM.conf_login_validate_pw = function() {
-
-    // A function that accepts a password and checks its hash. This offers
-    // basic security to stop tampering with kmotions config. __NOTE__ this is
-    // not bombproof and anyone with advanced javascript knowledge
-    // (That rules me out !) could work around it.
-    //
-    // If you have let a user view your CCTV it is assumed that you at least
-    // partially trust him/her not to be an evil highly skilled hacker.
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    if (KM.config_misc_hash_pw(document.login.password.value) === KM.www_rc.config_hash) {
-        KM.conf_backdrop_html();
-    } else {
-        document.login.password.value = '';
-    }
 };
 
 
@@ -5758,7 +4499,7 @@ KM.conf_backdrop_html = function() {
 	var backdrop_width = KM.browser.main_display_width * 0.8;
 	var backdrop_height = KM.browser.main_display_height - 60;
 	var config_height = backdrop_height-30; 
-	var button_width = backdrop_width / 7;
+	var button_width = backdrop_width / 5;
 
 
     //document.getElementsByTagName('body')[0].style.backgroundColor = KM.WHITE;
@@ -5776,15 +4517,11 @@ KM.conf_backdrop_html = function() {
     '<div class="config_backdrop" style="width:'+backdrop_width+'px;height:'+backdrop_height+'px;">' +
 	'<div id="config_bar" class="config_button_bar" style="height:30px;overflow:hidden;" >' +
 
-	    '<input type="button" value="Misc" id="ptz_button" onclick="KM.conf_misc_html()" '+
+	    '<input type="button" value="Misc" id="misc_button" onclick="KM.conf_misc_html()" '+
 	    'style="width:' + button_width + 'px;"/>' +
-	    '<input type="button" value="Cameras" id="ptz_button" onclick="KM.conf_feed_html()" '+
-	    'style="width:' + button_width + 'px;"/>' +
-	    '<input type="button" value="PTZ" id="ptz_button" onclick="KM.conf_ptz_html()" '+
-	    'style="width:' + button_width + 'px;"/>' +
-	    '<input type="button" value="Schedules" id="ptz_button" onclick="KM.conf_schedule_html()" '+
-	    'style="width:' + button_width + 'px;"/>' +
-	    '<input type="button" value="Themes" id="ptz_button" onclick="KM.conf_theme_html()" '+
+	    '<input type="button" value="Cameras" id="feed_button" onclick="KM.conf_feed_html()" '+
+	    'style="width:' + button_width + 'px;"/>' +	    
+	    '<input type="button" value="Themes" id="theme_button" onclick="KM.conf_theme_html()" '+
 	    'style="width:' + button_width + 'px;"/>' +
 	    '<input type="button" value="Motion Errors" id="error_button" onclick="KM.conf_select_errors();" ' +
 	    'style="width:' + button_width + 'px;"/>' +
@@ -5849,21 +4586,6 @@ KM.conf_disable_error_button = function () {
     document.getElementById('error_button').disabled = true;
 };
 
-
-
-KM.conf_ptz = function() {
-
-    // A function that is executed when the 'ptz' button is clicked
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.session_id.current++;
-    KM.conf_error_daemon(KM.session_id.current);
-    KM.conf_ptz_html();
-};
 
 
 KM.conf_select_errors = function() {
@@ -6695,13 +5417,6 @@ KM.conf_feed_update = function () {
     // feed value back to gui in case parseInt changes it
     document.getElementById('feed_snap').value = snap;
 
-    // enable / disable the ptz button
-    if (KM.www_rc.feed_enabled[KM.config.camera]) {
-        document.getElementById('ptz_button').disabled = false;
-    } else {
-        document.getElementById('ptz_button').disabled = true;
-    };
-
 	KM.conf_config_track.feed_modified(KM.config.camera);
 
 };
@@ -6752,14 +5467,14 @@ KM.conf_live_feed_daemon = function (session_id, feed) {
 
 	    ref_time_ms = (new Date()).getTime();
 	    KM.kill_timeout_ids(KM.CONFIG_LOOP); // free up memory from 'setTimeout' calls
-	    KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {KM.get_jpeg(feed_config, refresh_callback_config, session_id_config); }, 1));
+	    KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {KM.get_jpeg(feed); }, 1));
 	}
     }
 
     function refresh_callback_config(jpeg, feed, same, session_id) {
         // called by 'get_jpeg' when jpeg avaliable
         if (session_id === KM.session_id.current) {
-	    KM.update_feeds();
+	    KM.update_events();
 
 	    if (jpeg !== 'null') {
 
@@ -6778,833 +5493,6 @@ KM.conf_live_feed_daemon = function (session_id, feed) {
     }
 
 };
-
-
-/* ****************************************************************************
-Config display - PTZ config screen
-
-Displays and processes the misc config screen
-**************************************************************************** */
-
-
-KM.conf_ptz_html = function() {
-
-    // A function that generates the PTZ backdrop HTML. It create the PTZ
-    // config screen on the config backdrop 'slab'. This is a complex GUI with
-    // a lot of workarounds, the price of ...kmotion -> motion -> kernel driver
-    // -> hardware with no feedback loop :)
-    //
-    // From X0:Y0 all LUDR (Left Up Down Right) presses are sent to motion and
-    // added to KM.config.ptz_current_x, KM.config.ptz_current_y to track an
-    // theoretical 'absolute' position. However if a PTZ mechanical end stop is
-    // encountered the 'absolute' position is corrupted and a new X0:Y0
-    // alibration will be needed.
-    //
-    // In addition greying and disabling of the LUDR buttons avoids premature
-    // repeat clicking. Excess clicks are discarded which would again cause the
-    // 'absolute' position is corrupted.
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.config.session_id = KM.session_id.current;
-    KM.conf_config_track.reset();
-    var image_width = 340;
-    var image_height = 250;
-    var html_str = '<br>' +
-
-    '<div style="float:left; width:360px;padding-bottom:20px">' +
-        '<div class="config_margin_left_20px">' +
-            '<img id="image" ' +
-            'style="width: ' + image_width + 'px; height: ' + image_height +
-            'px;" src="images/gcam.png" alt=""> ' +
-            '<input type="button" id="ptz_left" style="width:85px;" ' +
-            'OnClick="KM.conf_ptz_servo(1);" value="Left" disabled>' +
-            '<input type="button" id="ptz_up" style="width:85px;" ' +
-            'OnClick="KM.conf_ptz_servo(2);" value="Up" disabled>' +
-            '<input type="button" id="ptz_down" style="width:85px;" ' +
-            'OnClick="KM.conf_ptz_servo(3);" value="Down" disabled>' +
-            '<input type="button" id="ptz_right" style="width:85px;" ' +
-            'OnClick="KM.conf_ptz_servo(4);" value="Right" disabled>' +
-        '</div>' +
-    '</div>' +
-
-    '<div class="config_tick_margin">' +	
-    '<div class="config_button" id="ptz_text_1">' +
-	'<input type="checkbox" id="ptz_enabled" onclick="KM.conf_ptz_highlight_apply();" />Enable ptz '+
-        'Driver : ' +
-        '<select id="ptz_track" onchange="KM.conf_ptz_highlight_apply();" disabled>' +
-            '<option value="1">1: stepper (motion tracking project)' +
-            '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>' +
-            '<option value="2">2: iomojo for the smilecam</option>' +
-            '<option value="3">3: pwc driver for USB cameras</option>' +
-            '<option value="4">4: generic </option>' +
-            '<option value="5">5: uvcvideo driver for USB cameras</option>' +
-            '<option value="6">6: reserved</option>' +
-            '<option value="7">7: reserved</option>' +
-            '<option value="8">8: reserved</option>' +
-            '<option value="9">9: kmotion Axis 213 driver</option>' +
-            '<option value="10">10: kmotion Axis 2130 driver</option>' +
-            '<option value="11">11: kmotion Panasonic driver</option>' +
-            '<option value="12">12: kmotion Foscam driver</option>' +
-        '</select>' +
-    '</div><br>' +
-
-    '<br><hr style="margin:10px">' +
-
-    '<div class="config_tick_box" id="ptz_text_2">' +
-        '<input type="checkbox" id="ptz_calib_first" onclick="KM.conf_ptz_highlight_apply();" disabled>' +
-        'Auto recalibrate. (Causes addition pan / tilting)' +
-    '</div>' +
-
-    '<div style="float:left; width:120px;" class="config_button" id="ptz_text_3">' +
-        'Steps Click X :<br>' +
-        'Button Delay :<br>' +
-    '</div>' +
-
-    '<div >' +
-        '<input type="text" id="ptz_step_x" size="3" onfocus="KM.conf_ptz_highlight_apply();" disabled>&nbsp;' +
-        '<span class="config_text_basic" id="ptz_text_4">' +
-            '&nbsp;&nbsp;&nbsp;Steps Click Y :&nbsp;&nbsp;' +
-            '<input type="text" id="ptz_step_y" size="3" onfocus="KM.conf_ptz_highlight_apply();" disabled>&nbsp;<br>' +
-        '</span>' +
-        '<input type="text" id="ptz_servo_settle" size="3" onfocus="KM.conf_ptz_highlight_apply();" disabled>' +
-    '</div>' +
-
-    '<br><hr style="margin:10px">' +
-
-    '<div class="config_button" id="ptz_text_5">' +
-        'Always ' +
-        '<input type="button" id="ptz_calib" OnClick="KM.conf_ptz_calibrate();" value="Calibrate PT(Z) to X0:Y0"> ' +
-        ' before moving<br>the camera and selecting any \'Set Position\'s.' +
-        '<br><br>' +
-        'Failure to do so may cause inaccurate positional<br>data to be stored.' +
-    '</div>' +
-
-    '<br><hr style="margin:10px">' +
-
-    '<div class="config_tick_box" id="ptz_text_6">' +
-        '<input type="checkbox" id="ptz_park_enabled" onclick="KM.conf_ptz_highlight_apply();" disabled>' +
-        'Enable auto park. Moves the camera to a set position if no activity for a preset time.' +
-    '</div>' +
-
-    '<div class="config_button" id="ptz_text_7">' +
-        '<input type="button" id="ptz_park_1" OnClick="KM.conf_ptz_set_park();" value="Set Position" disabled>' +
-        '<input type="button" id="ptz_park_2" OnClick="KM.conf_ptz_test_park();" value="Test" disabled>' +
-        ' Auto park seconds : ' +
-        '<input type="text" id="ptz_park_delay" size="3" onfocus="KM.conf_ptz_highlight_apply();" disabled>&nbsp;' +
-    '</div>' +
-
-    '<br><hr style="margin:10px">' +
-
-    '<div >' +
-        '<div class="config_button" id="ptz_text_8">' +
-            '<input type="button" id="ptz_preset_1" OnClick="KM.conf_ptz_set_preset(1);" value="Set Position" disabled>' +
-            '<input type="button" id="ptz_preset_2" OnClick="KM.conf_ptz_test_preset(1);" value="Test" disabled>' +
-            ' Preset 1: Activated by executing \'kmotion_ptz ' + KM.config.camera + ' 1\' in a BASH shell.'+
-        '</div>' +
-
-    '<div class="config_button" id="ptz_text_9">' +
-        '<input type="button" id="ptz_preset_3" OnClick="KM.conf_ptz_set_preset(2);" value="Set Position" disabled>' +
-        '<input type="button" id="ptz_preset_4" OnClick="KM.conf_ptz_test_preset(2);" value="Test" disabled>' +
-        ' Preset 2: Activated by executing \'kmotion_ptz ' + KM.config.camera + ' 2\' in a BASH shell.'+
-    '</div>' +
-
-    '<div class="config_button" id="ptz_text_10">' +
-        '<input type="button" id="ptz_preset_5" OnClick="KM.conf_ptz_set_preset(3);" value="Set Position" disabled>' +
-        '<input type="button" id="ptz_preset_6" OnClick="KM.conf_ptz_test_preset(3);" value="Test" disabled >' +
-        ' Preset 3: Activated by executing \'kmotion_ptz ' + KM.config.camera + ' 3\' in a BASH shell.'+
-    '</div>' +
-
-    '<div class="config_button" id="ptz_text_11">' +
-        '<input type="button" id="ptz_preset_7" OnClick="KM.conf_ptz_set_preset(4);" value="Set Position" disabled>' +
-        '<input type="button" id="ptz_preset_8" OnClick="KM.conf_ptz_test_preset(4);" value="Test" disabled>' +
-        ' Preset 4: Activated by executing \'kmotion_ptz ' + KM.config.camera + ' 4\' in a BASH shell.'+
-    '</div>' +
-    '</div>' +
-
-   '<br><hr style="margin:10px">' +
-
-    '<div class="config_button" id="ptz_text_12" style="margin-top:50px">' +
-        '<input type="button" id="ptz_apply" OnClick="KM.conf_ptz_apply();" value="Apply"> ' +
-        'all changes to the local browser configuration and sync with the remote server.' +
-    '</div>'+
-	'<div>';
-
-    if (KM.www_rc.ptz_enabled[KM.config.camera]) {
-        html_str = html_str.replace(/disabled/g, '');
-        html_str = html_str.replace(/gcam.png/, 'bcam.png');
-        KM.conf_live_feed_daemon(KM.session_id.current, KM.config.camera);
-    }
-    document.getElementById('config_html').innerHTML = html_str;
-
-    document.getElementById('ptz_enabled').checked = KM.www_rc.ptz_enabled[KM.config.camera];
-    document.getElementById('ptz_track').selectedIndex = KM.www_rc.ptz_track_type[KM.config.camera] - 1;
-    document.getElementById('ptz_calib_first').checked = KM.www_rc.ptz_calib_first[KM.config.camera];
-    document.getElementById('ptz_step_x').value = KM.www_rc.ptz_step_x[KM.config.camera];
-    document.getElementById('ptz_step_y').value = KM.www_rc.ptz_step_y[KM.config.camera];
-    document.getElementById('ptz_servo_settle').value = KM.www_rc.ptz_servo_settle[KM.config.camera];
-    document.getElementById('ptz_park_enabled').checked = KM.www_rc.ptz_park_enabled[KM.config.camera];
-    document.getElementById('ptz_park_delay').value = KM.www_rc.ptz_park_delay[KM.config.camera];
-    KM.config.ptz_alert_status_1 = false;
-};
-
-
-KM.conf_ptz_servo = function (button) {
-
-    // A function that moves the camera by sending coded string crf<feed 2 digit>b<button 2 digit>$
-    //
-    // expects:
-    // 'button' ... the clicked button
-    //
-    // returns:
-    //
-
-    KM.exe_script('/cgi_bin/xmlHttp_ptz.php', 'crf' + KM.pad_out2(KM.config.camera) + 'b' + KM.pad_out2(button) + '$')
-    KM.conf_ptz_grey_LUDR();
-    // all ptz cameras are set to 0:0 at the start, track the movements to
-    // calculate abs position (in theory)
-    if      (button === 1) KM.config.ptz_current_x -= KM.www_rc.ptz_step_x[KM.config.camera];
-    else if (button === 2) KM.config.ptz_current_y += KM.www_rc.ptz_step_y[KM.config.camera];
-    else if (button === 3) KM.config.ptz_current_y -= KM.www_rc.ptz_step_y[KM.config.camera];
-    else                   KM.config.ptz_current_x += KM.www_rc.ptz_step_x[KM.config.camera];
-};
-
-
-KM.conf_ptz_calibrate = function () {
-
-    // A function that moves the camera to 0:0
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.conf_ptz_grey_LUDR();
-    // reset camera to 0:0 by sending coded string 'caf<feed 2 digit>x<4 digits + 5000>y<4 digits + 5000>$'
-    KM.exe_script('/cgi_bin/xmlHttp_ptz.php', 'caf' + KM.pad_out2(KM.config.camera) + 'x5000y5000$');
-    KM.config.ptz_current_x = 0;
-    KM.config.ptz_current_y = 0;
-};
-
-
-KM.conf_ptz_set_park = function () {
-
-    // A function that sets the park position
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.www_rc.ptz_park_x[KM.config.camera] = KM.config.ptz_current_x;
-    KM.www_rc.ptz_park_y[KM.config.camera] = KM.config.ptz_current_y;
-    KM.conf_ptz_highlight_apply();
-};
-
-
-KM.conf_ptz_test_park = function () {
-
-    // A function that tests the park position
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.conf_ptz_grey_LUDR();
-    KM.config.ptz_current_x = KM.www_rc.ptz_park_x[KM.config.camera];
-    KM.config.ptz_current_y = KM.www_rc.ptz_park_y[KM.config.camera];
-    // test park position with string 'caf<feed 2 digit>x<4 digits>y<4 digits>$'
-    KM.exe_script('/cgi_bin/xmlHttp_ptz.php', 'caf' + KM.pad_out2(KM.config.camera) + 'x' +
-    KM.pad_out4(KM.www_rc.ptz_park_x[KM.config.camera] + 5000) + 'y' +
-    KM.pad_out4(KM.www_rc.ptz_park_y[KM.config.camera] + 5000) + '$');
-};
-
-
-KM.conf_ptz_set_preset = function (preset) {
-
-    // A function that sets the preset position
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.www_rc['ptz_preset' + preset + '_x'][KM.config.camera] = KM.config.ptz_current_x;
-    KM.www_rc['ptz_preset' + preset + '_y'][KM.config.camera] = KM.config.ptz_current_y;
-    KM.conf_ptz_highlight_apply();
-};
-
-
-KM.conf_ptz_test_preset = function (preset) {
-
-    // A function that tests the preset position
-    //
-    // expects:
-    // 'preset' ... the preset number to test
-    //
-    // returns:
-    //
-
-    KM.conf_ptz_grey_LUDR();
-    KM.config.ptz_current_x = KM.www_rc['ptz_preset' + preset + '_x'][KM.config.camera];
-    KM.config.ptz_current_y = KM.www_rc['ptz_preset' + preset + '_y'][KM.config.camera];
-    // test preset position with string 'caf<feed 2 digit>x<4 digits>y<4 digits>$'
-    KM.exe_script('/cgi_bin/xmlHttp_ptz.php', 'caf' + KM.pad_out2(KM.config.camera) + 'x' +
-    KM.pad_out4(KM.www_rc['ptz_preset' + preset + '_x'][KM.config.camera] + 5000) + 'y' +
-    KM.pad_out4(KM.www_rc['ptz_preset' + preset + '_y'][KM.config.camera] + 5000) + '$');
-};
-
-
-KM.conf_ptz_enabled = function () {
-
-    // A function that enables/disables the current PTZ gui
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.conf_config_track.ptz_en_tt_modified(KM.config.camera);
-    KM.conf_ptz_highlight_apply();
-    if (document.getElementById('ptz_enabled').checked) {
-        KM.conf_ptz_ungrey();
-    } else {
-        KM.conf_ptz_grey();
-    }
-};
-
-
-KM.conf_ptz_highlight_apply = function () {
-
-    // A function that highlights the 'need to apply' warning
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    document.getElementById('ptz_apply').style.fontWeight = 'bold';
-    document.getElementById('ptz_apply').style.color = KM.BLUE;
-    document.getElementById('ptz_text_12').style.color = KM.BLUE;
-};
-
-
-KM.conf_ptz_grey = function () {
-
-    // A function that greys out the ptz screen
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.session_id.current++; // needed to kill updates
-    KM.conf_error_daemon(KM.session_id.current);
-    KM.conf_ptz_grey_LUDR();
-    var ids = ['ptz_track', 'ptz_calib_first', 'ptz_step_x', 'ptz_step_y',
-    'ptz_servo_settle', 'ptz_calib', 'ptz_park_enabled', 'ptz_park_delay',
-    'ptz_park_1', 'ptz_park_2', 'ptz_preset_1', 'ptz_preset_2', 'ptz_preset_3',
-    'ptz_preset_4', 'ptz_preset_5', 'ptz_preset_6', 'ptz_preset_7',
-    'ptz_preset_8'];
-
-    for (var i = 0; i < ids.length; i++) {
-		try {
-			document.getElementById(ids[i]).disabled = true;
-		} catch (e) {}
-    }    
-    document.getElementById('image').src = 'images/gcam.png';
-};
-
-
-KM.conf_ptz_grey_LUDR = function () {
-
-    // A function that greys out the Left Up Down Right buttons
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    var ids = ['ptz_left', 'ptz_up', 'ptz_down', 'ptz_right'];
-    for (var i = 0; i < ids.length; i++) {
-		try {
-			document.getElementById(ids[i]).disabled = true;
-		} catch (e) {}
-    }
-};
-
-
-KM.conf_ptz_ungrey = function () {
-
-    // A function that un-greys the PTZ gui
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.conf_live_feed_daemon(KM.session_id.current, KM.config.camera);
-
-    var ids = ['ptz_track', 'ptz_calib_first', 'ptz_step_x', 'ptz_step_y',
-    'ptz_servo_settle', 'ptz_calib', 'ptz_park_enabled', 'ptz_park_delay',
-    'ptz_park_1', 'ptz_park_2', 'ptz_preset_1', 'ptz_preset_2', 'ptz_preset_3',
-    'ptz_preset_4', 'ptz_preset_5', 'ptz_preset_6', 'ptz_preset_7',
-    'ptz_preset_8'];
-    for (var i = 0; i < ids.length; i++) {
-		try {
-			document.getElementById(ids[i]).disabled = false;
-		} catch (e) {}
-    }
-
-    var ids = ['ptz_left', 'ptz_up', 'ptz_down', 'ptz_right'];
-    for (var i = 0; i < ids.length; i++) {
-		try {
-			document.getElementById(ids[i]).disabled = false;
-		} catch (e) {}
-    }
-
-    document.getElementById('image').src = 'images/bcam.png';
-};
-
-
-KM.conf_ptz_ungrey_LUDR = function () {
-
-    // A function that un-greys out the Left Up Down Right buttons
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    if (KM.www_rc.ptz_enabled[KM.config.camera] && KM.config.session_id === KM.session_id.current) {
-        var ids = ['ptz_left', 'ptz_up', 'ptz_down', 'ptz_right'];
-        for (var i = 0; i < ids.length; i++) {
-			try {
-				document.getElementById(ids[i]).disabled = false;
-			} catch (e) {}
-        }
-    }
-};
-
-
-KM.conf_ptz_apply = function () {
-
-    // A function that checks and applys the changes
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.www_rc.ptz_enabled[KM.config.camera] = document.getElementById('ptz_enabled').checked;
-    KM.www_rc.ptz_calib_first[KM.config.camera] = document.getElementById('ptz_calib_first').checked;
-    KM.www_rc.ptz_servo_settle[KM.config.camera] = document.getElementById('ptz_servo_settle').value;
-    KM.www_rc.ptz_park_enabled[KM.config.camera] = document.getElementById('ptz_park_enabled').checked;
-
-    // check for changes in key fields
-    if (KM.www_rc.ptz_step_x[KM.config.camera] !== parseInt(document.getElementById('ptz_step_x').value, 10) ||
-    KM.www_rc.ptz_step_y[KM.config.camera] !== parseInt(document.getElementById('ptz_step_y').value, 10)) {
-
-        var step_x = parseInt(document.getElementById('ptz_step_x').value, 10);
-        var step_y = parseInt(document.getElementById('ptz_step_y').value, 10);
-        if (isNaN(step_x)) step_x = 0;
-        if (isNaN(step_y)) step_y = 0;
-        KM.www_rc.ptz_step_x[KM.config.camera] = step_x;
-        KM.www_rc.ptz_step_y[KM.config.camera] = step_y;
-        // feed value back to gui in case parseInt changes it
-        document.getElementById('ptz_step_x').value = step_x;
-        document.getElementById('ptz_step_y').value = step_y;
-    }
-
-    if (KM.www_rc.ptz_track_type[KM.config.camera] !== parseInt(document.getElementById('ptz_track').value, 10)) {
-        KM.www_rc.ptz_track_type[KM.config.camera] = document.getElementById('ptz_track').value
-        KM.conf_config_track.ptz_en_tt_modified(KM.config.camera);
-    }
-
-    var settle = parseFloat(document.getElementById('ptz_servo_settle').value, 10);
-    if (isNaN(settle)) settle = 0;
-    KM.www_rc.ptz_servo_settle[KM.config.camera] = settle;
-    // feed value back to gui in case parseFloat changes it
-    document.getElementById('ptz_servo_settle').value = settle;
-
-    var delay = parseInt(document.getElementById('ptz_park_delay').value, 10);
-    if (isNaN(delay)) delay = 0;
-    KM.www_rc.ptz_park_delay[KM.config.camera] = delay;
-    // feed value back to gui in case parseInt changes it
-    document.getElementById('ptz_park_delay').value = delay;
-
-    // reset any warning highlight on the apply line
-    document.getElementById('ptz_apply').style.fontWeight = 'normal';
-    document.getElementById('ptz_apply').style.color = KM.BLACK;
-    document.getElementById('ptz_text_12').style.color = KM.DARK_GREY;
-
-    KM.conf_config_track.ptz_misc_modified(KM.config.camera);
-    KM.conf_config_track.sync();
-};
-
-
-/* ****************************************************************************
-Config display - Schedules config screen
-
-Displays and processes the schedules config screen
-**************************************************************************** */
-
-KM.conf_schedule_html = function (sched) {
-
-    // A function that generates the weekly schedule HTML. It create the
-    // schedule config screen on the config backdrop 'slab'.
-    //
-    // expects:
-    // 'sched' ... the schedule number
-    //
-    // returns:
-    //
-
-
-sched = 1;
-
-
-
-	var config_html = document.getElementById('config_html');	
-	var width = config_html.clientWidth*0.9; 
-    var html_str = '<br>' +
-
-    '<div class="sched_selector" style="width:'+width+'px;">' +
-
-	    '<select id="feed_camera" onchange="KM.conf_feed_change();">' +
-		'<option value="1">Schedule 1</option>' +
-		'<option value="2">Schedule 2</option>' +
-		'<option value="3">Schedule 3</option>' +
-		'<option value="4">Schedule 4</option>' +
-		'<option value="5">Schedule 5</option>' +
-		'<option value="6">Schedule 6</option>' +
-		'<option value="7">Schedule 7</option>' +
-		'<option value="8">Schedule 8</option>' +
-	    '</select>' +
-
-	    '<input type="button" id="sched_week"' +
-	    'OnClick="KM.conf_sched_week();" value="Weekly Schedule">' +
-
-	    '<input type="button" id="sched_except"' +
-	    'OnClick="KM.conf_sched_week_except();" value="Exceptions to Weekly Schedule">' +
-
-	'<span class="sched_status">&nbsp;Schedule Status : Inactive</span>' +
-
-   '</div><br>' +
-
-    KM.conf_sched_weekday(sched, 1, 'Monday') +
-    KM.conf_sched_weekday(sched, 2, 'Tuesday') +
-    KM.conf_sched_weekday(sched, 3, 'Wednesday') +
-    KM.conf_sched_weekday(sched, 4, 'Thursday') +
-    KM.conf_sched_weekday(sched, 5, 'Friday') +
-    KM.conf_sched_weekday(sched, 6, 'Saturday') +
-    KM.conf_sched_weekday(sched, 7, 'Sunday') +
-
-    '<div class="config_text_margin">' +
-	'<input type="button" id="sched_apply" OnClick="KM.conf_sched_apply(' + sched + ');" value="Apply Schedule Changes"> ' +
-    '</div>';
-
-    document.getElementById('config_html').innerHTML = html_str;
-};
-
-
-KM.conf_sched_weekday = function (sched, index, day) {
-
-    // A function that generates the schedule buttons and time line html for
-    // a particular day
-    //
-    // expects:
-    // 'sched' ... the schedule number
-    // 'index' ... the time line index number
-    // 'day'   ... the 'day' string
-    //
-    // returns:
-    // 'html' ... time line html
-	var config_html = document.getElementById('config_html');	
-	var width = config_html.clientWidth*0.9;
-	var btn_width = width*0.15;
-
-    return '<div class="sched_selector" style="width:'+width+'px; margin-bottom: 4px;">' +
-		'<input type="button" style="width: '+btn_width+'px;" value="' + day + '">' +
-
-		'<span style="float:right;">' +
-		    '<input type="button"' +
-		    'OnClick="KM.conf_sched_select_all(' + index + ');" value="Select All">' +
-
-		    '<input type="button"' +
-		    'OnClick="KM.conf_sched_select_invert(' + index + ');" value="Select Invert">' +
-
-		    '<input type="button"' +
-		    'OnClick="KM.conf_sched_select_none(' + index + ');" value="Select None">' +
-
-		    '<input type="button"' +
-		    'OnClick="KM.conf_sched_copy(' + index + ');" value="Copy">' +
-
-		    '<input type="button"' +
-		    'OnClick="KM.conf_sched_paste(' + index + ');" value="Paste">' +
-
-		'</span>' +
-
-	    '</div>' +
-
-	    KM.conf_sched_tline(sched, index) +
-
-	    '<div style="height: 10px;"></div>'
-};
-
-
-KM.conf_sched_tline = function (sched, index) {
-
-    // A function that generates the schedule time line html
-    //
-    // expects:
-    // 'sched' ... the schedule number
-    // 'index' ... the time line index number
-    //
-    // returns:
-    // 'html'  ... time line html
-
-    // calculated rather than hard coded
-	var config_html = document.getElementById('config_html');	
-	var width = config_html.clientWidth*0.9;   
-    var height = 25;
-    var pos = 0, old_pos = 0;
-    var mins = 0, hours = 0, title = '';
-    var segments = (24 * 60) / 15;
-    var scale = width / segments;
-    var segment_width;
-
-    // convert 4 x 6 digit hex to 96 bit bin, truncating as necessary
-    var tline = KM.www_rc['sched_tline' + index][sched];
-    var tmp;
-    var segments_data = '';
-
-    var tmp1 = tline.split('#');
-    for (var i = 0; i < 4; i++) {
-	var tmp2 = parseInt('0x' + tmp1[i], 16).toString(2)
-	segments_data += tmp2.slice(0, 24);
-    };
-
-    // construct the html
-    var tline = '' +
-    '<div id="timeline" class="sched_timeline" style="width:' + width + 'px;">'
-
-    for (var i = 1; i < segments + 1; i++) {
-	pos = (i * scale);
-	segment_width = pos - old_pos;
-	old_pos = pos;
-
-	// generate 'title' HH:MM-HH:MM
-	mins = (i - 1) * 15;
-	hours = parseInt(mins / 60);
-	mins = mins - (hours * 60);
-	title = KM.pad_out2(hours) + ":" + KM.pad_out2(mins) + " - " + KM.pad_out2(hours) + ":" + KM.pad_out2(mins + 14);
-
-	tline += '<img id="tline_' + index + '_' + i + '" ' ;
-
-	if (segments_data.charAt(i - 1) == '1') {
-	    tline += 'src="./images/sched_green.png" ';
-	} else {
-	    tline += 'src="./images/sched_grey.png" ';
-	}
-
-	tline += 'style="width:' + segment_width + 'px;height:' + height +
-	'px;" onClick="KM.sched_tline_clicked(' + index + ', ' + i + ')" title="' +
-	title  + '" alt=" schedule timeline">';
-    }
-
-    tline += '</div>';
-    return tline;
-};
-
-
-KM.sched_tline_clicked = function(index, segment) {
-
-    // A function that inverts the clicked time line segment
-    //
-    // expects:
-    // 'index'   ... the time line index number
-    // 'segment' ... the clicked segment
-    //
-    // returns:
-    //
-
-    var ref = 'tline_' + index + '_' + segment;
-    // a bodge, but an efficient one ... ouch !!!
-    if (document.getElementById(ref).src.indexOf('green.png') != -1) {
-	document.getElementById(ref).src = './images/sched_grey.png';
-    } else {
-	document.getElementById(ref).src = './images/sched_green.png';
-    }
-    KM.conf_sched_highlight_apply();
-};
-
-
-KM.conf_sched_select_all = function(index) {
-
-    // A function that sets all the time line segments to green
-    //
-    // expects:
-    // 'index' ... the time line index number
-    //
-    // returns:
-    //
-
-    var segments = (24 * 60) / 15;
-    for (var i = 1; i < segments + 1; i++) {
-
-	document.getElementById('tline_' + index + '_' + i).src = './images/sched_green.png';
-    }
-    KM.conf_sched_highlight_apply();
-};
-
-
-KM.conf_sched_select_invert = function(index) {
-
-    // A function that inverts all the time line segments
-    //
-    // expects:
-    // 'index' ... the time line index number
-    //
-    // returns:
-    //
-
-    var segments = (24 * 60) / 15;
-    var ref;
-
-    for (var i = 1; i < segments + 1; i++) {
-	ref = 'tline_' + index + '_' + i;
-	// a bodge, but an efficient one ... ouch !!!
-	if (document.getElementById(ref).src.indexOf('green.png') != -1) {
-	    document.getElementById(ref).src = './images/sched_grey.png';
-	} else {
-	    document.getElementById(ref).src = './images/sched_green.png';
-	}
-    }
-    KM.conf_sched_highlight_apply();
-};
-
-
-KM.conf_sched_select_none = function(index) {
-
-    // A function that sets all the time line segments to grey
-    //
-    // expects:
-    // 'index' ... the time line index number
-    //
-    // returns:
-    //
-
-    var segments = (24 * 60) / 15;
-    for (var i = 1; i < segments + 1; i++) {
-
-	document.getElementById('tline_' + index + '_' + i).src = './images/sched_grey.png';
-    }
-    KM.conf_sched_highlight_apply();
-};
-
-
-KM.conf_sched_copy = function(index) {
-
-    // A function that copies the state of the time line segments
-    //
-    // expects:
-    // 'index' ... the time line index number
-    //
-    // returns:
-    //
-
-    var segments = (24 * 60) / 15;
-    KM.config.sched_pastebin = '';
-
-    for (var i = 1; i < segments + 1; i++) {
-	if (document.getElementById('tline_' + index + '_' + i).src.indexOf('green.png') != -1) {
-	    KM.config.sched_pastebin += '1';
-	} else {
-	    KM.config.sched_pastebin += '0';
-	}
-    }
-    KM.conf_sched_highlight_apply();
-};
-
-
-KM.conf_sched_paste = function(index) {
-
-    // A function that pastes the state of the time line segments
-    //
-    // expects:
-    // 'index' ... the time line index number
-    //
-    // returns:
-    //
-
-    var segments = (24 * 60) / 15;
-
-    for (var i = 1; i < segments + 1; i++) {
-	if (KM.config.sched_pastebin.charAt(i - 1) === '1') {
-	    document.getElementById('tline_' + index + '_' + i).src = './images/sched_green.png';
-	} else {
-	    document.getElementById('tline_' + index + '_' + i).src = './images/sched_grey.png';
-	}
-    }
-    KM.conf_sched_highlight_apply();
-};
-
-
-KM.conf_sched_highlight_apply = function () {
-
-    // A function that highlight the 'need to apply' warning
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    document.getElementById('sched_apply').style.fontWeight = 'bold';
-    document.getElementById('sched_apply').style.color = KM.BLUE;
-};
-
-
-KM.conf_sched_apply = function (sched) {
-
-    // A function that checks and applys the changes
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    var segments = (24 * 60) / 15;
-    var tline;
-
-    for (var index = 1; index < 8; index++) {
-
-	// read the raw segment data
-	tline = '';
-	for (var segment = 1; segment < segments + 1; segment++) {
-	    // a bodge, but an efficient one ... ouch !!!
-	    if (document.getElementById('tline_' + index + '_' + segment).src.indexOf('green.png') != -1) {
-		tline += '1';
-	    } else {
-		tline += '0';
-	    }
-	}
-
-	// spliting and encodeing to hex
-	for (var i = 1; 1 < 5; i++) {
-	    alert(parseInt(tline.slice((i - 1) * 24, i * 24), 10).toString(16))
-	}
-
-
-    }
-
-    alert(tline)
-};
-
 
 
 
@@ -7885,125 +5773,6 @@ KM.conf_load_html = function() {
 
 
 /* ****************************************************************************
-Main Display - About Code
-
-Insert the 'about' HTML and provide linking code
-**************************************************************************** */
-
-
-KM.display_about = function () {
-
-    // A function to insert the 'about' HTML and provide linking code
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.session_id.current++;
-
-    document.getElementById('main_display').innerHTML = '' +
-
-
-    '<div class="title" style="width: 992px;">' +
-	'kmotion: About' +
-    '</div>' +
-
-    '<div class="divider">' +
-        '<img src="images/about_divider_color.png" alt="" >' +
-    '</div>' +
-
-    '<div class="para_msg">' +
-	'<p>My name is Dave Selby the developer of kmotion and ' +
-	'<span class="link_word" onClick="javascript: ' +
-	'KM.about_link_to(\'http://code.google.com/p/kmotion2\');">kmotion v2</span>' +
-	'. This is my pet project which I develop in my spare time. ' +
-	'Unfortunately I don\'t work in the IT industry but if you email me at '+
-	'dave6502@googlemail.com I will send you my CV ;)</p>' +
-
-	'<p>On a personal note I would like to thank ' +
-	'<span class="link_word" onClick="javascript: ' +
-	'KM.about_link_to(\'http://picasaweb.google.com/jazzcommunication\');">Gudy</span>' +
-	' for his many many hours of ' +
-	'testing and bug reporting on the \'live\' code. kmotion v2 would not be where it is now without ' +
-	'his help - thank you Gudy.</p>' +
-
-	'<p>I would also like to thank ' +
-	'<span class="link_word" onClick="javascript: ' +
-	'KM.about_link_to(\'http://www.prunk.si\');">Jan Prunk </span>' +
-	'for providing the '+
-	'<span class="link_word" onClick="javascript: ' +
-	'KM.about_link_to(\'http://www.kmotion.eu\');">\'www.kmotion.eu\' </span>' +
-	'domain, website and blog all without charge allowing kmotion to move ' +
-	'to the next level - thank you Jan.</p>' +
-
-	'<p>And I would like to thank ' +
-	'<span class="link_word" onClick="javascript: ' +
-	'KM.about_link_to(\'http://www.wingware.com/\');">Wingware</span> ' +
-	'for supplying a copy of their superb Python IDE without which this ' +
-	'project would have taken much much longer. It has also proven itself ' +
-	'as an excellent Javascript, BASH, HTML and CSS editor!</p>' +
-
-	'<p>Lastly if you like the software please feel free to drop me some $ ' +
-	'via paypal to the above address. Failing that if you are as poor as ' +
-	'me, do me a favour and send me a screenshot of your site. If you ' +
-	'give permission I will paste it on the site. Enjoy.</p>' +
-	'<p>Released under the ' +
-	'<span class="link_word" onClick="javascript: ' +
-	'KM.about_link_to(\'http://www.gnu.org/licenses/gpl.html\');">GPL v3.</span></p>' +
-    '</div>';
-};
-
-KM.about_link_to = function (url) {
-    // link to the URL
-    document.getElementById('main_display').innerHTML = '' +
-    '<object data="' + url + '" type="text/html"' +
-    'width="100%" height="100%"' +
-    '</object>';
-};
-
-
-/* ****************************************************************************
-Main Display - Msg Code
-
-Insert the 'msg' HTML and populate with a custom message if avaliable.
-**************************************************************************** */
-
-
-KM.display_msg = function() {
-
-    // A function to insert the 'msg' HTML and populate with a custom message
-    // if avaliable.
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.session_id.current++;
-
-    if (KM.www_rc.msg.length < 5) {
-
-        document.getElementById('main_display').innerHTML = '' +
-
-	'<div class="title" style="width: 992px;">' +
-	    'kmotion: Message' +
-	'</div>' +
-
-	'<div class="divider">' +
-	    '<img src="images/message_divider_color.png" alt="" >' +
-	'</div>' +
-
-        '<div class="para_msg"><p style="text-align: center">No Messages ...</p></div>';
-
-    } else {
-	document.getElementById('main_display').innerHTML = '' +
-	'<div class="para_msg">' + KM.collapse_chars(KM.www_rc.msg) + '</div>';
-    }
-};
-
-
-/* ****************************************************************************
 System - Misc code
 
 The bootup code ...
@@ -8020,8 +5789,13 @@ KM.init1 = function () {
     // returns :
     //
 
-    KM.feed_cache_setup();
-    KM.update_feeds();
+   // KM.feed_cache_setup();
+    // setTimeout(function() {			
+				// KM.update_events();				
+				// setTimeout(arguments.callee,1000);
+			
+	// }, 1000);
+    KM.update_events();
     var callback = KM.init2;
     KM.load_settings(callback);
 };
@@ -8040,6 +5814,7 @@ KM.init2 = function (data) {
 
     KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {init_interface(); }, 1000));
 
+
     function init_interface() {
 
 	// A function that performs final initialization and 'msg' handleing
@@ -8051,17 +5826,14 @@ KM.init2 = function (data) {
         KM.background_button_clicked(KM.www_rc.color_select);
         KM.enable_display_buttons(KM.www_rc.display_select);
         KM.enable_camera_buttons();
-		if (KM.www_rc.hide_button_bar)
+		if (KM.www_rc.hide_button_bar) {
 			KM.toggle_button_bar();
+		}
 
-	    // flip mode if 'msg' avaliable
-            if (KM.www_rc.msg.length < 5) {
-                KM.enable_function_buttons(1); // select 'live' mode
-                KM.function_button_clicked(1); // start 'live' mode
-            } else {
-                KM.enable_function_buttons(7); // select 'msg' mode
-                KM.function_button_clicked(7); // start 'live' mode
-            }
+	    
+		KM.enable_function_buttons(1); // select 'live' mode
+		KM.function_button_clicked(1); // start 'live' mode
+           
     }
 };
 
