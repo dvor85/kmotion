@@ -12,12 +12,18 @@ def main(src):
     if os.path.isfile(src):
         src_dir, src_name = os.path.split(src)
         dst_dir = os.path.join(src_dir, 'www')
+        last_jpg = os.path.join(src_dir, 'last.jpg')
         if not os.path.isdir(dst_dir):
             os.makedirs(dst_dir)
+            
         dst = os.path.join(dst_dir, src_name)
         image_resize(src, dst, 640, 480)
-        with open(os.path.join(dst_dir, 'last'), 'w') as f_obj:
-            f_obj.write(dst)
+        if os.path.exists(last_jpg):
+            os.unlink(last_jpg)        
+        os.symlink(dst, last_jpg)
+        
+        #with open(, 'w') as f_obj:
+        #    f_obj.write(dst)
     
 if __name__ == "__main__":
     main(sys.argv[1])
