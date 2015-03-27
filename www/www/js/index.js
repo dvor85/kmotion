@@ -45,9 +45,6 @@ KM.LOGS         = 6;
 KM.CONFIG_LOOP  = 7;
 KM.MISC_JUMP    = 8;
 
-KM.latest_events = [];
-
-
 KM.browser = {
     browser_FF: false,      // browser is firefox
     browser_IE: false,      // browser is internet explorer
@@ -64,15 +61,13 @@ KM.session_id = {
 KM.menu_bar_buttons = {
     function_selected:   0,     // the function selected
     display_sec_enabled: false, // enabled sections ...
-    camera_sec_enabled:  false,
-    func_sec_enabled:    false
+    camera_sec_enabled:  false
 };
 
-
-
 KM.live = {
-    last_camera_select: 0 // the last camera selected
-
+    last_camera_select: 0, // the last camera selected
+    latest_events: [],
+    fps: 1
 };
 
 
@@ -125,30 +120,15 @@ KM.www_rc = {
     // display cameras
     display_cameras: [],
 
-    // live mode config
-    interleave:    false,
-    full_screen:   false,
-    low_bandwidth: false,
-    low_cpu:       false,
-
-    // archive mode config
-    skip_frames:   false,
-
     // button enables config
     archive_button_enabled: true,
     logs_button_enabled:    true,
     config_button_enabled:  true,
     
 
-    // function buttons enabled config
-    func_enabled: KM.fill_arr(['pad'],max_feed, false),
-
     // misc config
-    secure:      true, // secure login to config
     display_select:  1,
     color_select:    1,
-    config_hash:    '',
-    msg:            '',
 	hide_button_bar: false
 };
 
@@ -328,17 +308,17 @@ KM.load_settings = function (callback) {
 		    }
 		}
 	    };
-	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_settings_rd.php' + '?mfd='+max_feed+'&rnd=' + new Date().getTime(), true);
+	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_settings_rd.php?'+ Math.random() + '&mfd='+max_feed, true);
 	    xmlHttp.send(null);
 	}
 
 	function retry() {
 	    if (!got_settings) {
-		request();
-		KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {retry(); }, 5000));
+            request();
+            KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {retry(); }, 5000));
 	    }
 	}
-	retry();
+    retry();
     }
 
 
@@ -382,25 +362,6 @@ KM.load_settings = function (callback) {
 	    var value = par_split[1];
 
 	    switch (key) {
-		case 'ine': // interleave enabled
-		    KM.www_rc.interleave = (parseInt(value, 10) === 1);
-		    break;
-		case 'mfd': // max_feed
-		    //max_feed = parseInt(value, 10);
-			//console.log(max_feed);
-		    break;
-		case 'fse': // full screen enabled
-		    KM.www_rc.full_screen = (parseInt(value, 10) === 1);
-		    break;
-		case 'lbe': // low bandwidth enabled
-		    KM.www_rc.low_bandwidth = (parseInt(value, 10) === 1);
-		    break;
-		case 'lce': // low cpu enabled
-		    KM.www_rc.low_cpu = (parseInt(value, 10) === 1);
-		    break;
-		case 'skf': // skip archive frames enabled
-		    KM.www_rc.skip_frames = (parseInt(value, 10) === 1);
-		    break;
 		case 'are': // archive button enabled
 		    KM.www_rc.archive_button_enabled = (parseInt(value, 10) === 1);
 		    break;
@@ -410,36 +371,10 @@ KM.load_settings = function (callback) {
 		case 'coe': // config button enabled
 		    KM.www_rc.config_button_enabled = (parseInt(value, 10) === 1);
 		    break;
-		case 'fue': // func button enabled
-		    KM.www_rc.func_button_enabled = (parseInt(value, 10) === 1);
-		    break;
-		case 'spa': // spare button enabled
-		    KM.www_rc.msg_button_enabled = (parseInt(value, 10) === 1);
-		    break;
-		case 'abe': // about button enabled
-		    KM.www_rc.about_button_enabled = (parseInt(value, 10) === 1);
-		    break;
-		case 'loe': // logout button enabled
-		    KM.www_rc.logout_button_enabled = (parseInt(value, 10) === 1);
-		    break;
-		case 'fne': // functions enabled
-		    KM.www_rc.func_enabled[index] = (parseInt(value, 10) === 1);
-		    break;
-
-		case 'sec': // secure config
-		    KM.www_rc.secure = (parseInt(value, 10) === 1);
-		    break;
-		case 'coh': // config hash code
-		    KM.www_rc.config_hash = value;
-		    break;
-
 		case 'fma': // feed mask
 		    KM.www_rc.feed_mask[index] = value;
 		    break;
-
 		case 'fen': // feed enabled
-			//console.log(value);
-			//console.log(index);
 		    KM.www_rc.feed_enabled[index] = (parseInt(value, 10) === 1);
 		    break;
 		case 'fpl': // feed pal
@@ -491,9 +426,7 @@ KM.load_settings = function (callback) {
 		    KM.www_rc.feed_movie_enabled[index] = (parseInt(value, 10) === 1);
 		    break;
 
-		
-
-		case 'dif': // display feeds
+        case 'dif': // display feeds
 		    var feeds = value.split(",");
 		    for (var j = 0; ((j < feeds.length) & ( j < max_feed )); j++) {
 				var feed_ = parseInt(feeds[j], 10);
@@ -565,24 +498,6 @@ KM.set_main_display_size = function () {
 
     KM.browser.main_display_height = height - 16;
 };
-
-
-KM.exe_script = function (script, val) {
-
-    // A function that executes a given server script with a 'xmlHttp' call
-    // passing 'val='. Does not define 'onreadystatechange' for a return value.
-    // Called by 'func' and 'ptz' code.
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    var xmlHttp = KM.get_xmlHttp_obj();
-    xmlHttp.open('GET', script + '?val=' + val + '&rnd=' + new Date().getTime(), true);
-    xmlHttp.send(null);
-};
-
 
 KM.secs_hhmmss = function (secs) {
 
@@ -789,13 +704,11 @@ KM.enable_camera_buttons = function () {
         }
     }
     KM.menu_bar_buttons.camera_sec_enabled = true;
-    KM.menu_bar_buttons.func_sec_enabled = false;
 };
 
+// update camera buttons
 KM.update_camera_buttons = KM.enable_camera_buttons;
-    // update camera buttons
-
-
+    
 KM.disable_camera_buttons = function () {
 
     // A function that disables the 16 camera buttons
@@ -812,7 +725,6 @@ KM.disable_camera_buttons = function () {
     document.getElementById('ct' + i).style.color = KM.GREY;
     }
     KM.menu_bar_buttons.camera_sec_enabled = false;
-    KM.menu_bar_buttons.func_sec_enabled = false;
 };
 
 
@@ -836,7 +748,6 @@ KM.enable_func_buttons = function () {
         }
     }
     KM.menu_bar_buttons.camera_sec_enabled = false;
-    KM.menu_bar_buttons.func_sec_enabled = true;
 };
 
 KM.update_func_buttons = KM.enable_func_buttons;
@@ -859,11 +770,6 @@ KM.blink_camera_func_button = function (button) {
     if (KM.menu_bar_buttons.camera_sec_enabled) {
         document.getElementById('ct' + button).style.color = KM.RED;
         KM.add_timeout_id(KM.BUTTON_BAR, setTimeout(function () {KM.update_camera_buttons(); }, 250));
-    } else {  // if function check function enabled
-        if (KM.www_rc.func_enabled[button]) {
-            document.getElementById('ct' + button).style.color = KM.RED;
-            KM.add_timeout_id(KM.BUTTON_BAR, setTimeout(function () {KM.update_func_buttons(); }, 250));
-        }
     }
 };
 
@@ -888,28 +794,20 @@ KM.enable_function_buttons = function (button) {
     for (var i = 1; i < buttons.length; i++) {
         if (KM.www_rc[buttons[i]] || i === 1) {
             if (i === button) {
-                if (i === 5) { // special background for the 'func' button
-                    document.getElementById('fb5').style.background =
-                    'url(images/temp4.png) no-repeat bottom left';
-                }
                 document.getElementById('ft' + i).style.color = KM.RED;
 				document.getElementById('ft' + i).parentNode.style.display="block";
 				misc_function_display="block";
 
 	    } else {
-		if (i === 5) { // normal background for the 'func' button
-		    document.getElementById('fb5').style.background =
-		    'url(images/temp2.png) no-repeat bottom left';
-		}
-		document.getElementById('ft' + i).style.color = KM.BLUE;
-		document.getElementById('ft' + i).parentNode.style.display="block";
-		misc_function_display="block";
+            document.getElementById('ft' + i).style.color = KM.BLUE;
+            document.getElementById('ft' + i).parentNode.style.display="block";
+            misc_function_display="block";
 	    }
 
-	} else {
-	    document.getElementById('ft' + i).style.color = KM.GREY;
-		document.getElementById('ft' + i).parentNode.style.display="none";
-	}
+        } else {
+            document.getElementById('ft' + i).style.color = KM.GREY;
+            document.getElementById('ft' + i).parentNode.style.display="none";
+        }
     }
 	document.getElementById("misc_function_display").style.display=misc_function_display;
 };
@@ -957,13 +855,13 @@ KM.camera_func_button_clicked = function (button) {
     // returns :
     //
 
-    if (KM.menu_bar_buttons.camera_sec_enabled || KM.menu_bar_buttons.func_sec_enabled) {
+    if (KM.menu_bar_buttons.camera_sec_enabled) {
         KM.blink_camera_func_button(button);
         if (KM.menu_bar_buttons.camera_sec_enabled) {
             KM.live.last_camera_select = button;
+            KM.www_rc.display_cameras[1][1] =  button;
             if (KM.www_rc.display_select === 1) {
-                // if '1' change view directly as a special case
-                KM.www_rc.display_cameras[1][1] =  button;
+                // if '1' change view directly as a special case               
                 KM.live.last_camera_select = 0;
                 KM.display_live_normal();
                
@@ -1033,67 +931,8 @@ KM.function_button_valid = function (button) {
     //
 
     var buttons = ['pad', 'pad', 'archive_button_enabled',
-        'logs_button_enabled', 'config_button_enabled', 'func_button_enabled',
-        'msg_button_enabled', 'panic_button_enabled', 'audible_button_enabled',
-	'about_button_enabled',  'logout_button_enabled'];
+        'logs_button_enabled', 'config_button_enabled'];
     return (button < 2 || KM.www_rc[buttons[button]]);
-};
-
-
-KM.logout_button_clicked = function () {
-
-    // A function that handles a logout
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    if (!window.confirm('Please confirm you wish to Logout')) {
-
-	// coded this way to avoid functions inside block, jslint objected
-        KM.enable_select_buttons();
-        KM.update_function_buttons(1);
-	return;
-    }
-
-    KM.session_id.current++;
-    document.getElementById('whole_display').innerHTML = '' +
-
-    '<div id="info_high_line">' +
-	'<div id="info_text">' +
-	    '<span class="italic">kmotion</span> logout<br>' +
-	    '<span id="info_small_text">For security reasons please shut down your browser now.</span>' +
-	'</div>' +
-    '</div>';
-
-    var dom = document.getElementById('info_small_text');
-    var level = 193;
-
-    function step_lighter() {
-	// get lighter
-	var hex = level.toString(16);
-	dom.style.color = '#' + hex + hex + hex;
-	level += 2;
-	if (level < 255) {
-	    setTimeout(step_lighter, 20);
-	} else {
-	    step_darker();
-	}
-    }
-
-    function step_darker() {
-	// get darker
-	var hex = level.toString(16);
-	dom.style.color = '#' + hex + hex + hex;
-	level -= 2;
-	if (level > 193) {
-	    setTimeout(step_darker, 20);
-	} else {
-	    setTimeout(step_lighter, 400);
-	}
-    }
-    setTimeout(step_lighter, 2000);
 };
 
 
@@ -1154,13 +993,11 @@ KM.update_events = function () {
 	if (xmlHttp.readyState === 4) {
 	    xmlHttp.onreadystatechange = null; // plug memory leak
 	    var jdata = JSON.parse(xmlHttp.responseText);
-		//KM.feeds.latest_jpegs = jdata.latest;
-        //KM.update_jpegs();
-		KM.latest_events = jdata.events;
+		KM.live.latest_events = jdata.events;
 	    }
     };
 
-    xmlHttp.open('GET', '/ajax/feeds' + '?rdd='+encodeURIComponent(ramdisk_dir)+'&rnd=' + new Date().getTime(), true);
+    xmlHttp.open('GET', '/ajax/feeds?'+Math.random() + '&rdd='+encodeURIComponent(ramdisk_dir), true);
     xmlHttp.send(null);
 	
 };
@@ -1171,16 +1008,41 @@ KM.get_jpeg = function (feed) {
 
 KM.update_jpegs = function () {
     var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
-    var feed = 0;
+    var feed;
 	for (var c=1;c<num_feeds;c++) {
-		if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][c]]) {
-			feed=KM.www_rc.display_cameras[KM.www_rc.display_select][c];
-            document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
+        feed=KM.www_rc.display_cameras[KM.www_rc.display_select][c];
+		if ((KM.www_rc.feed_enabled[feed]) && (KM.item_in_array(feed, KM.live.latest_events))) {	
+            if (document.getElementById('image_'+feed))
+                document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
 		}
-	}
-    KM.text_refresh();
-    
-}
+	}       
+};
+
+KM.text_refresh = function () {
+
+    // A function that refresh the display text colors, 'white' for feed
+    // disabled, 'blue' for no motion 'red' for motion.
+    //
+    // expects :
+    //
+    // returns :
+    //
+
+    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
+    var feed, text_color;
+    for (var i = 1; i < num_feeds; i++) {
+        text_color = KM.WHITE;
+        feed = KM.www_rc.display_cameras[KM.www_rc.display_select][i];
+        if (KM.www_rc.feed_enabled[feed]) {
+            text_color = KM.BLUE;
+            if (KM.item_in_array(feed, KM.live.latest_events)) {
+                text_color = KM.RED;
+            }
+        }
+        if (document.getElementById("text_" + feed))
+    	    document.getElementById("text_" + feed).style.color = text_color;
+    }
+};
 
 
 KM.init_display_grid = function (display_select) {
@@ -1258,7 +1120,7 @@ KM.init_display_grid = function (display_select) {
 	var feed = KM.www_rc.display_cameras[display_num][html_count];
 
 	if (KM.www_rc.feed_enabled[feed]) {
-	    jpeg = bcam_jpeg;	    
+	    jpeg = KM.get_jpeg(feed);	    
 	    text_color = KM.BLUE;	    
 	    text = KM.www_rc.feed_name[feed];
 	}
@@ -1272,7 +1134,7 @@ KM.init_display_grid = function (display_select) {
 	var l5 = 'width:' + width + 'px; ';
 	var l6 = 'height:' + height + 'px;" ';
 	var l7 = 'src="' + jpeg + '"; ';
-	var l8 = 'onClick="KM.camera_jpeg_clicked(' + html_count + ')"; ';
+	var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
 	var l9 = 'alt="">';
 	html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9;
 
@@ -1580,33 +1442,6 @@ KM.init_display_grid = function (display_select) {
     }
 };
 
-KM.text_refresh = function () {
-
-    // A function that refresh the display text colors, 'white' for feed
-    // disabled, 'blue' for no motion 'red' for motion.
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
-    var feed, text_color;
-    for (var i = 1; i < num_feeds; i++) {
-        text_color = KM.WHITE;
-        feed = KM.www_rc.display_cameras[KM.www_rc.display_select][i];
-        if (KM.www_rc.feed_enabled[feed]) {
-            text_color = KM.BLUE;
-            if (KM.item_in_array(feed, KM.latest_events)) {
-                text_color = KM.RED;
-            }
-        }
-        if (document.getElementById("text_" + i))
-    	    document.getElementById("text_" + i).style.color = text_color;
-    }
-};
-
-
 KM.camera_jpeg_clicked = function (camera) {
 
     // A function that intelligently porcesses a click on camera jpeg 'camera'
@@ -1630,8 +1465,7 @@ KM.camera_jpeg_clicked = function (camera) {
 		}
         KM.live.last_camera_select = 0;
     } else {
-        KM.www_rc.display_cameras[1][1] =
-        KM.www_rc.display_cameras[KM.www_rc.display_select][camera];
+        KM.www_rc.display_cameras[1][1] = KM.www_rc.display_cameras[KM.www_rc.display_select][camera];
         KM.www_rc.display_select = 1;
         KM.update_display_buttons(1);
         
@@ -1692,8 +1526,9 @@ KM.display_live_normal = function () {
             KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
             if (KM.session_id.current === session_id) {
                 KM.update_events();
-                KM.update_jpegs();            
-                KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000));
+                KM.text_refresh();
+                KM.update_jpegs();                 
+                KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000/KM.live.fps));
             }
         }
 };
@@ -1785,12 +1620,12 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	KM.session_id.current++;
-	var session_id = KM.session_id.current;
-	KM.set_main_display_size(); // in case user has 'zoomed' browser view
-	init_backdrop_html();
-	var callback = init_main_menus;
-	populate_dates_cams_dbase(callback, session_id);
+        KM.session_id.current++;
+        var session_id = KM.session_id.current;
+        KM.set_main_display_size(); // in case user has 'zoomed' browser view
+        init_backdrop_html();
+        var callback = init_main_menus;
+        populate_dates_cams_dbase(callback, session_id);
     }
 
 
@@ -2880,39 +2715,6 @@ KM.display_archive_ = function () {
 
 	    if (play_accel > 3) { // ie forward
 
-		// code to implement frame skipping for faster archive playback
-		// skip the next 'skip' frames or until snap
-		if (KM.www_rc.skip_frames && play_accel !== 4) {
-		    for (var i = 0; i < skip; i++) {
-
-			var skip_next_snap_obj = next_snap_frame(date, cam);
-
-			if (movie_show) { // if a movie check for next frame ...
-			    var skip_next_movie_obj =  next_movie_frame();
-			    if (skip_next_movie_obj.valid && ((skip_next_movie_obj.secs <= skip_next_snap_obj.secs) || !snap_show || !skip_next_snap_obj.valid)) {
-
-				display_secs = skip_next_movie_obj.secs;
-				movie_frame =  skip_next_movie_obj.frame;
-				movie_index =  skip_next_movie_obj.index;
-
-				continue
-			    }
-
-			} else if (smovie_show) { // if a smovie check for next frame ...
-			    var skip_next_smovie_obj = next_smovie_frame(date, cam);
-			    if (skip_next_smovie_obj.valid && ((skip_next_smovie_obj.secs <= skip_next_snap_obj.secs) || !snap_show || !skip_next_snap_obj.valid)) {
-
-				display_secs = skip_next_smovie_obj.secs;
-				smovie_frame = skip_next_smovie_obj.frame;
-				smovie_index = skip_next_smovie_obj.index;
-
-				continue
-			    }
-			}
-			break;
-		    }
-		}
-
 		// normal archive playback
 		var next_snap_obj = next_snap_frame(date, cam);
 
@@ -3271,39 +3073,6 @@ KM.display_archive_ = function () {
 	    KM.kill_timeout_ids(KM.ARCH_LOOP);
 
 	    if (play_accel < 4) { // ie backward
-
-		// code to implement frame skipping for faster archive playback
-		// skip the next 'skip' frames or until snap
-		if (KM.www_rc.skip_frames && play_accel !== 3) {
-		    for (var i = 0; i < skip; i++) {
-
-			var skip_prev_snap_obj = prev_snap_frame(date, cam);
-
-			if (movie_show) { // if a movie check for prev frame ...
-			    var skip_prev_movie_obj =  prev_movie_frame();
-			    if (skip_prev_movie_obj.valid && ((skip_prev_movie_obj.secs >= skip_prev_snap_obj.secs) || !snap_show || !skip_prev_snap_obj.valid)) {
-
-				display_secs = skip_prev_movie_obj.secs;
-				movie_frame =  skip_prev_movie_obj.frame;
-				movie_index =  skip_prev_movie_obj.index;
-
-				continue
-			    }
-
-			} else if (smovie_show) { // if a smovie check for prev frame ...
-			    var skip_prev_smovie_obj = prev_smovie_frame(date, cam);
-			    if (skip_prev_smovie_obj.valid && ((skip_prev_smovie_obj.secs >= skip_prev_snap_obj.secs) || !snap_show || !skip_prev_snap_obj.valid)) {
-
-				display_secs = skip_prev_smovie_obj.secs;
-				smovie_frame = skip_prev_smovie_obj.frame;
-				smovie_index = skip_prev_smovie_obj.index;
-
-				continue
-			    }
-			}
-			break;
-		    }
-		}
 
 		// normal archive playback
 		var prev_snap_obj = prev_snap_frame(date, cam);
@@ -3904,14 +3673,14 @@ KM.display_archive_ = function () {
 		}
 	    }
 	    cams=cams.slice(0,-1);
-	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_arch.php?date=00000000&cam=0&func=avail&cams='+cams+'&rnd=' + new Date().getTime(), true);
+	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_arch.php?'+Math.random()+'&date=00000000&cam=0&func=avail&cams='+cams, true);
 	    xmlHttp.send(null);
 	}
 
 	function retry() {
 	    if (!got_coded_str) {
-		request();
-		KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {retry(); }, 5000));
+            request();
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {retry(); }, 5000));
 	    }
 	}
 
@@ -4000,14 +3769,14 @@ KM.display_archive_ = function () {
 		    }
 		}
 	    };
-	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_arch.php?date=' + date + '&cam=' + camera + '&func=index' + '&rnd=' + new Date().getTime(), true);
+	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_arch.php?'+Math.random()+'&date=' + date + '&cam=' + camera + '&func=index', true);
 	    xmlHttp.send(null);
 	}
 
 	function retry() {
 	    if (!got_coded_str) {
-		request();
-		KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {retry(); }, 5000));
+            request();
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {retry(); }, 5000));
 	    }
 	}
 	retry();
@@ -4188,7 +3957,7 @@ KM.display_logs = function () {
                 }
             }
         };
-        xmlHttp.open('GET', '/ajax/logs' + '?rnd=' + new Date().getTime(), true);
+        xmlHttp.open('GET', '/ajax/logs?'+Math.random(), true);
         xmlHttp.send(null);
     }
 
@@ -4284,35 +4053,15 @@ KM.conf_config_track = function() {
 	sync: function() {
 	    // sync 'www_rc' with server 'www_rc'
 	    if (misc_modified) {
-		// interleave enabled
-		coded_str += '$ine:' + bool_num(KM.www_rc.interleave);
-		// full screen enabled
-		coded_str += '$fse:' + bool_num(KM.www_rc.full_screen);
-		// low bandwidth enabled
-		coded_str += '$lbe:' + bool_num(KM.www_rc.low_bandwidth);
-		// low cpu enabled
-		coded_str += '$lce:' + bool_num(KM.www_rc.low_cpu);
-		// skip archive frames enabled
-		coded_str += '$skf:' + bool_num(KM.www_rc.skip_frames);
 		// archive button enabled
 		coded_str += '$are:' + bool_num(KM.www_rc.archive_button_enabled);
 		// stats button enabled
 		coded_str += '$lge:' + bool_num(KM.www_rc.logs_button_enabled);
 		// config bitton enabled
 		coded_str += '$coe:' + bool_num(KM.www_rc.config_button_enabled);
-		// function button enabled
-		coded_str += '$fue:' + bool_num(KM.www_rc.func_button_enabled);
-		// spare button enabled
-		coded_str += '$spa:' + bool_num(KM.www_rc.msg_button_enabled);
-		// about button enabled
-		coded_str += '$abe:' + bool_num(KM.www_rc.about_button_enabled);
-		// logout button enabled
-		coded_str += '$loe:' + bool_num(KM.www_rc.logout_button_enabled);
 		//hide_button_bar
 		coded_str += '$hbb:' + bool_num(KM.www_rc.hide_button_bar);
-		// secure config
-		coded_str += '$sec:' + bool_num(KM.www_rc.secure);
-	    }
+		}
 
 	    for (var i = 1; i < max_feed; i++) {
 		if (mask_modified[i] === true) {
@@ -4445,7 +4194,7 @@ KM.conf_error_daemon = function (session_id) {
 				}
 			}	
 		};
-		xmlHttp.open('GET', '/ajax/outs' + '?rnd=' + new Date().getTime(), true);
+		xmlHttp.open('GET', '/ajax/outs?'+Math.random(), true);
 		xmlHttp.send(null);
     }
 
@@ -4644,31 +4393,18 @@ KM.conf_misc_html = function() {
 	
     document.getElementById('config_html').innerHTML = '<br />\
             <div class="config_group_margin">\
-              <input type="checkbox" id="misc_inter" onclick="KM.conf_misc_highlight_apply();" />Interleave mode. Gives preference to cameras where motion has been detected.<br>\
-              <input type="checkbox" id="misc_full" onclick="KM.conf_misc_force_inter();" />Full screen mode. Changes to full screen mode when motion has been detected.<br>\
-              <input type="checkbox" id="misc_low_bw" onclick="KM.conf_misc_force_inter();" />Low bandwidth mode. Update "no motion" cameras every 15 mins.<br>\
-              <input type="checkbox" id="misc_low_cpu" onclick="KM.conf_misc_highlight_apply();" />Low CPU mode. Reduce browser CPU usage by capping update frequency.<br>\
-			</div>\
-            <br /><hr style="margin:10px;clear:both" />\
-			<div class="config_group_margin">\
 				<div class="config_tick_margin">\
                   <input type="checkbox" id="misc_live" checked="checked" disabled="disabled" />Live button enabled.<br>\
                   <input type="checkbox" id="misc_logs" onclick="KM.conf_misc_highlight_apply();" />Logs button enabled.<br>\
-                  <input type="checkbox" id="misc_func" onclick="KM.conf_misc_highlight_apply();" />Func button enabled.<br>\
-                  <input type="checkbox" id="misc_aboutxx" onclick="KM.conf_misc_highlight_apply();" />Panic button enabled.<br>\
-                  <input type="checkbox" id="misc_msg" onclick="KM.conf_misc_highlight_apply();" />Msg button enabled.<br>\
+                  <input type="checkbox" id="misc_archive" onclick="KM.conf_misc_highlight_apply();" />Archive button enabled.<br>\
                 </div>\
 				<div class="config_tick_margin">\
-					<input type="checkbox" id="misc_archive" onclick="KM.conf_misc_highlight_apply();" />Archive button enabled.<br>\
 					<input type="checkbox" id="misc_config" onclick="KM.conf_misc_highlight_apply();" />Config button enabled.<br>\
-					<input type="checkbox" id="misc_about" onclick="KM.conf_misc_highlight_apply();" />About button enabled.<br>\
-					<input type="checkbox" id="misc_logout" onclick="KM.conf_misc_highlight_apply();" />Logout button enabled.<br>\
 					<input type="checkbox" id="misc_hide_button_bar" onclick="KM.conf_misc_highlight_apply();" />Hide button bar.<br>\
 				</div>\
             </div>\
             <br /><hr style="margin:10px;clear:both" />\
             <div class="config_group_margin">\
-              <input type="checkbox" id="misc_skip_frames" onclick="KM.conf_misc_highlight_apply();" />Enable archive playback acceleration by skipping frames. (may miss events)<br>\
               <input type="checkbox" id="misc_save" onclick="KM.conf_misc_save_display();" />Save the current "Display Select" configuration as default.<br>\
               <input type="checkbox" id="misc_secure" onclick="KM.conf_misc_highlight_apply();" />Enable security login screen. New password : <input type="password" id="misc_pw" />&nbsp;<input type="button" onclick="KM.conf_misc_save_pw();" value="Submit" /><br>\
             </div>\
@@ -4677,48 +4413,11 @@ KM.conf_misc_html = function() {
               <input type="button" id="conf_apply" onclick="KM.conf_misc_apply();" value="Apply" />all changes to the local browser configuration and sync with the remote server.\
            </div>';
 
-    // update the misc config screen
-        if (KM.www_rc.low_bandwidth || KM.www_rc.full_screen) {
-            // if low bandwidth or full screen selected, force interleave mode
-            KM.www_rc.interleave = true;
-            document.getElementById('misc_inter').checked = KM.www_rc.interleave;
-            document.getElementById('misc_inter').disabled = true;
-        }
-    document.getElementById('misc_inter').checked = KM.www_rc.interleave;
-    document.getElementById('misc_full').checked = KM.www_rc.full_screen;
-    document.getElementById('misc_low_bw').checked = KM.www_rc.low_bandwidth;
-    document.getElementById('misc_low_cpu').checked = KM.www_rc.low_cpu;
-    document.getElementById('misc_skip_frames').checked = KM.www_rc.skip_frames;
+
     document.getElementById('misc_archive').checked = KM.www_rc.archive_button_enabled;
     document.getElementById('misc_logs').checked = KM.www_rc.logs_button_enabled;
     document.getElementById('misc_config').checked = KM.www_rc.config_button_enabled;
-    document.getElementById('misc_func').checked = KM.www_rc.func_button_enabled;
-    document.getElementById('misc_msg').checked = KM.www_rc.msg_button_enabled;
-    document.getElementById('misc_about').checked = KM.www_rc.about_button_enabled;
-    document.getElementById('misc_logout').checked = KM.www_rc.logout_button_enabled;
 	document.getElementById('misc_hide_button_bar').checked = KM.www_rc.hide_button_bar;
-    document.getElementById('misc_secure').checked = KM.www_rc.secure;
-};
-
-
-KM.conf_misc_force_inter = function() {
-
-    // A function that if low bandwidth or full screen selected, forces
-    // interleave mode
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    if (!document.getElementById('misc_low_bw').checked &&
-    !document.getElementById('misc_full').checked) {
-        document.getElementById('misc_inter').disabled = false;
-    } else {
-        document.getElementById('misc_inter').checked = KM.www_rc.interleave;
-        document.getElementById('misc_inter').disabled = true;
-    }
-    KM.conf_misc_highlight_apply();
 };
 
 
@@ -4775,24 +4474,10 @@ KM.conf_misc_apply = function () {
     // returns:
     //
 
-    KM.www_rc.interleave = document.getElementById('misc_inter').checked;
-    KM.www_rc.full_screen = document.getElementById('misc_full').checked;
-    KM.www_rc.low_bandwidth = document.getElementById('misc_low_bw').checked;
-    KM.www_rc.low_cpu = document.getElementById('misc_low_cpu').checked;
-    KM.www_rc.skip_frames = document.getElementById('misc_skip_frames').checked;
     KM.www_rc.archive_button_enabled = document.getElementById('misc_archive').checked;
     KM.www_rc.logs_button_enabled = document.getElementById('misc_logs').checked;
     KM.www_rc.config_button_enabled = document.getElementById('misc_config').checked;
-    KM.www_rc.func_button_enabled =  document.getElementById('misc_func').checked;
-    KM.www_rc.msg_button_enabled = document.getElementById('misc_msg').checked;
-    KM.www_rc.about_button_enabled = document.getElementById('misc_about').checked;
-    KM.www_rc.logout_button_enabled = document.getElementById('misc_logout').checked;
 	KM.www_rc.hide_button_bar = document.getElementById('misc_hide_button_bar').checked;
-    KM.www_rc.secure = document.getElementById('misc_secure').checked;
-    if (KM.config.pwd_changed) {
-        KM.www_rc.config_hash = KM.config_misc_hash_pw(document.getElementById('misc_pw').value);
-        KM.config.pwd_changed = false;
-    }
     // reset the 'misc_save' checked box any warning highlight on the apply line
     document.getElementById('misc_save').checked = false;
     document.getElementById('conf_apply').style.fontWeight = 'normal';
@@ -4802,27 +4487,6 @@ KM.conf_misc_apply = function () {
     KM.conf_config_track.misc_modified();
     KM.conf_config_track.sync()
 };
-
-
-KM.config_misc_hash_pw = function(text) {
-
-    // A function that hashes the password 'text'
-    //
-    // expects:
-    // 'text'  ... the password to be hashed
-    //
-    // returns:
-    // 'hash' ... the hash
-    //
-
-    // kmotion = 107109111116105111110
-    var hash = '';
-    for (var i = 0; i < text.length; i++) {
-        hash += text.charCodeAt(i);
-    }
-    return hash
-};
-
 
 /* ****************************************************************************
 Config display - Feed config screen
@@ -5456,42 +5120,19 @@ KM.conf_live_feed_daemon = function (session_id, feed) {
 
     var session_id_config = session_id;
     var feed_config = feed;
-    var ref_time_ms = 0;
-    var jpegs = ['', '', '', '', ''];
-    var jpeg_ptr = 0;        // jpeg name caching else browser gets confused!
-    KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {refresh_config(); }, 1));
+    
+    refresh(session_id, feed);
 
-    function refresh_config() {
-	// refresh the config screen display
-	if (session_id_config === KM.session_id.current) {
-
-	    ref_time_ms = (new Date()).getTime();
-	    KM.kill_timeout_ids(KM.CONFIG_LOOP); // free up memory from 'setTimeout' calls
-	    KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {KM.get_jpeg(feed); }, 1));
-	}
-    }
-
-    function refresh_callback_config(jpeg, feed, same, session_id) {
-        // called by 'get_jpeg' when jpeg avaliable
+    function refresh(session_id, feed) {
+        KM.kill_timeout_ids(KM.CONFIG_LOOP); // free up memory from 'setTimeout' calls	
         if (session_id === KM.session_id.current) {
-	    KM.update_events();
-
-	    if (jpeg !== 'null') {
-
-		jpeg_ptr++;
-		jpeg_ptr = (jpeg_ptr > 4)?0:jpeg_ptr;
-		jpegs[jpeg_ptr] = jpeg;
-
-		try {
-		document.getElementById('image').src = jpegs[jpeg_ptr];
-		} catch (e) {}
-	    }
-	    var taken_ms = (new Date()).getTime() - ref_time_ms;
-	    var delay = Math.max(0, (1000 - taken_ms));
-	    KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {refresh_config(); }, delay));
-	}
+            try {
+                document.getElementById('image').src = KM.get_jpeg(feed);
+            } catch (e) {}
+                        
+            KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {refresh(session_id, feed); }, 1000/KM.live.fps));
+        }
     }
-
 };
 
 
@@ -5755,7 +5396,7 @@ KM.conf_load_html = function() {
                     }
                 }
             };
-            xmlHttp.open('GET', '/ajax/loads' + '?rnd=' + new Date().getTime(), true);
+            xmlHttp.open('GET', '/ajax/loads?'+Math.random(), true);
             xmlHttp.send(null);
         }
 
