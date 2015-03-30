@@ -69,12 +69,7 @@ class InitCore:
         return  : none
         """
         
-        config_js = '%s/www/www/js/config.js' % self.kmotion_dir
-        with open(config_js, 'w') as f_obj:
-            print >> f_obj, 'var max_feed=%d;' % (self.feed_list[-1]+1)
-            print >> f_obj, 'var version="%s";' % self.version
-            print >> f_obj, 'var title="%s";' % self.title
-            print >> f_obj, 'var ramdisk_dir="%s";' % self.ramdisk_dir
+        pass
         
         
     def init_ramdisk_dir(self):

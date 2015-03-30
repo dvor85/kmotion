@@ -11,7 +11,6 @@
 <title>&nbsp;</title>
 <script type="text/javascript" src="js/swfobject.js"></script>
 <script type="text/javascript" src="js/vp.js"></script>
-<script type="text/javascript" src="js/config.js"></script>
 <script type="text/javascript" >
 
 /* *****************************************************************************
@@ -144,24 +143,7 @@ function hidehint() {
 
 		<span class="divider"><img src="images/divider.png" alt="" /> </span>
 		<span id="camera_func_header" class="header">Camera Select</span>
-		
-		<script type="text/javascript">
-			var camsel='';
-			for (var i = 1;i < max_feed;i++) {
-				if ((i % 4) == 0)
-					camsel+='<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>\n</div>';							
-				else if 	((i % 4) == 1)
-					camsel+='<div class="button_line">\n<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>';							
-				else
-					camsel+='<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>\n';							
-			}			
-			i=i-1;			
-			if ((i % 4) != 0) 
-				camsel+='</div>';
-			document.writeln(camsel);
-			camsel=null;
-		</script>	
-
+		<div id="camera_sec"></div>
 		<span class="divider"><img src="images/divider.png" alt="" /> </span>
 		
 		
@@ -183,13 +165,16 @@ function hidehint() {
 
 
 	</div>
+	<script type="text/javascript" src="js/index.js"></script>
+<?php
+/*$user=!empty($_SERVER["PHP_AUTH_USER"])?$_SERVER["PHP_AUTH_USER"]:"";
+if ($user=='admin') {
+    echo '<script type="text/javascript" src="js/index.js"></script>';
+} else {
+    echo '<script type="text/javascript" src="js/index-min.js"></script>';
+}*/
+?>	
 
-<script type="text/javascript">
-	document.getElementById('version_num').innerHTML = 'Ver ' + version;
-	document.getElementsByTagName('title')[0].innerHTML = title;
-</script>	
-	
-<script type="text/javascript" src="js/index.js"></script>	
 	
 </div>
 </body>

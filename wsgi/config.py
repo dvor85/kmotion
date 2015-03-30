@@ -1,0 +1,99 @@
+import os, sys, json, datetime
+from cgi import parse_qs, escape
+
+class ConfigRW():
+    
+    def __init__(self, kmotion_dir, environ): 
+        sys.path.append(kmotion_dir)               
+        self.kmotion_dir = kmotion_dir
+        self.environ = environ
+        self.params = parse_qs(self.environ['QUERY_STRING'])        
+        from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
+        
+        www_rc = 'www_rc_%s' % (self.getUsername())                              
+        if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
+            www_rc = 'www_rc'
+        self.www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
+        self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
+        self.ramdisk_dir = self.kmotion_parser.get('dirs', 'ramdisk_dir')
+        self.version = self.kmotion_parser.get('version', 'string')
+        self.title = self.kmotion_parser.get('version', 'title')
+        
+        
+        
+    def getUsername(self):
+        try:
+            username = ''
+            auth = self.environ['HTTP_AUTHORIZATION']            
+            if auth:
+                scheme, data = auth.split(None, 1)
+                if scheme.lower() == 'basic':
+                    username, password = data.decode('base64').split(':', 1)
+        except:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
+        return username
+    
+    def parseStr(self, s):
+        try:
+            return int(s)
+        except:
+            try:
+                return float(s)
+            except:
+                if s.lower() == "true":
+                    return True
+                elif s.lower() == "false":
+                    return False
+        return s
+    
+    def read(self):
+        max_feed = 1
+        www_rc = {"ramdisk_dir": self.ramdisk_dir,
+                  "version": self.version,
+                  "title": self.title,
+                  "feeds": {},
+                  "display_feeds": {}
+                  }
+                
+        for section in self.www_parser.sections():
+            try:
+                conf = {}
+                for k, v in self.www_parser.items(section):
+                    try:
+                        if 'display_feeds_' in k:                        
+                            display = self.parseStr(k.replace('display_feeds_', ''))
+                            www_rc['display_feeds'][display] = [self.parseStr(i) for i in v.split(',')]   
+                        else:
+                            conf[k] = self.parseStr(v) 
+                    except:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})                       
+                
+                if 'motion_feed' in section:
+                    feed = int(section.replace('motion_feed', '')) 
+                    max_feed = max(max_feed, feed)                   
+                    www_rc['feeds'][feed] = conf                                  
+                elif len(conf) > 0:
+                    www_rc[section] = conf                        
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
+                
+        www_rc['feeds']['length'] = len(www_rc['feeds'])  
+        www_rc['feeds']['max_feed'] = max_feed      
+        return json.dumps(www_rc)
+    
+    def write(self):
+        return ''
+    
+    def main(self):
+        if self.params.has_key('read'):
+            return self.read()
+        elif self.params.has_key('write'):
+            return self.write()
+       
+
+            
+            
+            

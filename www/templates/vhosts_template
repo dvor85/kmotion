@@ -51,6 +51,7 @@ NameVirtualHost *:{port}
     </Directory>
     
     WSGIScriptAlias /ajax {wsgi_scripts}/ajax.py
+    WSGIPassAuthorization On
 	<Directory {wsgi_scripts}>
 		# secure login ...
         AuthType Basic

@@ -25,11 +25,14 @@ def application(environ, start_response):
         elif path_info == '/outs':
             from wsgi.outs import Outs
             body = Outs(kmotion_dir, environ).main()
+        elif path_info == '/config':
+            from wsgi.config import ConfigRW 
+            body = ConfigRW(kmotion_dir, environ).main()
         
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         status = '500 Error'
-        body = 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
+        body = 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})       
     finally:
         start_response(status, [('Content-type', 'text/plain'),
                                 ('Content-Length', str(len(body)))])

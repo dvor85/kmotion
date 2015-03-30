@@ -61,7 +61,7 @@ KM.session_id = {
 KM.menu_bar_buttons = {
     function_selected:   0,     // the function selected
     display_sec_enabled: false, // enabled sections ...
-    camera_sec_enabled:  false
+    camera_sec_enabled:  false    
 };
 
 KM.live = {
@@ -71,9 +71,8 @@ KM.live = {
 };
 
 
-KM.config = {
+KM.conf = {
     session_id:	     0, // the session id
-    pwd_change: false, // the password has changed
     camera:          1, // the current camera
     mask:           '', // the current expanded mask string
     error_str:      '', // the error string
@@ -94,56 +93,7 @@ KM.fill_arr = function (arr, len, fill) {
 	return arr;
 };
 
-KM.www_rc = {
-    // mimics the configuration in 'www_rc'
-    feed_enabled:  KM.fill_arr(['pad'], max_feed, false),
-    feed_pal:  KM.fill_arr(['pad'], max_feed, false),
-    feed_show_box: KM.fill_arr(['pad'],max_feed, false),
-    feed_mask:     KM.fill_arr(['pad'], max_feed, ''),
-    feed_device:   KM.fill_arr(['pad'], max_feed, ''),
-    feed_url:      KM.fill_arr(['pad'], max_feed, ''),
-    feed_proxy:    KM.fill_arr(['pad'], max_feed, ''),
-    feed_lgn_name: KM.fill_arr(['pad'], max_feed, ''),
-    feed_lgn_pw:   KM.fill_arr(['pad'], max_feed, ''),
-    feed_name:     KM.fill_arr(['pad'], max_feed, ''),
-    feed_input:    KM.fill_arr(['pad'], max_feed, 0),
-    feed_width:    KM.fill_arr(['pad'], max_feed, 0),
-    feed_height:   KM.fill_arr(['pad'], max_feed, 0),
-    feed_snap_enabled:   KM.fill_arr(['pad'],max_feed, false),
-    feed_smovie_enabled: KM.fill_arr(['pad'],max_feed, false),
-    feed_movie_enabled:  KM.fill_arr(['pad'],max_feed, false),
-    feed_snap_interval:  KM.fill_arr(['pad'], max_feed, 0),
-    feed_fps:      KM.fill_arr(['pad'], max_feed, 0),
-
-
-
-    // display cameras
-    display_cameras: [],
-
-    // button enables config
-    archive_button_enabled: true,
-    logs_button_enabled:    true,
-    config_button_enabled:  true,
-    
-
-    // misc config
-    display_select:  1,
-    color_select:    1,
-	hide_button_bar: false
-};
-
-KM.www_rc.display_cameras[1] =  KM.fill_arr(['pad'], 2, 'index');
-KM.www_rc.display_cameras[2] =  KM.fill_arr(['pad'], 4, 'index');
-KM.www_rc.display_cameras[3] =  KM.fill_arr(['pad'], 10, 'index');
-KM.www_rc.display_cameras[4] =  KM.fill_arr(['pad'], max_feed, 'index');
-KM.www_rc.display_cameras[5] =  KM.fill_arr(['pad'], 7, 'index');
-KM.www_rc.display_cameras[6] =  KM.fill_arr(['pad'], 14, 'index');
-KM.www_rc.display_cameras[7] =  KM.fill_arr(['pad'], 9, 'index');
-KM.www_rc.display_cameras[8] =  KM.fill_arr(['pad'], 11, 'index');
-KM.www_rc.display_cameras[9] =  KM.fill_arr(['pad'], 3, 'index');
-KM.www_rc.display_cameras[10] = KM.fill_arr(['pad'], 3, 'index');
-KM.www_rc.display_cameras[11] = KM.fill_arr(['pad'], 3, 'index');
-KM.www_rc.display_cameras[12] = KM.fill_arr(['pad'], 3, 'index');
+KM.config = {};
 
 // hide javascript errors
 //KM.handle_error = function () return true;
@@ -171,6 +121,11 @@ KM.toggle_button_bar=function () {
 
 	KM.function_button_clicked(KM.menu_bar_buttons.function_selected);
 }
+
+KM.browser.setTitle = function() {
+    document.getElementById('version_num').innerHTML = 'Ver ' + KM.config.version;
+	document.getElementsByTagName('title')[0].innerHTML = KM.config.title;
+};
 
 KM.timeout_ids = function () {
 
@@ -295,20 +250,19 @@ KM.load_settings = function (callback) {
 	var got_settings = false;
 	function request() {
 	    xmlHttp.onreadystatechange = function () {
-		if (xmlHttp.readyState === 4) {
-		    xmlHttp.onreadystatechange = null; // plug memory leak
-		    var data = xmlHttp.responseText.trim();
-			// final integrity check - if this data gets corrupted we are
-		    // in a world of hurt ...
-		    // 'data.substr(data.length - 5)' due to IE bug !
-			if (parseInt(data.substr(data.length - 8), 10) === data.length - 13) {
-			got_settings = true;
-			KM.kill_timeout_ids(KM.GET_DATA);
-			set_settings(data, callback);
-		    }
-		}
+            if (xmlHttp.readyState === 4) {
+                xmlHttp.onreadystatechange = null; // plug memory leak
+                try {
+                    KM.config = JSON.parse(xmlHttp.responseText);
+                    got_settings = true;
+                    KM.kill_timeout_ids(KM.GET_DATA);
+                    set_settings(callback);
+                } catch(e) {
+                }
+                
+            }
 	    };
-	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_settings_rd.php?'+ Math.random() + '&mfd='+max_feed, true);
+	    xmlHttp.open('GET', '/ajax/config?read='+ Math.random(), true);
 	    xmlHttp.send(null);
 	}
 
@@ -322,7 +276,7 @@ KM.load_settings = function (callback) {
     }
 
 
-    function set_settings(data, callback) {
+    function set_settings(callback) {
 
 	// A function that splits the raw 'www_rc' data and loads the browser
 	// settings then executes 'callback'
@@ -334,126 +288,21 @@ KM.load_settings = function (callback) {
 	// returns :
 	//
 
-	KM.set_main_display_size();
-	var user_agent = navigator.userAgent.toLowerCase();
+        KM.set_main_display_size();
+        var user_agent = navigator.userAgent.toLowerCase();
 
-	KM.browser.browser_IE = user_agent.search('msie') > -1;
-	KM.browser.browser_FF = user_agent.search('firefox') > -1;
-	KM.browser.browser_OP = user_agent.search('opera') > -1;
+        KM.browser.browser_IE = user_agent.search('msie') > -1;
+        KM.browser.browser_FF = user_agent.search('firefox') > -1;
+        KM.browser.browser_OP = user_agent.search('opera') > -1;
 
-	KM.browser.browser_SP = (user_agent.search('iphone') > -1 ||
-	user_agent.search('ipod') > -1 || user_agent.search('android') > -1 || user_agent.search('ipad') > -1 ||
-	user_agent.search('iemobile') > -1 ||  user_agent.search('blackberry') > -1);
-
-	var data_secs = data.split("$");
-	var par_split, key, index;
-	// i = 1 because datablob starts with a $
-	//console.log(data_secs);
-	for (var i = 1; i < data_secs.length; i++) {
-	    par_split = data_secs[i].split(':');
-
-	    if (par_split[0].length > 3) {
-		key = par_split[0].substring(0, 3);
-		index = parseInt(par_split[0].substring(3), 10);
-	    } else {
-		key = par_split[0];	// the 3 digit id ie 'fen' or 'fha'
-		index = '';		// optional list pointer for the id
-	    }
-	    var value = par_split[1];
-
-	    switch (key) {
-		case 'are': // archive button enabled
-		    KM.www_rc.archive_button_enabled = (parseInt(value, 10) === 1);
-		    break;
-		case 'lge': // logs button enabled
-		    KM.www_rc.logs_button_enabled = (parseInt(value, 10) === 1);
-		    break;
-		case 'coe': // config button enabled
-		    KM.www_rc.config_button_enabled = (parseInt(value, 10) === 1);
-		    break;
-		case 'fma': // feed mask
-		    KM.www_rc.feed_mask[index] = value;
-		    break;
-		case 'fen': // feed enabled
-		    KM.www_rc.feed_enabled[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'fpl': // feed pal
-		    KM.www_rc.feed_pal[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'fde': // feed device
-		    KM.www_rc.feed_device[index] = value;
-		    break;
-		case 'fin': // feed input
-		    KM.www_rc.feed_input[index] = parseInt(value, 10);
-		    break;
-		case 'ful': // feed url
-		    KM.www_rc.feed_url[index] = KM.collapse_chars(value);
-			break;
-		case 'fpr': // feed proxy
-		    KM.www_rc.feed_proxy[index] = KM.collapse_chars(value);
-		    break;
-		case 'fln': // feed login name
-		    KM.www_rc.feed_lgn_name[index] = KM.collapse_chars(value);
-		    break;
-		case 'flp': // feed login password (*'d)
-		    KM.www_rc.feed_lgn_pw[index] = KM.collapse_chars(value);
-		    break;
-		case 'fwd': // feed width
-		    KM.www_rc.feed_width[index] = parseInt(value, 10);
-		    break;
-		case 'fhe': // feed height
-		    KM.www_rc.feed_height[index] = parseInt(value, 10);
-		    break;
-		case 'fna': // feed name
-		    KM.www_rc.feed_name[index] = KM.collapse_chars(value);
-		    break;
-		case 'fbo': // feed show box
-		    KM.www_rc.feed_show_box[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'ffp': // feed fps
-		    KM.www_rc.feed_fps[index] = parseInt(value, 10);
-		    break;
-		case 'fpe': // feed snap enabled
-		    KM.www_rc.feed_snap_enabled[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'fsn': // feed snap interval
-		    KM.www_rc.feed_snap_interval[index] = parseInt(value, 10);
-		    break;
-		case 'ffe': // feed frame enabled
-		    KM.www_rc.feed_smovie_enabled[index] = (parseInt(value, 10) === 1);
-		    break;
-		case 'fme': // feed ffmpeg enabled
-		    KM.www_rc.feed_movie_enabled[index] = (parseInt(value, 10) === 1);
-		    break;
-
-        case 'dif': // display feeds
-		    var feeds = value.split(",");
-		    for (var j = 0; ((j < feeds.length) & ( j < max_feed )); j++) {
-				var feed_ = parseInt(feeds[j], 10);
-				if (feed_ < max_feed) {
-					KM.www_rc.display_cameras[index][j + 1] = feed_;
-				}
-		    }
-		    break;
-
-		case 'col': // background color
-		    KM.www_rc.color_select = parseInt(value, 10);
-		    break;
-		case 'dis': // display select
-		    KM.www_rc.display_select = parseInt(value, 10);
-		    break;
-
-		case 'msg': // message
-		    KM.www_rc.msg = KM.collapse_chars(value);
-		    break;
-		case 'hbb': //hide_button_bar
-			KM.www_rc.hide_button_bar = (parseInt(value, 10) === 1);
-			break;
-	    }
-	}
-	// finally tha callback
-	callback();
+        KM.browser.browser_SP = (user_agent.search('iphone') > -1 ||
+        user_agent.search('ipod') > -1 || user_agent.search('android') > -1 || user_agent.search('ipad') > -1 ||
+        user_agent.search('iemobile') > -1 ||  user_agent.search('blackberry') > -1);
+        
+        // finally tha callback
+        callback();
     }
+    
     get_settings(callback);
 };
 
@@ -582,7 +431,7 @@ KM.item_in_array = function (item, list) {
 
     var str_item = item.toString();
     for (var i = 0; i < list.length; i++) {
-        if (list[i].toString() === str_item) {
+        if (list[i].toString() == str_item) {
             return true;
         }
     }
@@ -655,7 +504,7 @@ KM.enable_display_buttons = function (button) {
 
     KM.cull_timeout_ids(KM.BUTTON_BAR);
     for (var i = 1; i < 13; i++) {
-        if (i === button) {
+        if (i == button) {
             document.getElementById('d' + i).src = 'images/r' + i + '.png';
         } else {
             document.getElementById('d' + i).src = 'images/b' + i + '.png';
@@ -683,6 +532,22 @@ KM.disable_display_buttons = function () {
     KM.menu_bar_buttons.display_sec_enabled = false;
 };
 
+KM.menu_bar_buttons.construct_camera_sec = function() {
+    var camsel='';
+    for (var i = 1;i <= KM.config.feeds.max_feed;i++) {
+        if ((i % 4) == 0)
+            camsel+='<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>\n</div>';							
+        else if 	((i % 4) == 1)
+            camsel+='<div class="button_line">\n<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>';							
+        else
+            camsel+='<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>\n';							
+    }			
+    i=i-1;			
+    if ((i % 4) != 0) 
+        camsel+='</div>';
+    document.getElementById('camera_sec').innerHTML = camsel;
+};
+
 
 KM.enable_camera_buttons = function () {
 
@@ -694,14 +559,16 @@ KM.enable_camera_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Camera Select';
-    for (var i = 1; i < max_feed; i++) {
-        document.getElementById('ct' + i).innerHTML = i;
-        document.getElementById('cb' + i).style.background = 'url(images/temp1.png) no-repeat bottom left';
-        if (KM.www_rc.feed_enabled[i]) {
-            document.getElementById('ct' + i).style.color = KM.BLUE;
-        } else {
-            document.getElementById('ct' + i).style.color = KM.GREY;
-        }
+    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+        try {
+            document.getElementById('ct' + i).innerHTML = i;
+            document.getElementById('cb' + i).style.background = 'url(images/temp1.png) no-repeat bottom left';
+            if (KM.config.feeds[i].feed_enabled) {
+                document.getElementById('ct' + i).style.color = KM.BLUE;
+            } else {
+                document.getElementById('ct' + i).style.color = KM.GREY;
+            }
+        } catch(e) {}
     }
     KM.menu_bar_buttons.camera_sec_enabled = true;
 };
@@ -719,10 +586,12 @@ KM.disable_camera_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Camera Select';
-    for (var i = 1; i < max_feed; i++) {
-        document.getElementById('cb' + i).style.background = 'url(images/temp1.png) no-repeat bottom left';
-        document.getElementById('ct' + i).innerHTML = i;
-    document.getElementById('ct' + i).style.color = KM.GREY;
+    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+        try {
+            document.getElementById('cb' + i).style.background = 'url(images/temp1.png) no-repeat bottom left';
+            document.getElementById('ct' + i).innerHTML = i;
+            document.getElementById('ct' + i).style.color = KM.GREY;
+        } catch(e) {}
     }
     KM.menu_bar_buttons.camera_sec_enabled = false;
 };
@@ -738,14 +607,16 @@ KM.enable_func_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Function Select';
-    for (var i = 1; i < max_feed; i++) {
-        document.getElementById('ct' + i).innerHTML = 'f' + i;
-        document.getElementById('cb' + i).style.background = 'url(images/temp3.png) no-repeat bottom left';
-        if (KM.www_rc.func_enabled[i]) {
-            document.getElementById('ct' + i).style.color = KM.BLUE;
-        } else {
-            document.getElementById('ct' + i).style.color = KM.GREY;
-        }
+    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+        try {
+            document.getElementById('ct' + i).innerHTML = 'f' + i;
+            document.getElementById('cb' + i).style.background = 'url(images/temp3.png) no-repeat bottom left';
+            if (KM.config.func_enabled[i]) {
+                document.getElementById('ct' + i).style.color = KM.BLUE;
+            } else {
+                document.getElementById('ct' + i).style.color = KM.GREY;
+            }
+        } catch (e) {}
     }
     KM.menu_bar_buttons.camera_sec_enabled = false;
 };
@@ -792,8 +663,8 @@ KM.enable_function_buttons = function (button) {
 	var misc_function_display="none";
 
     for (var i = 1; i < buttons.length; i++) {
-        if (KM.www_rc[buttons[i]] || i === 1) {
-            if (i === button) {
+        if (KM.config.misc[buttons[i]] || i == 1) {
+            if (i == button) {
                 document.getElementById('ft' + i).style.color = KM.RED;
 				document.getElementById('ft' + i).parentNode.style.display="block";
 				misc_function_display="block";
@@ -837,7 +708,7 @@ KM.display_button_clicked = function (button) {
 
     if (KM.menu_bar_buttons.display_sec_enabled)  {
         KM.update_display_buttons(button);
-        KM.www_rc.display_select = button;
+        KM.config.misc.display_select = button;
         KM.live.last_camera_select = 0;
         KM.display_live_normal();
 
@@ -859,8 +730,8 @@ KM.camera_func_button_clicked = function (button) {
         KM.blink_camera_func_button(button);
         if (KM.menu_bar_buttons.camera_sec_enabled) {
             KM.live.last_camera_select = button;
-            KM.www_rc.display_cameras[1][1] =  button;
-            if (KM.www_rc.display_select === 1) {
+            KM.config.display_feeds[1][0] =  button;
+            if (KM.config.misc.display_select == 1) {
                 // if '1' change view directly as a special case               
                 KM.live.last_camera_select = 0;
                 KM.display_live_normal();
@@ -890,7 +761,7 @@ KM.function_button_clicked = function (button) {
         switch (button) {
             case 1: // 'live button'
                 document.onkeydown=null; //stop memory leak
-                KM.enable_display_buttons(KM.www_rc.display_select);
+                KM.enable_display_buttons(KM.config.misc.display_select);
                 KM.enable_camera_buttons();	    
                 KM.display_live_normal();
                 break;
@@ -932,7 +803,7 @@ KM.function_button_valid = function (button) {
 
     var buttons = ['pad', 'pad', 'archive_button_enabled',
         'logs_button_enabled', 'config_button_enabled'];
-    return (button < 2 || KM.www_rc[buttons[button]]);
+    return (button < 2 || KM.config.misc[buttons[button]]);
 };
 
 
@@ -964,7 +835,7 @@ KM.background_button_clicked = function (color) {
     link.media = 'all';
     head.appendChild(link);
 
-    KM.www_rc.color_select = color;
+    KM.config.misc.color_select = color;
 };
 
 
@@ -997,7 +868,7 @@ KM.update_events = function () {
 	    }
     };
 
-    xmlHttp.open('GET', '/ajax/feeds?'+Math.random() + '&rdd='+encodeURIComponent(ramdisk_dir), true);
+    xmlHttp.open('GET', '/ajax/feeds?'+Math.random() + '&rdd='+encodeURIComponent(KM.config.ramdisk_dir), true);
     xmlHttp.send(null);
 	
 };
@@ -1007,14 +878,15 @@ KM.get_jpeg = function (feed) {
 }
 
 KM.update_jpegs = function () {
-    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
     var feed;
-	for (var c=1;c<num_feeds;c++) {
-        feed=KM.www_rc.display_cameras[KM.www_rc.display_select][c];
-		if ((KM.www_rc.feed_enabled[feed]) && (KM.item_in_array(feed, KM.live.latest_events))) {	
-            if (document.getElementById('image_'+feed))
-                document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
-		}
+	for (var c=0;c<=KM.config.feeds.max_feed;c++) {
+        try {
+            feed=KM.config.display_feeds[KM.config.misc.display_select][c];
+            if (KM.config.feeds[feed].feed_enabled && (KM.item_in_array(feed, KM.live.latest_events))) {	
+                if (document.getElementById('image_'+feed))
+                    document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
+            }
+        } catch (e) {}
 	}       
 };
 
@@ -1028,19 +900,20 @@ KM.text_refresh = function () {
     // returns :
     //
 
-    var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
     var feed, text_color;
-    for (var i = 1; i < num_feeds; i++) {
-        text_color = KM.WHITE;
-        feed = KM.www_rc.display_cameras[KM.www_rc.display_select][i];
-        if (KM.www_rc.feed_enabled[feed]) {
-            text_color = KM.BLUE;
-            if (KM.item_in_array(feed, KM.live.latest_events)) {
-                text_color = KM.RED;
+    for (var i = 0; i <= KM.config.feeds.max_feed; i++) {
+        try {
+            text_color = KM.WHITE;
+            feed = KM.config.display_feeds[KM.config.misc.display_select][i];
+            if (KM.config.feeds[feed].feed_enabled) {
+                text_color = KM.BLUE;
+                if (KM.item_in_array(feed, KM.live.latest_events)) {
+                    text_color = KM.RED;
+                }
             }
-        }
-        if (document.getElementById("text_" + feed))
-    	    document.getElementById("text_" + feed).style.color = text_color;
+            if (document.getElementById("text_" + feed))
+                document.getElementById("text_" + feed).style.color = text_color;
+        } catch (e) {}
     }
 };
 
@@ -1099,8 +972,8 @@ KM.init_display_grid = function (display_select) {
 	// returns :
 	//
 
-        html_count++;
-
+    
+    
 	var gcam_jpeg = 'images/gcam.png';
 	var bcam_jpeg = 'images/bcam.png';
 	if (alt_jpeg === true) {
@@ -1117,35 +990,43 @@ KM.init_display_grid = function (display_select) {
 	var jpeg = gcam_jpeg;
 	var text = 'No Video';
 	var text_color = KM.WHITE;
-	var feed = KM.www_rc.display_cameras[display_num][html_count];
+    if (html_count>KM.config.feeds.max_feed) return;
+	
+    try {
+        var feed = KM.config.display_feeds[display_num][html_count];
+        if (KM.config.feeds[feed].feed_enabled) {
+            jpeg = KM.get_jpeg(feed);	    
+            text_color = KM.BLUE;	 
+            if (KM.config.feeds[feed].feed_name) {
+                text = KM.config.feeds[feed].feed_name;
+            } else {
+                text = 'Cam ' + (html_count+1);
+            }
+        }
+        text = feed + ' : ' + text;
 
-	if (KM.www_rc.feed_enabled[feed]) {
-	    jpeg = KM.get_jpeg(feed);	    
-	    text_color = KM.BLUE;	    
-	    text = KM.www_rc.feed_name[feed];
-	}
-	text = feed + ' : ' + text;
+        
+        var l1 = '<img id="image_' + feed + '" ';
+        var l2 = 'style="position:absolute; ';
+        var l3 = 'left:' + left + 'px; ';
+        var l4 = 'top:' + top + 'px; ';
+        var l5 = 'width:' + width + 'px; ';
+        var l6 = 'height:' + height + 'px;" ';
+        var l7 = 'src="' + jpeg + '"; ';
+        var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
+        var l9 = 'alt="">';
+        html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9;
 
-	if (html_count>max_feed-1) return;
-	var l1 = '<img id="image_' + feed + '" ';
-	var l2 = 'style="position:absolute; ';
-	var l3 = 'left:' + left + 'px; ';
-	var l4 = 'top:' + top + 'px; ';
-	var l5 = 'width:' + width + 'px; ';
-	var l6 = 'height:' + height + 'px;" ';
-	var l7 = 'src="' + jpeg + '"; ';
-	var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
-	var l9 = 'alt="">';
-	html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9;
-
-	var l10 = '<span id="text_' + feed + '"; ';
-	var l11 = 'style="position:absolute; ';
-	var l12 = 'left:' + (left + text_left) + 'px; ';
-	var l13 = 'top:' +  (top + text_top) + 'px;';
-	var l14 = 'font-weight: bold;';
-	var l15 = 'color:' + text_color  + ';';
-	var l16 = '">' + text + '</span>';
-	html = html + l10 + l11 + l12 + l13 + l14 + l15 + l16;
+        var l10 = '<span id="text_' + feed + '"; ';
+        var l11 = 'style="position:absolute; ';
+        var l12 = 'left:' + (left + text_left) + 'px; ';
+        var l13 = 'top:' +  (top + text_top) + 'px;';
+        var l14 = 'font-weight: bold;';
+        var l15 = 'color:' + text_color  + ';';
+        var l16 = '">' + text + '</span>';
+        html = html + l10 + l11 + l12 + l13 + l14 + l15 + l16;
+    } catch (e) {}
+    html_count++;
     }
 
 
@@ -1264,8 +1145,8 @@ KM.init_display_grid = function (display_select) {
 
 	case 4:  // symetrical 16 grid
 
-	    cols = Math.ceil(Math.sqrt(max_feed-1));//5;//
-		rows = Math.ceil((max_feed-1)/cols);//Math.ceil(Math.sqrt(max_feed-1));
+	    cols = Math.ceil(Math.sqrt(KM.config.feeds.max_feed));//5;//
+		rows = Math.ceil((KM.config.feeds.max_feed)/cols);
 		//console.log(cols);
 		//console.log(rows);
 
@@ -1453,20 +1334,20 @@ KM.camera_jpeg_clicked = function (camera) {
     //
     // returns :
     //
-
+    var camera_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(camera);
     if (KM.live.last_camera_select !== 0) {
-		var camera_last_pos=KM.www_rc.display_cameras[KM.www_rc.display_select].indexOf(KM.live.last_camera_select);
-		var camera_old=KM.www_rc.display_cameras[KM.www_rc.display_select][camera];
-		if (KM.www_rc.feed_enabled[KM.live.last_camera_select]) {
-		    KM.www_rc.display_cameras[KM.www_rc.display_select][camera]=KM.live.last_camera_select;
+		var camera_last_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(KM.live.last_camera_select);
+		var camera_old=KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
+		if (KM.config.feeds[KM.live.last_camera_select].feed_enabled) {
+		    KM.config.display_feeds[KM.config.misc.display_select][camera_pos]=KM.live.last_camera_select;
 		    if (camera_last_pos>0) {
-			KM.www_rc.display_cameras[KM.www_rc.display_select][camera_last_pos]=camera_old;
+			KM.config.display_feeds[KM.config.misc.display_select][camera_last_pos]=camera_old;
 		    }
 		}
         KM.live.last_camera_select = 0;
     } else {
-        KM.www_rc.display_cameras[1][1] = KM.www_rc.display_cameras[KM.www_rc.display_select][camera];
-        KM.www_rc.display_select = 1;
+        KM.config.display_feeds[1][0] = KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
+        KM.config.misc.display_select = 1;
         KM.update_display_buttons(1);
         
     }
@@ -1498,15 +1379,16 @@ KM.display_live_normal = function () {
     // setup for grid display
     KM.session_id.current++;
     KM.set_main_display_size(); // in case user has 'zoomed' browser view
-    KM.init_display_grid(KM.www_rc.display_select);
+    KM.init_display_grid(KM.config.misc.display_select);
 
     // exit if no feeds enabled, else 100% CPU usage
     var no_feeds = true;
-	var num_feeds = Math.min(KM.www_rc.display_cameras[KM.www_rc.display_select].length, max_feed);
-    for (var i = 1; i < num_feeds; i++) {
-        if (KM.www_rc.feed_enabled[KM.www_rc.display_cameras[KM.www_rc.display_select][i]]) {
-            no_feeds = false;
-        }
+    for (var i = 0; i <= KM.config.feeds.max_feed; i++) {
+        try {
+            if (KM.config.feeds[KM.config.display_feeds[KM.config.misc.display_select][i]].feed_enabled) {
+                no_feeds = false;
+            }
+        } catch (e) {}
     }
     if (no_feeds) return; // no feeds
     refresh(KM.session_id.current);   
@@ -2563,7 +2445,7 @@ KM.display_archive_ = function () {
 	var old_play_accel = play_accel;
 	if (play_mode) { // play mode
 
-	    if (button === 1) { // fast play backward
+	    if (button == 1) { // fast play backward
 		if (play_accel > 2) {
 		    play_accel = 2;
 		} else {
@@ -2573,23 +2455,23 @@ KM.display_archive_ = function () {
 		update_button_bar_play_mode();
 
 
-	    } else if (button === 2) { // play backward
+	    } else if (button == 2) { // play backward
 		play_accel = 3;
 		update_button_bar_play_mode();
 
 
-	    } else if (button === 3) { // frame mode
+	    } else if (button == 3) { // frame mode
 		KM.session_id.current++;
 		play_mode = false;
 		update_button_bar_frame_mode();
 
 
-	    } else if (button === 4) { // play forward
+	    } else if (button == 4) { // play forward
 		play_accel = 4;
 		update_button_bar_play_mode();
 
 
-	    } else if (button === 5) { // fast play forward
+	    } else if (button == 5) { // fast play forward
 		if (play_accel < 5) {
 		    play_accel = 5;
 		} else {
@@ -2613,24 +2495,24 @@ KM.display_archive_ = function () {
 
 	} else { // frame mode
 
-	    if (button === 1) { // -event
+	    if (button == 1) { // -event
 		prev_event();
 
-	    } else if (button === 2) { // -frame
+	    } else if (button == 2) { // -frame
 		play_accel = 3; // play backward
 		play_backward();
 
-	    } else if (button === 3) { // play mode
+	    } else if (button == 3) { // play mode
 		play_mode = true;
 		play_accel = 4; // play forward
 		update_button_bar_play_mode();
 		play_forward();
 
-	    } else if (button === 4) { // +frame
+	    } else if (button == 4) { // +frame
 		play_accel = 4; // play forward
 		play_forward();
 
-	    } else if (button === 5) { // +event
+	    } else if (button == 5) { // +event
 		next_event();
 	    }
 		current_play_accel=4;
@@ -3667,10 +3549,11 @@ KM.display_archive_ = function () {
 		}
 	    };
 	    var cams='';
-	    for (var c=1;c<KM.www_rc.feed_enabled.length;c++) {
-		if (KM.www_rc.feed_enabled[c]) {
-			cams+=c+',';
-		}
+	    for (var c=1;c<=KM.config.feeds.max_feed;c++) {
+            try {
+                if (KM.config.feeds[c].feed_enabled) 
+                    cams+=c+',';
+            } catch(e) {}                
 	    }
 	    cams=cams.slice(0,-1);
 	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_arch.php?'+Math.random()+'&date=00000000&cam=0&func=avail&cams='+cams, true);
@@ -3978,7 +3861,7 @@ Miscellaneous code that provides general closures and functions for config
 **************************************************************************** */
 
 
-KM.conf_config_track = function() {
+/*KM.conf_config_track = function() {
 
     // A closure that tracks changes to the local config and when needed
     // synchronises these changes with 'www_rc' and requests config reloads.
@@ -3998,8 +3881,8 @@ KM.conf_config_track = function() {
     var misc_modified =       false;
     var display_modified =    false; // the 'display select' and color theme
     var pw_modified =         false;
-    var mask_modified =       KM.fill_arr(['pad'], false, max_feed);
-    var feed_modified =       KM.fill_arr(['pad'], false, max_feed);
+ //   var mask_modified =       KM.fill_arr(['pad'], false, max_feed);
+ //   var feed_modified =       KM.fill_arr(['pad'], false, max_feed);
 
 
 
@@ -4044,8 +3927,8 @@ KM.conf_config_track = function() {
 	reset: function() {
 	    misc_modified =       false;
 	    pw_modified =         false;
-	    mask_modified =       KM.fill_arr(['pad'], false, max_feed),
-	    feed_modified =       KM.fill_arr(['pad'], false, max_feed), 	    
+//	    mask_modified =       KM.fill_arr(['pad'], false, KM.config.feeds.max_feed+1),
+//	    feed_modified =       KM.fill_arr(['pad'], false, KM.config.feeds.max_feed+1), 	    
 	    display_modified =    false; // the 'display select' and color theme
 	    coded_str = '';
 	},
@@ -4054,58 +3937,58 @@ KM.conf_config_track = function() {
 	    // sync 'www_rc' with server 'www_rc'
 	    if (misc_modified) {
 		// archive button enabled
-		coded_str += '$are:' + bool_num(KM.www_rc.archive_button_enabled);
+		coded_str += '$are:' + bool_num(KM.config.misc.archive_button_enabled);
 		// stats button enabled
-		coded_str += '$lge:' + bool_num(KM.www_rc.logs_button_enabled);
+		coded_str += '$lge:' + bool_num(KM.config.misc.logs_button_enabled);
 		// config bitton enabled
-		coded_str += '$coe:' + bool_num(KM.www_rc.config_button_enabled);
+		coded_str += '$coe:' + bool_num(KM.config.misc.config_button_enabled);
 		//hide_button_bar
-		coded_str += '$hbb:' + bool_num(KM.www_rc.hide_button_bar);
+		coded_str += '$hbb:' + bool_num(KM.config.misc.hide_button_bar);
 		}
 
-	    for (var i = 1; i < max_feed; i++) {
-		if (mask_modified[i] === true) {
+	    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+		if (mask_modified[i] == true) {
 		    // feed mask
-		    coded_str += '$fma' + i + ':' + KM.www_rc.feed_mask[KM.config.camera];
+		    coded_str += '$fma' + i + ':' + KM.config.feeds[KM.conf.camera].feed_mask;
 		}
 	    }
 
-	    for (var i = 1; i < max_feed; i++) {
-		if (feed_modified[i] === true) {
+	    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+		if (feed_modified[i] == true) {
 		    // feed enabled
-		    coded_str += '$fen' + i + ':' + bool_num(KM.www_rc.feed_enabled[KM.config.camera]);
+		    coded_str += '$fen' + i + ':' + bool_num(KM.config.feed_enabled[KM.conf.camera]);
 		    // feed pal
-		    coded_str += '$fpl' + i + ':' + bool_num(KM.www_rc.feed_pal[KM.config.camera]);
+		    coded_str += '$fpl' + i + ':' + bool_num(KM.config.feed_pal[KM.conf.camera]);
 		    // feed device
-		    coded_str += '$fde' + i + ':' + KM.www_rc.feed_device[KM.config.camera];
+		    coded_str += '$fde' + i + ':' + KM.config.feed_device[KM.conf.camera];
 		    // feed input
-		    coded_str += '$fin' + i + ':' + KM.www_rc.feed_input[KM.config.camera];
+		    coded_str += '$fin' + i + ':' + KM.config.feed_input[KM.conf.camera];
 		    // feed url
-		    coded_str += '$ful' + i + ':' + KM.expand_chars(KM.www_rc.feed_url[KM.config.camera]);
+		    coded_str += '$ful' + i + ':' + KM.expand_chars(KM.config.feed_url[KM.conf.camera]);
 		    // feed proxy
-		    coded_str += '$fpr' + i + ':' + KM.expand_chars(KM.www_rc.feed_proxy[KM.config.camera]);
+		    coded_str += '$fpr' + i + ':' + KM.expand_chars(KM.config.feed_proxy[KM.conf.camera]);
 		    // feed login name
-		    coded_str += '$fln' + i + ':' + KM.expand_chars(KM.www_rc.feed_lgn_name[KM.config.camera]);
+		    coded_str += '$fln' + i + ':' + KM.expand_chars(KM.config.feed_lgn_name[KM.conf.camera]);
 		    // feed login password
-		    coded_str += '$flp' + i + ':' + KM.expand_chars(KM.www_rc.feed_lgn_pw[KM.config.camera]);
+		    coded_str += '$flp' + i + ':' + KM.expand_chars(KM.config.feed_lgn_pw[KM.conf.camera]);
 		    // feed width
-		    coded_str += '$fwd' + i + ':' + KM.www_rc.feed_width[KM.config.camera];
+		    coded_str += '$fwd' + i + ':' + KM.config.feed_width[KM.conf.camera];
 		    // feed height
-		    coded_str += '$fhe' + i + ':' + KM.www_rc.feed_height[KM.config.camera];
+		    coded_str += '$fhe' + i + ':' + KM.config.feed_height[KM.conf.camera];
 		    // feed name
-		    coded_str += '$fna' + i + ':' + KM.expand_chars(KM.www_rc.feed_name[KM.config.camera]);
+		    coded_str += '$fna' + i + ':' + KM.expand_chars(KM.config.feed_name[KM.conf.camera]);
 		    // feed show box
-		    coded_str += '$fbo' + i + ':' + bool_num(KM.www_rc.feed_show_box[KM.config.camera]);
+		    coded_str += '$fbo' + i + ':' + bool_num(KM.config.feed_show_box[KM.conf.camera]);
 		    // feed fps
-		    coded_str += '$ffp' + i + ':' + KM.www_rc.feed_fps[KM.config.camera];
+		    coded_str += '$ffp' + i + ':' + KM.config.feed_fps[KM.conf.camera];
 		    // feed snap enabled
-		    coded_str += '$fpe' + i + ':' + bool_num(KM.www_rc.feed_snap_enabled[KM.config.camera]);
+		    coded_str += '$fpe' + i + ':' + bool_num(KM.config.feed_snap_enabled[KM.conf.camera]);
 		    // feed snap interval
-		    coded_str += '$fsn' + i + ':' + KM.www_rc.feed_snap_interval[KM.config.camera];
+		    coded_str += '$fsn' + i + ':' + KM.config.feed_snap_interval[KM.conf.camera];
 		    // feed frame enabled
-		    coded_str += '$ffe' + i + ':' + bool_num(KM.www_rc.feed_smovie_enabled[KM.config.camera]);
+		    coded_str += '$ffe' + i + ':' + bool_num(KM.config.feed_smovie_enabled[KM.conf.camera]);
 		    // feed ffmpeg enabled
-		    coded_str += '$fme' + i + ':' + bool_num(KM.www_rc.feed_movie_enabled[KM.config.camera]);
+		    coded_str += '$fme' + i + ':' + bool_num(KM.config.feed_movie_enabled[KM.conf.camera]);
 		}
 	    }
 
@@ -4115,12 +3998,12 @@ KM.conf_config_track = function() {
 		for (var i = 1; i < 13; i++) {
 		    // display feeds
 		    coded_str += '$dif' + i + ':' +
-		    KM.www_rc.display_cameras[i].slice(1, KM.www_rc.display_cameras[i].length);
+		    KM.config.display_feeds[i].slice(1, KM.config.display_feeds[i].length);
 		}
 		// color select
-		coded_str += '$col:' + KM.www_rc.color_select;
+		coded_str += '$col:' + KM.config.color_select;
 		// display select
-		coded_str += '$dis:' + KM.www_rc.display_select;
+		coded_str += '$dis:' + KM.config.display_select;
 	    }
 
 
@@ -4148,12 +4031,12 @@ kmotion will experience temporary\nvideo freezing.');
 	    }
 	}
     }
-}();
+}();*/
 
 
 KM.conf_error_daemon = function (session_id) {
 
-    // A closure that acts as a daemon updateing 'KM.config.error_str' with
+    // A closure that acts as a daemon updateing 'KM.conf.error_str' with
     // motions output every 2 seconds. If errors are detected in this string
     // enable the 'Motion Errors' button and colour it red.
     //
@@ -4177,12 +4060,12 @@ KM.conf_error_daemon = function (session_id) {
                 // 'data.substr(data.length - 4)' due to IE bug !
                 // possibly large string so 6 digit checksum
                 if (KM.session_id.current === session_id) {
-                    KM.config.error_str = JSON.parse(data);
+                    KM.conf.error_str = JSON.parse(data);
 					// scan the string looking for errors
-					var error_lines = KM.config.error_str.split("\n");
+					var error_lines = KM.conf.error_str.split("\n");
 					var error_flag = false;
 					for (var i = 0; i < error_lines.length; i++) {
-						if (error_lines[i].search(KM.config.error_search_str) !== -1) {
+						if (error_lines[i].search(KM.conf.error_search_str) !== -1) {
 							error_flag = true;
 						}
 					}
@@ -4204,7 +4087,7 @@ KM.conf_error_daemon = function (session_id) {
         if (KM.session_id.current === session_id) {
             KM.cull_timeout_ids(KM.ERROR_DAEMON);
             KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 2000));
-			//if (KM.config.error_str!="")
+			//if (KM.conf.error_str!="")
 			//	KM.kill_timeout_ids(KM.ERROR_DAEMON);
 			//KM.conf_error_html();
         }
@@ -4283,24 +4166,7 @@ KM.conf_backdrop_html = function() {
 
     '</div>';
 	
-    if (KM.www_rc.version_latest === 'failed_parse') {
-        document.getElementById('update').innerHTML = 'Connecting to update server ...';
-        document.getElementById('update').style.color = KM.YELLOW;
-
-    } else if (KM.www_rc.version_latest === 'SVN') {
-        document.getElementById('update').innerHTML = 'Execute \'svn update\' for latest build.';
-        document.getElementById('update').style.color = KM.RED;
-
-    } else if (KM.www_rc.version === KM.www_rc.version_latest) {
-        document.getElementById('update').innerHTML = 'No updates avaliable.';
-        document.getElementById('update').style.color = KM.GREY;
-
-    } else {
-        document.getElementById('update').innerHTML = 'Version ' + KM.www_rc.version_latest + ' is now avaliable.';
-        document.getElementById('update').style.color = KM.RED;
-    }
-
-
+    
     KM.conf_misc_html();
 };
 
@@ -4345,7 +4211,7 @@ KM.conf_select_errors = function() {
     //
     // returns:
     //
-    //KM.config.error_str="";
+    //KM.conf.error_str="";
     KM.session_id.current++;
     KM.conf_error_daemon(KM.session_id.current);
     KM.conf_error_html();
@@ -4414,10 +4280,10 @@ KM.conf_misc_html = function() {
            </div>';
 
 
-    document.getElementById('misc_archive').checked = KM.www_rc.archive_button_enabled;
-    document.getElementById('misc_logs').checked = KM.www_rc.logs_button_enabled;
-    document.getElementById('misc_config').checked = KM.www_rc.config_button_enabled;
-	document.getElementById('misc_hide_button_bar').checked = KM.www_rc.hide_button_bar;
+    document.getElementById('misc_archive').checked = KM.config.misc.archive_button_enabled;
+    document.getElementById('misc_logs').checked = KM.config.misc.logs_button_enabled;
+    document.getElementById('misc_config').checked = KM.config.misc.config_button_enabled;
+	document.getElementById('misc_hide_button_bar').checked = KM.config.misc.hide_button_bar;
 };
 
 
@@ -4444,7 +4310,6 @@ KM.conf_misc_save_pw = function() {
     // returns:
     //
 
-    KM.config.pwd_changed = true;
     KM.conf_config_track.pw_modified();
     KM.conf_misc_highlight_apply();
 };
@@ -4474,10 +4339,10 @@ KM.conf_misc_apply = function () {
     // returns:
     //
 
-    KM.www_rc.archive_button_enabled = document.getElementById('misc_archive').checked;
-    KM.www_rc.logs_button_enabled = document.getElementById('misc_logs').checked;
-    KM.www_rc.config_button_enabled = document.getElementById('misc_config').checked;
-	KM.www_rc.hide_button_bar = document.getElementById('misc_hide_button_bar').checked;
+    KM.config.misc.archive_button_enabled = document.getElementById('misc_archive').checked;
+    KM.config.misc.logs_button_enabled = document.getElementById('misc_logs').checked;
+    KM.config.misc.config_button_enabled = document.getElementById('misc_config').checked;
+	KM.config.misc.hide_button_bar = document.getElementById('misc_hide_button_bar').checked;
     // reset the 'misc_save' checked box any warning highlight on the apply line
     document.getElementById('misc_save').checked = false;
     document.getElementById('conf_apply').style.fontWeight = 'normal';
@@ -4544,7 +4409,7 @@ KM.conf_feed_html = function () {
      '<div class="config_tick_margin">' +
 	 '<div  class="config_text_margin">' +
         '<select style="width:190px;" id="feed_camera" onchange="KM.conf_feed_change();">';
-		for (var i=1;i<max_feed;i++) {
+		for (var i=1;i<=KM.config.feeds.max_feed;i++) {
 			html_str+='<option value="'+i+'">Camera '+i+'</option>';
         };
 		html_str+='</select>\
@@ -4563,7 +4428,7 @@ KM.conf_feed_html = function () {
             <div class="config_tick_margin">\
 			<div class="config_text">\
               <select style="width:190px" id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
-				for (var i=0;i<max_feed-1;i++) {
+				for (var i=0;i<=KM.config.feeds.max_feed;i++) {
 					html_str+='<option value="'+i+'">/dev/video'+i+'</option>';			
 				};
 				html_str+='<option value="-1">Network Cam</option></select>\
@@ -4603,7 +4468,7 @@ KM.conf_feed_html = function () {
             </div></div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
             <div class="config_tick_margin" id="feed_text_7">\
-              <div class="config_text">Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onfocus="KM.conf_feed_highlight_apply();" value="'+KM.config.camera+'"/></div>\
+              <div class="config_text">Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onfocus="KM.conf_feed_highlight_apply();" value="'+KM.conf.camera+'"/></div>\
             </div>\
 			</div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
@@ -4661,18 +4526,18 @@ KM.conf_feed_html = function () {
           </div><br />';
     
 
-    if (KM.www_rc.feed_enabled[KM.config.camera]) {
+    if (KM.config.feeds[KM.conf.camera].feed_enabled) {
         html_str = html_str.replace(/disabled/g, '');
         html_str = html_str.replace(/gcam.png/, 'bcam.png');
 
-        KM.conf_live_feed_daemon(KM.session_id.current, KM.config.camera);
+        KM.conf_live_feed_daemon(KM.session_id.current, KM.conf.camera);
     }
     document.getElementById('config_html').innerHTML = html_str;
 
     // has to be this messy way to avoid flicker
-	//console.log(KM.www_rc.feed_device[KM.config.camera]);
-    if (KM.www_rc.feed_enabled[KM.config.camera]) {
-        if (KM.www_rc.feed_device[KM.config.camera] == -1) {
+	//console.log(KM.config.feed_device[KM.conf.camera]);
+    if (KM.config.feeds[KM.conf.camera].feed_enabled) {
+        if (KM.config.feeds[KM.conf.camera].feed_device == -1) {
             document.getElementById('feed_input').disabled = true;
             document.getElementById('feed_url').disabled = false;
             document.getElementById('feed_proxy').disabled = false;
@@ -4687,28 +4552,28 @@ KM.conf_feed_html = function () {
         }
     }
 
-    document.getElementById('feed_camera').selectedIndex = KM.config.camera - 1;
-    document.getElementById('feed_enabled').checked = KM.www_rc.feed_enabled[KM.config.camera];
-    document.getElementById('feed_pal_enabled').checked = KM.www_rc.feed_pal[KM.config.camera];
-    document.getElementById('feed_ntsc_enabled').checked = !KM.www_rc.feed_pal[KM.config.camera];
-	if (KM.www_rc.feed_device[KM.config.camera]>-1)
-		document.getElementById('feed_device').selectedIndex = KM.www_rc.feed_device[KM.config.camera];
+    document.getElementById('feed_camera').selectedIndex = KM.conf.camera - 1;
+    document.getElementById('feed_enabled').checked = KM.config.feeds[KM.conf.camera].feed_enabled;
+    document.getElementById('feed_pal_enabled').checked = KM.config.feeds[KM.conf.camera].feed_pal;
+    document.getElementById('feed_ntsc_enabled').checked = !KM.config.feeds[KM.conf.camera].feed_pal;
+	if (KM.config.feeds[KM.conf.camera].feed_device>-1)
+		document.getElementById('feed_device').selectedIndex = KM.config.feeds[KM.conf.camera].feed_device;
 	else
-		document.getElementById('feed_device').selectedIndex = max_feed-1;
-    document.getElementById('feed_input').selectedIndex = KM.www_rc.feed_input[KM.config.camera];
-    document.getElementById('feed_url').value = KM.www_rc.feed_url[KM.config.camera];
-    document.getElementById('feed_proxy').value = KM.www_rc.feed_proxy[KM.config.camera];
-    document.getElementById('feed_lgn_name').value = KM.www_rc.feed_lgn_name[KM.config.camera];
-    document.getElementById('feed_lgn_pw').value = KM.www_rc.feed_lgn_pw[KM.config.camera];
-    document.getElementById('feed_width').value = KM.www_rc.feed_width[KM.config.camera];
-    document.getElementById('feed_height').value = KM.www_rc.feed_height[KM.config.camera];
-    document.getElementById('feed_name').value = KM.www_rc.feed_name[KM.config.camera];
-    document.getElementById('feed_box').checked = KM.www_rc.feed_show_box[KM.config.camera];
-    document.getElementById('feed_fps').value = KM.www_rc.feed_fps[KM.config.camera];
-    document.getElementById('feed_snap_enabled').checked = KM.www_rc.feed_snap_enabled[KM.config.camera];
-    document.getElementById('feed_snap').value = KM.www_rc.feed_snap_interval[KM.config.camera];
-    document.getElementById('feed_frame_enabled').checked = KM.www_rc.feed_smovie_enabled[KM.config.camera];
-    document.getElementById('feed_ffmpeg_enabled').checked = KM.www_rc.feed_movie_enabled[KM.config.camera];
+		document.getElementById('feed_device').selectedIndex = KM.config.feeds.max_feed;
+    document.getElementById('feed_input').selectedIndex = KM.config.feeds[KM.conf.camera].feed_input;
+    document.getElementById('feed_url').value = KM.config.feeds[KM.conf.camera].feed_url;
+    document.getElementById('feed_proxy').value = KM.config.feeds[KM.conf.camera].feed_proxy;
+    document.getElementById('feed_lgn_name').value = KM.config.feeds[KM.conf.camera].feed_lgn_name;
+    document.getElementById('feed_lgn_pw').value = KM.config.feeds[KM.conf.camera].feed_lgn_pw;
+    document.getElementById('feed_width').value = KM.config.feeds[KM.conf.camera].feed_width;
+    document.getElementById('feed_height').value = KM.config.feeds[KM.conf.camera].feed_height;
+    document.getElementById('feed_name').value = KM.config.feeds[KM.conf.camera].feed_name;
+    document.getElementById('feed_box').checked = KM.config.feeds[KM.conf.camera].feed_show_box;
+    document.getElementById('feed_fps').value = KM.config.feeds[KM.conf.camera].feed_fps;
+    document.getElementById('feed_snap_enabled').checked = KM.config.feeds[KM.conf.camera].feed_snap_enabled;
+    document.getElementById('feed_snap').value = KM.config.feeds[KM.conf.camera].feed_snap_interval;
+    document.getElementById('feed_frame_enabled').checked = KM.config.feeds[KM.conf.camera].feed_smovie_enabled;
+    document.getElementById('feed_ffmpeg_enabled').checked = KM.config.feeds[KM.conf.camera].feed_movie_enabled;
 
     // reposition the masks
     var origin_y = document.getElementById('image').offsetTop;
@@ -4730,21 +4595,21 @@ KM.conf_feed_html = function () {
         }
     }
 
-    KM.config.mask = '';
-    var mask_lines = KM.www_rc.feed_mask[KM.config.camera].split('#');
+    KM.conf.mask = '';
+    var mask_lines = KM.config.feeds[KM.conf.camera].feed_mask.split('#');
     for (var i = 0; i < 15; i++) {
-        KM.config.mask += KM.pad_out(parseInt(mask_lines[i], 16).toString(2), 15);
+        KM.conf.mask += KM.pad_out(parseInt(mask_lines[i], 16).toString(2), 15);
     }
-    if (KM.www_rc.feed_enabled[KM.config.camera]) {
+    if (KM.config.feeds[KM.conf.camera].feed_enabled) {
         // if enabled show the mask and enable ptz button
         for (var i = 0; i < 225; i++) {
-            if (KM.config.mask.charAt(i) === '1') {
+            if (KM.conf.mask.charAt(i) === '1') {
                 document.getElementById('mask_img_' + (i + 1)).src = 'images/mask.png'
             }
         }
     };
 
-	for (var i = 0; i < max_feed-1; i++) {
+	for (var i = 0; i <= KM.config.feeds.max_feed; i++) {
 		if (KM.conf_config_track.feed_modified[i] == true){
 			KM.conf_feed_highlight_apply();
 			break;
@@ -4763,14 +4628,14 @@ KM.conf_toggle_feed_mask = function (mask_num) {
     // returns:
     //
 
-    if (KM.config.mask.charAt(mask_num - 1) === '0' && document.getElementById('feed_enabled').checked) {
+    if (KM.conf.mask.charAt(mask_num - 1) === '0' && document.getElementById('feed_enabled').checked) {
         document.getElementById('mask_img_' + mask_num).src = 'images/mask.png';
-        KM.config.mask = KM.config.mask.substr(0, mask_num - 1) + '1' + KM.config.mask.substr(mask_num);
+        KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '1' + KM.conf.mask.substr(mask_num);
     } else {
         document.getElementById('mask_img_' + mask_num).src = 'images/mask_trans.png';
-        KM.config.mask = KM.config.mask.substr(0, mask_num - 1) + '0' + KM.config.mask.substr(mask_num);
+        KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '0' + KM.conf.mask.substr(mask_num);
     }
-    KM.conf_config_track.mask_modified(KM.config.camera);
+    KM.conf_config_track.mask_modified(KM.conf.camera);
     KM.conf_feed_highlight_apply();
 };
 
@@ -4790,26 +4655,26 @@ KM.conf_feed_mask_button = function (button_num) {
 
 	if (button_num === 1) {
 	    document.getElementById('mask_img_' + mask_num).src = 'images/mask.png';
-	    KM.config.mask = KM.config.mask.substr(0, mask_num - 1) + '1' + KM.config.mask.substr(mask_num);
+	    KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '1' + KM.conf.mask.substr(mask_num);
 
 	} else if (button_num === 2) {
-	    if (KM.config.mask.substr(mask_num - 1, 1) === '0') {
+	    if (KM.conf.mask.substr(mask_num - 1, 1) === '0') {
 
-		KM.config.mask = KM.config.mask.substr(0, mask_num - 1) + '1' + KM.config.mask.substr(mask_num);
+		KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '1' + KM.conf.mask.substr(mask_num);
 		document.getElementById('mask_img_' + mask_num).src = 'images/mask.png';
 
 	    } else {
 
-		KM.config.mask = KM.config.mask.substr(0, mask_num - 1) + '0' + KM.config.mask.substr(mask_num);
+		KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '0' + KM.conf.mask.substr(mask_num);
 		document.getElementById('mask_img_' + mask_num).src = 'images/mask_trans.png';
 	    }
 
 	} else if (button_num === 3) {
 	    document.getElementById('mask_img_' + mask_num).src = 'images/mask_trans.png';
-	    KM.config.mask = KM.config.mask.substr(0, mask_num - 1) + '0' + KM.config.mask.substr(mask_num);
+	    KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '0' + KM.conf.mask.substr(mask_num);
 	}
     }
-    KM.conf_config_track.mask_modified(KM.config.camera);
+    KM.conf_config_track.mask_modified(KM.conf.camera);
     KM.conf_feed_highlight_apply();
 };
 
@@ -4826,7 +4691,7 @@ KM.conf_feed_change = function () {
     //
 
     KM.session_id.current++; // needed to kill the live feed daemon
-    KM.config.camera = document.getElementById('feed_camera').selectedIndex + 1;
+    KM.conf.camera = document.getElementById('feed_camera').selectedIndex + 1;
     KM.add_timeout_id(KM.MISC_JUMP, setTimeout(function () {KM.conf_feed_html(); }, 1));
 };
 
@@ -4847,7 +4712,7 @@ KM.conf_feed_enabled = function () {
         KM.conf_feed_grey();
     }
     // have to generate new mask on feed enabled
-    KM.conf_config_track.mask_modified(KM.config.camera);
+    KM.conf_config_track.mask_modified(KM.conf.camera);
 };
 
 
@@ -4888,7 +4753,7 @@ KM.conf_feed_net_highlight = function () {
     // returns:
     //
 
-    if (document.getElementById('feed_device').selectedIndex == max_feed-1) {
+    if (document.getElementById('feed_device').selectedIndex == KM.config.feeds.max_feed) {
         document.getElementById('feed_input').disabled = true;
         document.getElementById('feed_url').disabled = false;
         document.getElementById('feed_proxy').disabled = false;
@@ -4978,7 +4843,7 @@ KM.conf_feed_ungrey = function () {
     // returns:
     //
 
-    KM.conf_live_feed_daemon(KM.session_id.current, KM.config.camera);
+    KM.conf_live_feed_daemon(KM.session_id.current, KM.conf.camera);
 
     var ids = ['mask_all' , 'mask_invert', 'mask_none', 'feed_pal_enabled',
     'feed_ntsc_enabled', 'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
@@ -4998,7 +4863,7 @@ KM.conf_feed_ungrey = function () {
     document.getElementById('image').src = 'images/bcam.png';
     // if enabled show the mask
     for (var i = 0; i < 225; i++) {
-        if (KM.config.mask.charAt(i) === '1') {
+        if (KM.conf.mask.charAt(i) === '1') {
             document.getElementById('mask_img_' + (i + 1)).src = 'images/mask.png'
         }
     }
@@ -5022,38 +4887,38 @@ KM.conf_feed_highlight_apply = function () {
 };
 
 KM.conf_feed_update = function () {
-	KM.www_rc.feed_enabled[KM.config.camera] = document.getElementById('feed_enabled').checked;
-    KM.www_rc.feed_pal[KM.config.camera] = document.getElementById('feed_pal_enabled').checked;
-    if (document.getElementById('feed_device').selectedIndex == max_feed-1) {
-	KM.www_rc.feed_device[KM.config.camera]=-1;
+	KM.config.feeds[KM.conf.camera].feed_enabled = document.getElementById('feed_enabled').checked;
+    KM.config.feeds[KM.conf.camera].feed_pal = document.getElementById('feed_pal_enabled').checked;
+    if (document.getElementById('feed_device').selectedIndex == KM.config.feeds.max_feed) {
+	KM.config.feeds[KM.conf.camera].feed_device=-1;
     } else {
-	KM.www_rc.feed_device[KM.config.camera] = document.getElementById('feed_device').selectedIndex;
+	KM.config.feeds[KM.conf.camera].feed_device = document.getElementById('feed_device').selectedIndex;
     };
-    KM.www_rc.feed_input[KM.config.camera] = document.getElementById('feed_input').selectedIndex;
-    KM.www_rc.feed_url[KM.config.camera] = document.getElementById('feed_url').value;
-    KM.www_rc.feed_proxy[KM.config.camera] = document.getElementById('feed_proxy').value;
-    KM.www_rc.feed_lgn_name[KM.config.camera] = document.getElementById('feed_lgn_name').value;
-    KM.www_rc.feed_lgn_pw[KM.config.camera] = document.getElementById('feed_lgn_pw').value;
-    KM.www_rc.feed_name[KM.config.camera] = document.getElementById('feed_name').value;
-    KM.www_rc.feed_show_box[KM.config.camera] = document.getElementById('feed_box').checked;
-    KM.www_rc.feed_snap_enabled[KM.config.camera] = document.getElementById('feed_snap_enabled').checked;
-    KM.www_rc.feed_smovie_enabled[KM.config.camera] = document.getElementById('feed_frame_enabled').checked;
-    KM.www_rc.feed_movie_enabled[KM.config.camera] = document.getElementById('feed_ffmpeg_enabled').checked;
+    KM.config.feeds[KM.conf.camera].feed_input = document.getElementById('feed_input').selectedIndex;
+    KM.config.feeds[KM.conf.camera].feed_url = document.getElementById('feed_url').value;
+    KM.config.feeds[KM.conf.camera].feed_proxy = document.getElementById('feed_proxy').value;
+    KM.config.feeds[KM.conf.camera].feed_lgn_name = document.getElementById('feed_lgn_name').value;
+    KM.config.feeds[KM.conf.camera].feed_lgn_pw = document.getElementById('feed_lgn_pw').value;
+    KM.config.feeds[KM.conf.camera].feed_name = document.getElementById('feed_name').value;
+    KM.config.feeds[KM.conf.camera].feed_show_box = document.getElementById('feed_box').checked;
+    KM.config.feeds[KM.conf.camera].feed_snap_enabled = document.getElementById('feed_snap_enabled').checked;
+    KM.config.feeds[KM.conf.camera].feed_smovie_enabled = document.getElementById('feed_frame_enabled').checked;
+    KM.config.feeds[KM.conf.camera].feed_movie_enabled = document.getElementById('feed_ffmpeg_enabled').checked;
 
     var tmp = '';
-    KM.www_rc.feed_mask[KM.config.camera] = '';
+    KM.config.feeds[KM.conf.camera].feed_mask = '';
     for (var i = 0; i < 15; i++) {
-        tmp = KM.config.mask.substr(i * 15, 15);
-        KM.www_rc.feed_mask[KM.config.camera] += parseInt(tmp, 2).toString(16) + '#';
+        tmp = KM.conf.mask.substr(i * 15, 15);
+        KM.config.feeds[KM.conf.camera].feed_mask += parseInt(tmp, 2).toString(16) + '#';
     }
 
     var width = parseInt(document.getElementById('feed_width').value, 10);
     if (isNaN(width)) width = 0;
     width = parseInt(width / 16) * 16;
-    if (KM.www_rc.feed_width[KM.config.camera] !== width) {
+    if (KM.config.feeds[KM.conf.camera].feed_width !== width) {
         // if the image size changes, change the mask
-        KM.conf_config_track.mask_modified(KM.config.camera);
-        KM.www_rc.feed_width[KM.config.camera] = width;
+        KM.conf_config_track.mask_modified(KM.conf.camera);
+        KM.config.feeds[KM.conf.camera].feed_width = width;
     }
     // feed value back to gui in case parseInt changes it
     document.getElementById('feed_width').value = width;
@@ -5061,27 +4926,27 @@ KM.conf_feed_update = function () {
     var height = parseInt(document.getElementById('feed_height').value, 10);
     if (isNaN(height)) height = 0;
     height = parseInt(height / 16) * 16;
-    if (KM.www_rc.feed_height[KM.config.camera] !== height) {
+    if (KM.config.feeds[KM.conf.camera].feed_height !== height) {
         // if the image size changes, change the mask
-        KM.conf_config_track.mask_modified(KM.config.camera);
-        KM.www_rc.feed_height[KM.config.camera] = height;
+        KM.conf_config_track.mask_modified(KM.conf.camera);
+        KM.config.feed_height[KM.conf.camera] = height;
     }
     // feed value back to gui in case parseInt changes it
     document.getElementById('feed_height').value = height;
 
     var fps = parseInt(document.getElementById('feed_fps').value, 10);
     if (isNaN(fps)) fps = 0;
-    KM.www_rc.feed_fps[KM.config.camera] = fps;
+    KM.config.feeds[KM.conf.camera].feed_fps = fps;
     // feed value back to gui in case parseInt changes it
     document.getElementById('feed_fps').value = fps;
 
     var snap = parseInt(document.getElementById('feed_snap').value, 10);
     if (isNaN(snap)) snap = 0;
-    KM.www_rc.feed_snap_interval[KM.config.camera] = snap;
+    KM.config.feeds[KM.conf.camera].feed_snap_interval = snap;
     // feed value back to gui in case parseInt changes it
     document.getElementById('feed_snap').value = snap;
 
-	KM.conf_config_track.feed_modified(KM.config.camera);
+	KM.conf_config_track.feed_modified(KM.conf.camera);
 
 };
 
@@ -5147,9 +5012,9 @@ KM.conf_theme_html = function() {
     document.getElementById('config_html').innerHTML = '<div style="height:50px;line-height:50px;background-color:#000000;color:#c1c1c1;margin:10px;padding-left:10px"><input type="radio" name="theme" value="0" onchange="KM.background_button_clicked(0);">Dark theme</div>' +
 						'<div style="height:50px;line-height:50px;background-color:#ffffff;color:#505050;margin:10px;padding-left:10px"><input type="radio" name="theme" value="1" onchange="KM.background_button_clicked(1);">Light theme</div>'+
 						'<input type="button" id="conf_apply" onclick="KM.conf_theme_apply();" value="Save">';
-    document.getElementsByName('theme')[KM.www_rc.color_select].checked = true;
+    document.getElementsByName('theme')[KM.config.misc.color_select].checked = true;
 
-    //KM.www_rc.color_select = ;
+    //KM.config.color_select = ;
 }
 
 KM.conf_theme_apply = function() {
@@ -5176,12 +5041,12 @@ KM.conf_error_html = function() {
     // returns:
     //
 	
-    var error_lines = KM.config.error_str.split("\n");
-	KM.config.error_str=null;
+    var error_lines = KM.conf.error_str.split("\n");
+	KM.conf.error_str=null;
 	var error_str = '';
     for (var i = error_lines.length-1; i>=0; i--) {
 	//for (var i = 0; i<error_lines.length; i++) {
-        if (error_lines[i].search(KM.config.error_search_str) !== -1) {
+        if (error_lines[i].search(KM.conf.error_search_str) !== -1) {
 			error_str += '<span style="color:' + KM.RED + ';">' + error_lines[i] + '</span><br>';
         }
 		else {
@@ -5442,7 +5307,7 @@ KM.init1 = function () {
 };
 
 
-KM.init2 = function (data) {
+KM.init2 = function () {
 
     // A function that performs the main startup initialization. Delays are
     // built in to enable preload and default values are set.
@@ -5464,10 +5329,12 @@ KM.init2 = function (data) {
 	//
 	// returns :
 	//
-        KM.background_button_clicked(KM.www_rc.color_select);
-        KM.enable_display_buttons(KM.www_rc.display_select);
+        KM.browser.setTitle();
+        KM.background_button_clicked(KM.config.misc.color_select);
+        KM.enable_display_buttons(KM.config.misc.display_select);
+        KM.menu_bar_buttons.construct_camera_sec();
         KM.enable_camera_buttons();
-		if (KM.www_rc.hide_button_bar) {
+		if (KM.config.misc.hide_button_bar) {
 			KM.toggle_button_bar();
 		}
 
