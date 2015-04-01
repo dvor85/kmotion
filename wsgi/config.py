@@ -1,5 +1,4 @@
 import os, sys, json, datetime
-from cgi import parse_qs, escape
 
 
 class ConfigRW():
@@ -89,6 +88,7 @@ class ConfigRW():
     def write(self):
         try: 
             config = self.params['jdata']
+            config['user'] = self.getUsername()
             with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout: 
                 pipeout.write(config)
         except:

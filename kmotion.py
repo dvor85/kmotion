@@ -70,11 +70,6 @@ class Kmotion:
         self.init_core.init_ramdisk_dir()
         
         try:  # wrapping in a try - except because parsing data from kmotion_rc
-            self.init_core.update_rcs()
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
-        
-        try:  # wrapping in a try - except because parsing data from kmotion_rc
             self.init_core.gen_vhost()
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])

@@ -55,22 +55,6 @@ class InitCore:
                 self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
         self.feed_list.sort()
     
-        self.update_rcs()
-        
-    
-    def update_rcs(self):
-        
-        """
-        Update the rc's during a 'kmotion' or 'kmotion reload'
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion
-                  ramdisk_dir ... the 'root' directory of ramdisk
-        excepts :
-        return  : none
-        """
-        
-        pass
-        
         
     def init_ramdisk_dir(self):
         """
@@ -161,33 +145,13 @@ class InitCore:
         """
         
         # use BASH rather than os.mkfifo(), FIFO bug workaround :)
-        fifo_func = '%s/www/fifo_func' % self.kmotion_dir
-        if not os.path.exists(fifo_func):
-            # os.mkfifo(fifo_func)
-            subprocess.call(['mkfifo', fifo_func])
-        os.chown(fifo_func, uid, gid)
-        os.chmod(fifo_func, 0660)
-        
         fifo_settings = '%s/www/fifo_settings_wr' % self.kmotion_dir
         if not os.path.exists(fifo_settings):
             # os.mkfifo(fifo_settings)
             subprocess.call(['mkfifo', fifo_settings])
         os.chown(fifo_settings, uid, gid)
-        os.chmod(fifo_settings, 0660)
+        os.chmod(fifo_settings, 0660)       
         
-        fifo_ptz = '%s/www/fifo_ptz' % self.kmotion_dir
-        if not os.path.exists(fifo_ptz):
-            # os.mkfifo(fifo_ptz)
-            subprocess.call(['mkfifo', fifo_ptz])
-        os.chown(fifo_ptz, uid, gid)
-        os.chmod(fifo_ptz, 0660)
-    
-        fifo_ptz_preset = '%s/www/fifo_ptz_preset' % self.kmotion_dir
-        if not os.path.exists(fifo_ptz_preset):
-            # os.mkfifo(fifo_ptz_preset)
-            subprocess.call(['mkfifo', fifo_ptz_preset])
-        os.chown(fifo_ptz_preset, uid, gid)
-        os.chmod(fifo_ptz_preset, 0660)
     
     def gen_vhost(self):
         """
