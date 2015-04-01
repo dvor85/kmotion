@@ -1,14 +1,15 @@
 
-import os, json
-from cgi import parse_qs, escape
+import os, sys, json
 
 class Feeds():
     
-    def __init__(self, kmotion_dir, environ):        
-        self.kmotion_dir = kmotion_dir
+    def __init__(self, kmotion_dir, environ):       
+        sys.path.append(kmotion_dir) 
+        from core.request import Request
+        self.kmotion_dir = kmotion_dir 
         self.environ = environ
-        self.params = parse_qs(self.environ['QUERY_STRING'])
-        self.ramdisk_dir = escape(self.params['rdd'][0])
+        self.params = Request(environ)
+        self.ramdisk_dir = self.params['rdd']
     
     def main(self):
         

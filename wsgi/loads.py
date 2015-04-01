@@ -1,5 +1,4 @@
 import json, subprocess
-from cgi import parse_qs, escape
 from datetime import timedelta
 
 
@@ -38,7 +37,6 @@ class Loads:
     def __init__(self, kmotion_dir, environ):
         self.kmotion_dir = kmotion_dir
         self.environ = environ
-        self.params = parse_qs(self.environ['QUERY_STRING'])
     
     def main(self):
         data = {}

@@ -5,25 +5,26 @@ Returns the archive data index's
 """
 
 import os, sys, json, datetime
-from cgi import parse_qs, escape
+
 
 
 class Archive():
     def __init__(self, kmotion_dir, environ):
         sys.path.append(kmotion_dir)
+        from core.request import Request
         from core.mutex_parsers import mutex_kmotion_parser_rd
         self.kmotion_dir = kmotion_dir
         self.environ = environ
-        self.params = parse_qs(self.environ['QUERY_STRING'])
-        self.func = escape(self.params['func'][0])
+        self.params = Request(self.environ)
+        self.func = self.params['func']
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
         
     def main(self):
         if self.func == 'avail':
-            return self.date_feed_avail_data(self.params['feeds'][0].split(','))
+            return self.date_feed_avail_data(self.params['feeds'].split(','))
         elif self.func == 'index':
-            return self.journal_data(escape(self.params['date'][0]), int(escape(self.params['feed'][0])))
+            return self.journal_data(self.params['date'], int(self.params['feed']))
         
 
     def date_feed_avail_data(self, feeds):
