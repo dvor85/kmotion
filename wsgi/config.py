@@ -1,4 +1,4 @@
-import os, sys, json, datetime
+import os, sys, json, datetime,traceback
 
 
 class ConfigRW():
@@ -8,7 +8,7 @@ class ConfigRW():
         from core.request import Request             
         self.kmotion_dir = kmotion_dir
         self.environ = environ
-        self.params = Request(self.environ)  
+        self.params = Request(self.environ)
               
         from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
         
@@ -87,13 +87,23 @@ class ConfigRW():
     
     def write(self):
         try: 
-            config = self.params['jdata']
+            import core.logger as logger
+            self.log = logger.Logger('config_setd', logger.DEBUG)
+            config = json.loads(self.params['jdata'])
             config['user'] = self.getUsername()
             with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout: 
-                pipeout.write(config)
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
+                pipeout.write(json.dumps(config))
+        except:  # global exception catch
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            exc_trace = traceback.extract_tb(exc_tb)[-1]
+            exc_loc1 = '%s' % exc_trace[0]
+            exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
+            
+            self.log('** CRITICAL ERROR ** crash - type: %s' % exc_type)
+            self.log('** CRITICAL ERROR ** crash - value: %s' % exc_value)
+            self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
+            self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
+            del(exc_tb)
             
         return ''
         
@@ -103,6 +113,8 @@ class ConfigRW():
             return self.read()
         elif self.params.has_key('write'):
             return self.write()
+        else:
+            return ''
        
 
             

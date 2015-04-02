@@ -48,12 +48,18 @@ class Kmotion_setd(Process):
                 self.config["feeds"]["max_feed"])
             
             for section in self.config.keys():
-                if section == 'feeds':
+                if section.startswith('_'):
+                    continue
+                if section == 'feeds':                    
                     for feed in self.config[section].keys():
+                        if feed.startswith('_'):
+                            continue
                         feed_section = 'motion_feed%02i' % int(feed)
                         if not self.www_parser.has_section(feed_section):
                             self.www_parser.add_section(feed_section)
                         for k, v in self.config[section][feed].items():
+                            if k.startswith('_'):
+                                continue
                             self.www_parser.set(feed_section, k, str(v))
                             if k == 'feed_mask':
                                 self.create_mask(feed, str(v))
@@ -67,6 +73,8 @@ class Kmotion_setd(Process):
                     if not self.www_parser.has_section(section):
                         self.www_parser.add_section(section)
                     for k, v in self.config[section].items():
+                        if k.startswith('_'):
+                            continue
                         self.www_parser.set(section, k, str(v))
                     
                     

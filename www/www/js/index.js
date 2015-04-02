@@ -3861,177 +3861,89 @@ Miscellaneous code that provides general closures and functions for config
 **************************************************************************** */
 
 
-/*KM.conf_config_track = function() {
+KM.conf_config_track = function() {
 
     // A closure that tracks changes to the local config and when needed
     // synchronises these changes with 'www_rc' and requests config reloads.
-    // Only synchronise changed sections to improve performance.
-    //
-    // Has the ability to request a single PTZ daemon config reload or a
-    // complete reload of all daemons including motion once the changes have
-    // been synchronised. If a complete reload is requested alerts the user of
-    // a possible 'video' freeze.caches log information and displays it with
-    // critical information highlighted
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    var misc_modified =       false;
-    var display_modified =    false; // the 'display select' and color theme
-    var pw_modified =         false;
- //   var mask_modified =       KM.fill_arr(['pad'], false, max_feed);
- //   var feed_modified =       KM.fill_arr(['pad'], false, max_feed);
-
-
-
-    var coded_str = '';
-
-    function bool_num(flag) {
-        if (flag) return 1;
-        return 0;
-    }
-
+    
+    var config = {};
+    var warning_msg = false;
+    
     return {
+    
+        init: function() {
+            config = JSON.parse(JSON.stringify(KM.config));
+        },
+   
+        misc_modified: function() {
+            config._misc_modified = true;
+        },
 
-	// the misc config screen has been modified
-	misc_modified: function() {
-	    misc_modified = true;
-	},
+        // the color scheme, camera layout or selected layout has been modified
+        display_modified: function() {
+            config._display_modified = true;
+        },
 
-	// the config password has been modified
-	pw_modified: function() {
-	    pw_modified = true;
-	},
+        // the feeds has been modified
+        feed_modified: function(i) {
+            config.feeds[i]._modified = true;            
+            warning_msg = true;
+        },
 
-	// the color scheme, camera layout or selected layout has been modified
-	display_modified: function() {
-	    display_modified = true;
-	},
+        // the feeds masks have been modified
+        mask_modified: function(i) {
+            config.feeds[i]._mask_modified = true;
+            warning_msg = true;
+        },
+        
+        reset: function() {
+            KM.conf_config_track.init();
+        },
 
-	// the feeds has been modified
-	feed_modified: function(i) {
-	    feed_modified[i] = true;
-	    warning_msg = true;
-	},
+        sync: function() {
+            // sync 'www_rc' with server 'www_rc'
+            if (!config._misc_modified) {
+                delete(config.misc.archive_button_enabled);
+                delete(config.misc.archive_button_enabled);
+                delete(config.misc.config_button_enabled);
+                delete(config.misc.hide_button_bar); 
+            };
+            
+            if (!config._display_modified) {
+                delete(config.display_feeds);
+                delete(config.misc.color_select);
+                delete(config.misc.display_select);
+            }
+            
+            for (var feed in config.feeds) {
+                try {
+                    if (!config.feeds[feed]["_modified"]) {
+                        if (!config.feeds[feed]["_mask_modified"]) {
+                            delete(config.feeds[feed]);                            
+                        }
+                    } else if (!config.feeds[feed]["_mask_modified"]) { 
+                        delete(config.feeds[feed]["feed_mask"]);
+                        delete(config.feeds[feed]["_mask_modified"]);
+                    }
+                } catch (e) {}
+            }
+            
+            var jdata = JSON.stringify(config);
+            var xmlHttp = KM.get_xmlHttp_obj();
+            xmlHttp.open('POST', '/ajax/config?write='+Math.random());
+            xmlHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xmlHttp.send('jdata=' + jdata);
+        
 
-	// the feeds masks have been modified
-	mask_modified: function(i) {
-	    mask_modified[i] = true;
-	    warning_msg = true;
-	},
-
-
-
-	reset: function() {
-	    misc_modified =       false;
-	    pw_modified =         false;
-//	    mask_modified =       KM.fill_arr(['pad'], false, KM.config.feeds.max_feed+1),
-//	    feed_modified =       KM.fill_arr(['pad'], false, KM.config.feeds.max_feed+1), 	    
-	    display_modified =    false; // the 'display select' and color theme
-	    coded_str = '';
-	},
-
-	sync: function() {
-	    // sync 'www_rc' with server 'www_rc'
-	    if (misc_modified) {
-		// archive button enabled
-		coded_str += '$are:' + bool_num(KM.config.misc.archive_button_enabled);
-		// stats button enabled
-		coded_str += '$lge:' + bool_num(KM.config.misc.logs_button_enabled);
-		// config bitton enabled
-		coded_str += '$coe:' + bool_num(KM.config.misc.config_button_enabled);
-		//hide_button_bar
-		coded_str += '$hbb:' + bool_num(KM.config.misc.hide_button_bar);
-		}
-
-	    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
-		if (mask_modified[i] == true) {
-		    // feed mask
-		    coded_str += '$fma' + i + ':' + KM.config.feeds[KM.conf.camera].feed_mask;
-		}
-	    }
-
-	    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
-		if (feed_modified[i] == true) {
-		    // feed enabled
-		    coded_str += '$fen' + i + ':' + bool_num(KM.config.feed_enabled[KM.conf.camera]);
-		    // feed pal
-		    coded_str += '$fpl' + i + ':' + bool_num(KM.config.feed_pal[KM.conf.camera]);
-		    // feed device
-		    coded_str += '$fde' + i + ':' + KM.config.feed_device[KM.conf.camera];
-		    // feed input
-		    coded_str += '$fin' + i + ':' + KM.config.feed_input[KM.conf.camera];
-		    // feed url
-		    coded_str += '$ful' + i + ':' + KM.expand_chars(KM.config.feed_url[KM.conf.camera]);
-		    // feed proxy
-		    coded_str += '$fpr' + i + ':' + KM.expand_chars(KM.config.feed_proxy[KM.conf.camera]);
-		    // feed login name
-		    coded_str += '$fln' + i + ':' + KM.expand_chars(KM.config.feed_lgn_name[KM.conf.camera]);
-		    // feed login password
-		    coded_str += '$flp' + i + ':' + KM.expand_chars(KM.config.feed_lgn_pw[KM.conf.camera]);
-		    // feed width
-		    coded_str += '$fwd' + i + ':' + KM.config.feed_width[KM.conf.camera];
-		    // feed height
-		    coded_str += '$fhe' + i + ':' + KM.config.feed_height[KM.conf.camera];
-		    // feed name
-		    coded_str += '$fna' + i + ':' + KM.expand_chars(KM.config.feed_name[KM.conf.camera]);
-		    // feed show box
-		    coded_str += '$fbo' + i + ':' + bool_num(KM.config.feed_show_box[KM.conf.camera]);
-		    // feed fps
-		    coded_str += '$ffp' + i + ':' + KM.config.feed_fps[KM.conf.camera];
-		    // feed snap enabled
-		    coded_str += '$fpe' + i + ':' + bool_num(KM.config.feed_snap_enabled[KM.conf.camera]);
-		    // feed snap interval
-		    coded_str += '$fsn' + i + ':' + KM.config.feed_snap_interval[KM.conf.camera];
-		    // feed frame enabled
-		    coded_str += '$ffe' + i + ':' + bool_num(KM.config.feed_smovie_enabled[KM.conf.camera]);
-		    // feed ffmpeg enabled
-		    coded_str += '$fme' + i + ':' + bool_num(KM.config.feed_movie_enabled[KM.conf.camera]);
-		}
-	    }
-
-	    if (display_modified) {
-		// user settings
-		//coded_str += '$usr:%CURRENT_USER%';
-		for (var i = 1; i < 13; i++) {
-		    // display feeds
-		    coded_str += '$dif' + i + ':' +
-		    KM.config.display_feeds[i].slice(1, KM.config.display_feeds[i].length);
-		}
-		// color select
-		coded_str += '$col:' + KM.config.color_select;
-		// display select
-		coded_str += '$dis:' + KM.config.display_select;
-	    }
-
-
-
-
-
-	    var coded_len = coded_str.length;
-	    var zero_pad = '00000000'.substring(0, 8 - (coded_len + '').length);
-	    coded_str += '$chk:' + zero_pad + coded_len;
-		//console.log(coded_str);
-	    if (coded_len !== 0) { // ie empty string
-		var xmlHttp = KM.get_xmlHttp_obj();
-		xmlHttp.open('POST', '/cgi_bin/xmlHttp_settings_wr.php');
-		xmlHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		xmlHttp.setRequestHeader("Content-length", coded_str.length);
-		xmlHttp.setRequestHeader("Connection", "close");
-		xmlHttp.send('dblob=' + coded_str);
-	    }
-
-	    if (warning_msg) {
-	    alert('The current synchronisation with the remote server\n\
-involves reloading of the motion daemon configuration.\n\nDuring the reload \
-kmotion will experience temporary\nvideo freezing.');
-	    KM.conf_config_track.reset();
-	    }
-	}
+            if (warning_msg) {
+                alert('The current synchronisation with the remote server\n\
+                        involves reloading of the motion daemon configuration.\n\nDuring the reload \
+                        kmotion will experience temporary\nvideo freezing.');
+            };
+            KM.conf_config_track.reset();
+        }
     }
-}();*/
+}();
 
 
 KM.conf_error_daemon = function (session_id) {
@@ -4272,7 +4184,6 @@ KM.conf_misc_html = function() {
             <br /><hr style="margin:10px;clear:both" />\
             <div class="config_group_margin">\
               <input type="checkbox" id="misc_save" onclick="KM.conf_misc_save_display();" />Save the current "Display Select" configuration as default.<br>\
-              <input type="checkbox" id="misc_secure" onclick="KM.conf_misc_highlight_apply();" />Enable security login screen. New password : <input type="password" id="misc_pw" />&nbsp;<input type="button" onclick="KM.conf_misc_save_pw();" value="Submit" /><br>\
             </div>\
             <hr style="margin:10px;clear:both" />\
             <div class="config_text_margin" id="conf_text" >\
@@ -4299,21 +4210,6 @@ KM.conf_misc_save_display = function() {
     KM.conf_config_track.display_modified();
     KM.conf_misc_highlight_apply();
 };
-
-
-KM.conf_misc_save_pw = function() {
-
-    // A function that saves the config password
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.conf_config_track.pw_modified();
-    KM.conf_misc_highlight_apply();
-};
-
 
 KM.conf_misc_highlight_apply = function () {
 
@@ -4343,6 +4239,7 @@ KM.conf_misc_apply = function () {
     KM.config.misc.logs_button_enabled = document.getElementById('misc_logs').checked;
     KM.config.misc.config_button_enabled = document.getElementById('misc_config').checked;
 	KM.config.misc.hide_button_bar = document.getElementById('misc_hide_button_bar').checked;
+    
     // reset the 'misc_save' checked box any warning highlight on the apply line
     document.getElementById('misc_save').checked = false;
     document.getElementById('conf_apply').style.fontWeight = 'normal';
@@ -4350,7 +4247,7 @@ KM.conf_misc_apply = function () {
     document.getElementById('conf_text').style.color = KM.DARK_GREY;
     KM.update_function_buttons(4); // update button enables
     KM.conf_config_track.misc_modified();
-    KM.conf_config_track.sync()
+    KM.conf_config_track.sync();
 };
 
 /* ****************************************************************************
@@ -4414,8 +4311,7 @@ KM.conf_feed_html = function () {
         };
 		html_str+='</select>\
 					<input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />Enable camera \
-					<br><br><input type="checkbox" id="feed_pal_enabled" onclick="KM.conf_feed_pal_selected();" />PAL \
-					<input type="checkbox" id="feed_ntsc_enabled" onclick="KM.conf_feed_ntsc_selected();" />NTSC \
+					<br><br> \
 			  </div></div><div class="config_tick_margin"> \
             <br /><hr style="margin:10px" class="clear_float"/> \
 			<div class="config_tick_margin">\
@@ -4475,19 +4371,6 @@ KM.conf_feed_html = function () {
 			<div class="config_text_margin" id="feed_text_8">\
               <input type="checkbox" id="feed_box" onclick="KM.conf_feed_highlight_apply();" />Enable motion highlighting. (Draw box around detected motion)\
             </div>\
-            <div class="config_text_margin" id="feed_text_10">\
-              <input type="checkbox" id="feed_ffmpeg_enabled" onclick="KM.conf_feed_ffmpeg_selected();" />Enable movie mode. Record motion events as a (flash swf) movie. Low bandwidth playback.\
-            </div>\
-            <div class="config_text_margin" id="feed_text_11">\
-              <input type="checkbox" id="feed_frame_enabled" onclick="KM.conf_feed_frame_selected();" />Enable frame mode. Record motion events as a series of discrete frames. High bandwidth playback at : <input type="text" id="feed_fps" size="4" onfocus="KM.conf_feed_highlight_apply();" />fps, (5 fps recommended)\
-            </div>\
-            <div class="config_text_margin" id="feed_text_13">\
-              Schedule : <select id="feed_sched_motion" onchange="KM.conf_feed_highlight_apply();">\
-                <option value="0">\
-                  None\
-                </option>\
-              </select>\
-			</div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
             <div class="config_text_margin" id="feed_text_14">\
               <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight_apply();" />Enable snapshot mode. Record an image in time lapse mode with a pause between images.\
@@ -4495,30 +4378,7 @@ KM.conf_feed_html = function () {
             <div class="config_text_margin" style="width:412px;" id="feed_text_15">\
               of : <input type="text" id="feed_snap" size="4" onfocus="KM.conf_feed_highlight_apply();" />Seconds, (300 Seconds recommended)\
             </div>\
-            <div class="config_text_margin" id="feed_text_16">\
-              Schedule: <select id="feed_sched_snap" onchange="KM.conf_feed_highlight_apply();">\
-                <option value="0">\
-                  None\
-                </option>\
-              </select>\
-            </div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
-            <div class="config_text_margin" style="width:444px;" id="feed_text_17">\
-              <input type="checkbox" id="feed_email_enabled" onclick="KM.conf_feed_highlight_apply();" />Enable email notification on motion detection. Set\
-            </div>\
-            <div class="config_text_margin" id="feed_text_18">\
-              Email : <input type="text" id="feed_email_addr" size="40" onfocus="KM.conf_feed_highlight_apply();" />\
-            </div>\
-            <div class="config_text_margin" style="width:412px;" id="feed_text_19">\
-              to : <input type="text" id="feed_email_pause" size="4" onfocus="KM.conf_feed_highlight_apply();" />Seconds (Min) between emails.\
-            </div>\
-            <div class="config_text_margin" id="feed_text_20">\
-              Schedule : <select id="feed_sched_email" onchange="KM.conf_feed_highlight_apply();">\
-                <option value="0">\
-                  None\
-                </option>\
-              </select>\
-            </div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
             <div class="config_text_margin" id="conf_text">\
               <input type="button" id="conf_apply" onclick="KM.conf_feed_apply();" value="Apply" />all changes to the local browser configuration and sync with the remote server.\
@@ -4552,14 +4412,12 @@ KM.conf_feed_html = function () {
         }
     }
 
-    document.getElementById('feed_camera').selectedIndex = KM.conf.camera - 1;
-    document.getElementById('feed_enabled').checked = KM.config.feeds[KM.conf.camera].feed_enabled;
-    document.getElementById('feed_pal_enabled').checked = KM.config.feeds[KM.conf.camera].feed_pal;
-    document.getElementById('feed_ntsc_enabled').checked = !KM.config.feeds[KM.conf.camera].feed_pal;
+    document.getElementById('feed_camera').selectedIndex = KM.conf.camera -1;
+    document.getElementById('feed_enabled').checked = KM.config.feeds[KM.conf.camera].feed_enabled;   
 	if (KM.config.feeds[KM.conf.camera].feed_device>-1)
 		document.getElementById('feed_device').selectedIndex = KM.config.feeds[KM.conf.camera].feed_device;
 	else
-		document.getElementById('feed_device').selectedIndex = KM.config.feeds.max_feed;
+		document.getElementById('feed_device').selectedIndex = KM.config.feeds.max_feed+1;
     document.getElementById('feed_input').selectedIndex = KM.config.feeds[KM.conf.camera].feed_input;
     document.getElementById('feed_url').value = KM.config.feeds[KM.conf.camera].feed_url;
     document.getElementById('feed_proxy').value = KM.config.feeds[KM.conf.camera].feed_proxy;
@@ -4569,11 +4427,8 @@ KM.conf_feed_html = function () {
     document.getElementById('feed_height').value = KM.config.feeds[KM.conf.camera].feed_height;
     document.getElementById('feed_name').value = KM.config.feeds[KM.conf.camera].feed_name;
     document.getElementById('feed_box').checked = KM.config.feeds[KM.conf.camera].feed_show_box;
-    document.getElementById('feed_fps').value = KM.config.feeds[KM.conf.camera].feed_fps;
     document.getElementById('feed_snap_enabled').checked = KM.config.feeds[KM.conf.camera].feed_snap_enabled;
     document.getElementById('feed_snap').value = KM.config.feeds[KM.conf.camera].feed_snap_interval;
-    document.getElementById('feed_frame_enabled').checked = KM.config.feeds[KM.conf.camera].feed_smovie_enabled;
-    document.getElementById('feed_ffmpeg_enabled').checked = KM.config.feeds[KM.conf.camera].feed_movie_enabled;
 
     // reposition the masks
     var origin_y = document.getElementById('image').offsetTop;
@@ -4601,7 +4456,7 @@ KM.conf_feed_html = function () {
         KM.conf.mask += KM.pad_out(parseInt(mask_lines[i], 16).toString(2), 15);
     }
     if (KM.config.feeds[KM.conf.camera].feed_enabled) {
-        // if enabled show the mask and enable ptz button
+        // if enabled show the mask
         for (var i = 0; i < 225; i++) {
             if (KM.conf.mask.charAt(i) === '1') {
                 document.getElementById('mask_img_' + (i + 1)).src = 'images/mask.png'
@@ -4610,10 +4465,12 @@ KM.conf_feed_html = function () {
     };
 
 	for (var i = 0; i <= KM.config.feeds.max_feed; i++) {
-		if (KM.conf_config_track.feed_modified[i] == true){
-			KM.conf_feed_highlight_apply();
-			break;
-		};
+        try {
+            if (KM.conf_config_track.feed_modified[i] == true){
+                KM.conf_feed_highlight_apply();
+                break;
+            };
+        } catch (e) {};
 	};
 };
 
@@ -4715,35 +4572,6 @@ KM.conf_feed_enabled = function () {
     KM.conf_config_track.mask_modified(KM.conf.camera);
 };
 
-
-KM.conf_feed_pal_selected = function () {
-
-    // A function that excludes 'pal' and 'ntsc' from being both selected
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    document.getElementById('feed_ntsc_enabled').checked = false;
-    KM.conf_feed_highlight_apply();
-};
-
-
-KM.conf_feed_ntsc_selected = function () {
-
-    // A function that excludes 'pal' and 'ntsc' from being both selected
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    document.getElementById('feed_pal_enabled').checked = false;
-    KM.conf_feed_highlight_apply();
-};
-
-
 KM.conf_feed_net_highlight = function () {
 
     // A function that enables/disables user inputs for net cams
@@ -4769,35 +4597,6 @@ KM.conf_feed_net_highlight = function () {
     }
 };
 
-
-KM.conf_feed_frame_selected = function () {
-
-    // A function that excludes 'frame' and 'ffmpeg' from being both selected
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    document.getElementById('feed_ffmpeg_enabled').checked = false;
-    KM.conf_feed_highlight_apply();
-};
-
-
-KM.conf_feed_ffmpeg_selected = function () {
-
-    // A function that excludes 'frame' and 'ffmpeg' from being both selected
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    document.getElementById('feed_frame_enabled').checked = false;
-    KM.conf_feed_highlight_apply();
-};
-
-
 KM.conf_feed_grey = function () {
 
     // A function that greys out the feed screen
@@ -4810,13 +4609,10 @@ KM.conf_feed_grey = function () {
     KM.session_id.current++; // needed to kill updates
     KM.conf_error_daemon(KM.session_id.current);
 
-    var ids = ['mask_all' , 'mask_invert', 'mask_none', 'feed_pal_enabled',
-    'feed_ntsc_enabled', 'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
+    var ids = ['mask_all' , 'mask_invert', 'mask_none',
+    'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
     'feed_input', 'feed_proxy', 'feed_lgn_pw', 'feed_height', 'feed_name',
-    'feed_box', 'feed_ffmpeg_enabled', 'feed_frame_enabled', 'feed_fps',
-    'feed_sched_motion', 'feed_snap_enabled', 'feed_snap', 'feed_sched_snap',
-    'feed_email_enabled', 'feed_email_addr', 'feed_email_pause', 'feed_sched_email',
-    'feed_audio_enabled', 'feed_audio_file', 'feed_sched_audio']
+    'feed_box', 'feed_snap_enabled', 'feed_snap']
 
     for (var i = 0; i < ids.length; i++) {
 		try {
@@ -4845,13 +4641,10 @@ KM.conf_feed_ungrey = function () {
 
     KM.conf_live_feed_daemon(KM.session_id.current, KM.conf.camera);
 
-    var ids = ['mask_all' , 'mask_invert', 'mask_none', 'feed_pal_enabled',
-    'feed_ntsc_enabled', 'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
+    var ids = ['mask_all' , 'mask_invert', 'mask_none',
+    'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
     'feed_input', 'feed_proxy', 'feed_lgn_pw', 'feed_height', 'feed_name',
-    'feed_box', 'feed_ffmpeg_enabled', 'feed_frame_enabled', 'feed_fps',
-    'feed_sched_motion', 'feed_snap_enabled', 'feed_snap', 'feed_sched_snap',
-    'feed_email_enabled', 'feed_email_addr', 'feed_email_pause', 'feed_sched_email',
-    'feed_audio_enabled', 'feed_audio_file', 'feed_sched_audio']
+    'feed_box', 'feed_snap_enabled', 'feed_snap']
 
     for (var i = 0; i < ids.length; i++) {
 		try {
@@ -4888,11 +4681,10 @@ KM.conf_feed_highlight_apply = function () {
 
 KM.conf_feed_update = function () {
 	KM.config.feeds[KM.conf.camera].feed_enabled = document.getElementById('feed_enabled').checked;
-    KM.config.feeds[KM.conf.camera].feed_pal = document.getElementById('feed_pal_enabled').checked;
-    if (document.getElementById('feed_device').selectedIndex == KM.config.feeds.max_feed) {
-	KM.config.feeds[KM.conf.camera].feed_device=-1;
+    if (document.getElementById('feed_device').selectedIndex == KM.config.feeds.max_feed+1) {
+        KM.config.feeds[KM.conf.camera].feed_device=-1;
     } else {
-	KM.config.feeds[KM.conf.camera].feed_device = document.getElementById('feed_device').selectedIndex;
+        KM.config.feeds[KM.conf.camera].feed_device = document.getElementById('feed_device').selectedIndex;
     };
     KM.config.feeds[KM.conf.camera].feed_input = document.getElementById('feed_input').selectedIndex;
     KM.config.feeds[KM.conf.camera].feed_url = document.getElementById('feed_url').value;
@@ -4902,8 +4694,6 @@ KM.conf_feed_update = function () {
     KM.config.feeds[KM.conf.camera].feed_name = document.getElementById('feed_name').value;
     KM.config.feeds[KM.conf.camera].feed_show_box = document.getElementById('feed_box').checked;
     KM.config.feeds[KM.conf.camera].feed_snap_enabled = document.getElementById('feed_snap_enabled').checked;
-    KM.config.feeds[KM.conf.camera].feed_smovie_enabled = document.getElementById('feed_frame_enabled').checked;
-    KM.config.feeds[KM.conf.camera].feed_movie_enabled = document.getElementById('feed_ffmpeg_enabled').checked;
 
     var tmp = '';
     KM.config.feeds[KM.conf.camera].feed_mask = '';
@@ -4933,12 +4723,6 @@ KM.conf_feed_update = function () {
     }
     // feed value back to gui in case parseInt changes it
     document.getElementById('feed_height').value = height;
-
-    var fps = parseInt(document.getElementById('feed_fps').value, 10);
-    if (isNaN(fps)) fps = 0;
-    KM.config.feeds[KM.conf.camera].feed_fps = fps;
-    // feed value back to gui in case parseInt changes it
-    document.getElementById('feed_fps').value = fps;
 
     var snap = parseInt(document.getElementById('feed_snap').value, 10);
     if (isNaN(snap)) snap = 0;
@@ -5329,6 +5113,7 @@ KM.init2 = function () {
 	//
 	// returns :
 	//
+        KM.conf_config_track.init();
         KM.browser.setTitle();
         KM.background_button_clicked(KM.config.misc.color_select);
         KM.enable_display_buttons(KM.config.misc.display_select);
