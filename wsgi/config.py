@@ -81,8 +81,6 @@ class ConfigRW():
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
                 
-        config['feeds']['length'] = len(config['feeds'])  
-        config['feeds']['max_feed'] = max_feed      
         return json.dumps(config)
     
     def write(self):

@@ -93,6 +93,14 @@ KM.fill_arr = function (arr, len, fill) {
 	return arr;
 };
 
+KM.max_feed = function () {
+    var max = 0;
+    for (var feed in KM.config.feeds) {
+        max = Math.max(max,feed)
+    }
+    return max;
+};
+
 KM.config = {};
 
 // hide javascript errors
@@ -534,16 +542,16 @@ KM.disable_display_buttons = function () {
 
 KM.menu_bar_buttons.construct_camera_sec = function() {
     var camsel='';
-    for (var i = 1;i <= KM.config.feeds.max_feed;i++) {
-        if ((i % 4) == 0)
-            camsel+='<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>\n</div>';							
-        else if 	((i % 4) == 1)
-            camsel+='<div class="button_line">\n<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>';							
+    for (var f in KM.config.feeds) {
+        if ((f % 4) == 0)
+            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n</div>';							
+        else if 	((f % 4) == 1)
+            camsel+='<div class="button_line">\n<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>';							
         else
-            camsel+='<div id="cb'+i+'" class="camera_button" onClick="KM.camera_func_button_clicked('+i+');"><span id="ct'+i+'">'+i+'</span></div>\n';							
+            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n';							
     }			
-    i=i-1;			
-    if ((i % 4) != 0) 
+    f=f-1;			
+    if ((f % 4) != 0) 
         camsel+='</div>';
     document.getElementById('camera_sec').innerHTML = camsel;
 };
@@ -559,14 +567,14 @@ KM.enable_camera_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Camera Select';
-    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+    for (var f in KM.config.feeds) {
         try {
-            document.getElementById('ct' + i).innerHTML = i;
-            document.getElementById('cb' + i).style.background = 'url(images/temp1.png) no-repeat bottom left';
-            if (KM.config.feeds[i].feed_enabled) {
-                document.getElementById('ct' + i).style.color = KM.BLUE;
+            document.getElementById('ct' + f).innerHTML = f;
+            document.getElementById('cb' + f).style.background = 'url(images/temp1.png) no-repeat bottom left';
+            if (KM.config.feeds[f].feed_enabled) {
+                document.getElementById('ct' + f).style.color = KM.BLUE;
             } else {
-                document.getElementById('ct' + i).style.color = KM.GREY;
+                document.getElementById('ct' + f).style.color = KM.GREY;
             }
         } catch(e) {}
     }
@@ -586,11 +594,11 @@ KM.disable_camera_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Camera Select';
-    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+    for (var f in KM.config.feeds) {
         try {
-            document.getElementById('cb' + i).style.background = 'url(images/temp1.png) no-repeat bottom left';
-            document.getElementById('ct' + i).innerHTML = i;
-            document.getElementById('ct' + i).style.color = KM.GREY;
+            document.getElementById('cb' + f).style.background = 'url(images/temp1.png) no-repeat bottom left';
+            document.getElementById('ct' + f).innerHTML = f;
+            document.getElementById('ct' + f).style.color = KM.GREY;
         } catch(e) {}
     }
     KM.menu_bar_buttons.camera_sec_enabled = false;
@@ -607,14 +615,14 @@ KM.enable_func_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Function Select';
-    for (var i = 1; i <= KM.config.feeds.max_feed; i++) {
+    for (var f in KM.config.feeds) {
         try {
-            document.getElementById('ct' + i).innerHTML = 'f' + i;
-            document.getElementById('cb' + i).style.background = 'url(images/temp3.png) no-repeat bottom left';
-            if (KM.config.func_enabled[i]) {
-                document.getElementById('ct' + i).style.color = KM.BLUE;
+            document.getElementById('ct' + f).innerHTML = 'f' + f;
+            document.getElementById('cb' + f).style.background = 'url(images/temp3.png) no-repeat bottom left';
+            if (KM.config.func_enabled[f]) {
+                document.getElementById('ct' + f).style.color = KM.BLUE;
             } else {
-                document.getElementById('ct' + i).style.color = KM.GREY;
+                document.getElementById('ct' + f).style.color = KM.GREY;
             }
         } catch (e) {}
     }
@@ -878,10 +886,8 @@ KM.get_jpeg = function (feed) {
 }
 
 KM.update_jpegs = function () {
-    var feed;
-	for (var c=0;c<=KM.config.feeds.max_feed;c++) {
-        try {
-            feed=KM.config.display_feeds[KM.config.misc.display_select][c];
+	for (var feed in KM.config.display_feeds[KM.config.misc.display_select]) {
+        try {            
             if (KM.config.feeds[feed].feed_enabled && (KM.item_in_array(feed, KM.live.latest_events))) {	
                 if (document.getElementById('image_'+feed))
                     document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
@@ -900,11 +906,10 @@ KM.text_refresh = function () {
     // returns :
     //
 
-    var feed, text_color;
-    for (var i = 0; i <= KM.config.feeds.max_feed; i++) {
+    var text_color;
+    for (var feed in KM.config.display_feeds[KM.config.misc.display_select]) {
         try {
-            text_color = KM.WHITE;
-            feed = KM.config.display_feeds[KM.config.misc.display_select][i];
+            text_color = KM.WHITE;           
             if (KM.config.feeds[feed].feed_enabled) {
                 text_color = KM.BLUE;
                 if (KM.item_in_array(feed, KM.live.latest_events)) {
@@ -990,7 +995,7 @@ KM.init_display_grid = function (display_select) {
 	var jpeg = gcam_jpeg;
 	var text = 'No Video';
 	var text_color = KM.WHITE;
-    if (html_count>KM.config.feeds.max_feed) return;
+    if (html_count>KM.max_feed()) return;
 	
     try {
         var feed = KM.config.display_feeds[display_num][html_count];
@@ -1145,8 +1150,8 @@ KM.init_display_grid = function (display_select) {
 
 	case 4:  // symetrical 16 grid
 
-	    cols = Math.ceil(Math.sqrt(KM.config.feeds.max_feed));//5;//
-		rows = Math.ceil((KM.config.feeds.max_feed)/cols);
+	    cols = Math.ceil(Math.sqrt(KM.max_feed()));//5;//
+		rows = Math.ceil((KM.max_feed())/cols);
 		//console.log(cols);
 		//console.log(rows);
 
@@ -1383,9 +1388,9 @@ KM.display_live_normal = function () {
 
     // exit if no feeds enabled, else 100% CPU usage
     var no_feeds = true;
-    for (var i = 0; i <= KM.config.feeds.max_feed; i++) {
+    for (var feed in KM.config.display_feeds[KM.config.misc.display_select]) {
         try {
-            if (KM.config.feeds[KM.config.display_feeds[KM.config.misc.display_select][i]].feed_enabled) {
+            if (KM.config.feeds[feed].feed_enabled) {
                 no_feeds = false;
             }
         } catch (e) {}
@@ -3549,10 +3554,10 @@ KM.display_archive_ = function () {
 		}
 	    };
 	    var cams='';
-	    for (var c=1;c<=KM.config.feeds.max_feed;c++) {
+	    for (var f in KM.config.feeds) {
             try {
-                if (KM.config.feeds[c].feed_enabled) 
-                    cams+=c+',';
+                if (KM.config.feeds[f].feed_enabled) 
+                    cams+=f+',';
             } catch(e) {}                
 	    }
 	    cams=cams.slice(0,-1);
@@ -4306,8 +4311,8 @@ KM.conf_feed_html = function () {
      '<div class="config_tick_margin">' +
 	 '<div  class="config_text_margin">' +
         '<select style="width:190px;" id="feed_camera" onchange="KM.conf_feed_change();">';
-		for (var i=1;i<=KM.config.feeds.max_feed;i++) {
-			html_str+='<option value="'+i+'">Camera '+i+'</option>';
+		for (var f in KM.config.feeds) {
+			html_str+='<option value="'+f+'">Camera '+f+'</option>';
         };
 		html_str+='</select>\
 					<input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />Enable camera \
@@ -4324,7 +4329,7 @@ KM.conf_feed_html = function () {
             <div class="config_tick_margin">\
 			<div class="config_text">\
               <select style="width:190px" id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
-				for (var i=0;i<=KM.config.feeds.max_feed;i++) {
+				for (var i=0;i<=KM.max_feed();i++) {
 					html_str+='<option value="'+i+'">/dev/video'+i+'</option>';			
 				};
 				html_str+='<option value="-1">Network Cam</option></select>\
@@ -4417,7 +4422,7 @@ KM.conf_feed_html = function () {
 	if (KM.config.feeds[KM.conf.camera].feed_device>-1)
 		document.getElementById('feed_device').selectedIndex = KM.config.feeds[KM.conf.camera].feed_device;
 	else
-		document.getElementById('feed_device').selectedIndex = KM.config.feeds.max_feed+1;
+		document.getElementById('feed_device').selectedIndex = KM.max_feed()+1;
     document.getElementById('feed_input').selectedIndex = KM.config.feeds[KM.conf.camera].feed_input;
     document.getElementById('feed_url').value = KM.config.feeds[KM.conf.camera].feed_url;
     document.getElementById('feed_proxy').value = KM.config.feeds[KM.conf.camera].feed_proxy;
@@ -4464,9 +4469,9 @@ KM.conf_feed_html = function () {
         }
     };
 
-	for (var i = 0; i <= KM.config.feeds.max_feed; i++) {
+	for (var f in KM.config.feeds) {
         try {
-            if (KM.conf_config_track.feed_modified[i] == true){
+            if (KM.conf_config_track.feed_modified[f] == true){
                 KM.conf_feed_highlight_apply();
                 break;
             };
@@ -4581,7 +4586,7 @@ KM.conf_feed_net_highlight = function () {
     // returns:
     //
 
-    if (document.getElementById('feed_device').selectedIndex == KM.config.feeds.max_feed) {
+    if (document.getElementById('feed_device').selectedIndex == KM.max_feed()) {
         document.getElementById('feed_input').disabled = true;
         document.getElementById('feed_url').disabled = false;
         document.getElementById('feed_proxy').disabled = false;
@@ -4681,7 +4686,7 @@ KM.conf_feed_highlight_apply = function () {
 
 KM.conf_feed_update = function () {
 	KM.config.feeds[KM.conf.camera].feed_enabled = document.getElementById('feed_enabled').checked;
-    if (document.getElementById('feed_device').selectedIndex == KM.config.feeds.max_feed+1) {
+    if (document.getElementById('feed_device').selectedIndex == KM.max_feed()+1) {
         KM.config.feeds[KM.conf.camera].feed_device=-1;
     } else {
         KM.config.feeds[KM.conf.camera].feed_device = document.getElementById('feed_device').selectedIndex;

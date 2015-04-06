@@ -43,9 +43,7 @@ class Kmotion_setd(Process):
             del(self.config["ramdisk_dir"],
                 self.config["version"],
                 self.config["user"],
-                self.config["title"],
-                self.config["feeds"]["length"],
-                self.config["feeds"]["max_feed"])
+                self.config["title"])
             
             for section in self.config.keys():
                 if section.startswith('_'):
