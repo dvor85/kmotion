@@ -34,17 +34,15 @@ class Kmotion_setd(Process):
             self.log('kmotion FIFO pipe data: %s' % data, logger.DEBUG)  
                       
             self.config = json.loads(data)
+            self.user = self.config["user"]
+            del(self.config["user"])
             
-            www_rc = 'www_rc_%s' % self.config["user"]
+            www_rc = 'www_rc_%s' % self.user
             if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
                 www_rc = 'www_rc'
             
             self.www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
             must_reload = False
-            del(self.config["ramdisk_dir"],
-                self.config["version"],
-                self.config["user"],
-                self.config["title"])
             
             for section in self.config.keys():
                 if section == 'feeds':                    
@@ -62,7 +60,8 @@ class Kmotion_setd(Process):
                     if not self.www_parser.has_section(misc_section):
                         self.www_parser.add_section(misc_section)
                     for k, v in self.config[section].items():
-                        self.www_parser.set(misc_section, 'display_feeds_%02i' % int(k), ','.join([str(i) for i in v]))
+                        if len(v) > 0:
+                            self.www_parser.set(misc_section, 'display_feeds_%02i' % int(k), ','.join([str(i) for i in v]))
                 else:
                     if not self.www_parser.has_section(section):
                         self.www_parser.add_section(section)
@@ -71,7 +70,8 @@ class Kmotion_setd(Process):
                     
                     
             mutex_www_parser_wr(self.kmotion_dir, self.www_parser, www_rc)
-            if must_reload:
+            if must_reload and www_rc == 'www_rc':
+                self.log('Reload kmotion...', feed.CRIT)
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
                                         
     def create_mask(self, feed, mask_hex_str):   
@@ -87,8 +87,12 @@ class Kmotion_setd(Process):
         """
     
         self.log('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
-        image_width = self.config['feeds'][feed]['feed_width'] 
-        image_height = self.config['feeds'][feed]['feed_height']
+        try:
+            image_width = int(self.config['feeds'][feed]['feed_width']) 
+            image_height = int(self.config['feeds'][feed]['feed_height'])
+        except:
+            image_width = self.www_parser.getint('motion_feed%02i' % int(feed), 'feed_width') 
+            image_height = self.www_parser.getint('motion_feed%02i' % int(feed), 'feed_height')            
         self.log('create_mask() - width: %i height: %i' % (image_width, image_height), logger.DEBUG)
         
         black_px = '\x00' 

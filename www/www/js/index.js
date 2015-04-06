@@ -886,8 +886,10 @@ KM.get_jpeg = function (feed) {
 }
 
 KM.update_jpegs = function () {
-	for (var feed in KM.config.display_feeds[KM.config.misc.display_select]) {
-        try {            
+    var feed;
+	for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
+        try {  
+            feed = KM.config.display_feeds[KM.config.misc.display_select][i]
             if (KM.config.feeds[feed].feed_enabled && (KM.item_in_array(feed, KM.live.latest_events))) {	
                 if (document.getElementById('image_'+feed))
                     document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
@@ -906,9 +908,10 @@ KM.text_refresh = function () {
     // returns :
     //
 
-    var text_color;
-    for (var feed in KM.config.display_feeds[KM.config.misc.display_select]) {
+    var text_color,feed;
+    for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
         try {
+            feed = KM.config.display_feeds[KM.config.misc.display_select][i]
             text_color = KM.WHITE;           
             if (KM.config.feeds[feed].feed_enabled) {
                 text_color = KM.BLUE;
@@ -1388,8 +1391,10 @@ KM.display_live_normal = function () {
 
     // exit if no feeds enabled, else 100% CPU usage
     var no_feeds = true;
-    for (var feed in KM.config.display_feeds[KM.config.misc.display_select]) {
+    var feed;
+    for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
         try {
+            feed = KM.config.display_feeds[KM.config.misc.display_select][i];
             if (KM.config.feeds[feed].feed_enabled) {
                 no_feeds = false;
             }
@@ -3871,8 +3876,7 @@ KM.conf_config_track = function() {
     // A closure that tracks changes to the local config and when needed
     // synchronises these changes with 'www_rc' and requests config reloads.
     
-    var config = {};
-    var warning_msg = false;
+    var config = {};    
     
     return {
     
@@ -3880,76 +3884,36 @@ KM.conf_config_track = function() {
             config = JSON.parse(JSON.stringify(KM.config));
         },
    
-        misc_modified: function() {
-            config._misc_modified = true;
-        },
-
-        // the color scheme, camera layout or selected layout has been modified
-        display_modified: function() {
-            config._display_modified = true;
-        },
-
-        // the feeds has been modified
-        feed_modified: function(i) {
-            config.feeds[i]._modified = true;            
-            warning_msg = true;
-        },
-
-        // the feeds masks have been modified
-        mask_modified: function(i) {
-            config.feeds[i]._mask_modified = true;
-            warning_msg = true;
-        },
-        
         reset: function() {
             KM.conf_config_track.init();
-        },
+        },       
 
-        sync: function() {
-            // sync 'www_rc' with server 'www_rc'
-            if (!config._misc_modified) {
-                delete(config.misc.archive_button_enabled);
-                delete(config.misc.archive_button_enabled);
-                delete(config.misc.config_button_enabled);
-                delete(config.misc.hide_button_bar); 
-            }
-            delete(config._misc_modified);
+        sync: function(conf) {
+            diffObjects = function(obj1, obj2) {
+                if (obj1 === null || typeof obj1 !== 'object') {
+                    if (obj1 !== obj2)
+                        return obj1;
+                    else
+                        return null;
+                }
+             
+                var temp = obj1.constructor(); // give temp the original obj's constructor
+                for (var key in obj1) {
+                    var tk = diffObjects(obj1[key], obj2[key]);
+                    if (tk !== null)
+                        temp[key] = tk;
+                }             
+                return temp;
+            };
             
-            if (!config._display_modified) {
-                delete(config.display_feeds);
-                delete(config.misc.color_select);
-                delete(config.misc.display_select);
-            }
-            delete(config._display_modified);
-           
+            var diff = diffObjects(KM.config, config);
             
-            for (var feed in config.feeds) {
-                try {
-                    if (!config.feeds[feed]["_modified"]) {
-                        if (!config.feeds[feed]["_mask_modified"]) {
-                            delete(config.feeds[feed]);                            
-                        }
-                    } else if (!config.feeds[feed]["_mask_modified"]) { 
-                        delete(config.feeds[feed]["feed_mask"]);                        
-                    }
-                    delete(config.feeds[feed]["_mask_modified"]);
-                    delete(config.feeds[feed]["_modified"]);
-                    
-                } catch (e) {}
-            }
-            
-            var jdata = JSON.stringify(config);
+            var jdata = JSON.stringify(diff);
             var xmlHttp = KM.get_xmlHttp_obj();
             xmlHttp.open('POST', '/ajax/config?write='+Math.random());
             xmlHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             xmlHttp.send('jdata=' + jdata);
         
-
-            if (warning_msg) {
-                alert('The current synchronisation with the remote server\n\
-                        involves reloading of the motion daemon configuration.\n\nDuring the reload \
-                        kmotion will experience temporary\nvideo freezing.');
-            };
             KM.conf_config_track.reset();
         }
     }
@@ -4033,7 +3997,7 @@ KM.display_config = function () {
     // returns:
     //
 
-    
+    KM.conf_config_track.init();
     KM.conf_backdrop_html();
 
 };
@@ -4048,7 +4012,6 @@ KM.conf_backdrop_html = function() {
     //
     // returns:
     //
-
     KM.session_id.current++;
 	var backdrop_width = KM.browser.main_display_width * 0.8;
 	var backdrop_height = KM.browser.main_display_height - 60;
@@ -4056,7 +4019,6 @@ KM.conf_backdrop_html = function() {
 	var button_width = backdrop_width / 5;
 
 
-    //document.getElementsByTagName('body')[0].style.backgroundColor = KM.WHITE;
     document.getElementById('main_display').innerHTML = '' +
 
     '<div class="title" style="width:'+backdrop_width+'px;">' +
@@ -4182,46 +4144,28 @@ KM.conf_misc_html = function() {
     document.getElementById('config_html').innerHTML = '<br />\
             <div class="config_group_margin">\
 				<div class="config_tick_margin">\
-                  <input type="checkbox" id="misc_live" checked="checked" disabled="disabled" />Live button enabled.<br>\
-                  <input type="checkbox" id="misc_logs" onclick="KM.conf_misc_highlight_apply();" />Logs button enabled.<br>\
-                  <input type="checkbox" id="misc_archive" onclick="KM.conf_misc_highlight_apply();" />Archive button enabled.<br>\
+                  <input type="checkbox" id="logs_button_enabled" onclick="KM.conf_misc_highlight();" />Logs button enabled.<br>\
+                  <input type="checkbox" id="archive_button_enabled" onclick="KM.conf_misc_highlight();" />Archive button enabled.<br>\
                 </div>\
 				<div class="config_tick_margin">\
-					<input type="checkbox" id="misc_config" onclick="KM.conf_misc_highlight_apply();" />Config button enabled.<br>\
-					<input type="checkbox" id="misc_hide_button_bar" onclick="KM.conf_misc_highlight_apply();" />Hide button bar.<br>\
+					<input type="checkbox" id="config_button_enabled" onclick="KM.conf_misc_highlight();" />Config button enabled.<br>\
+					<input type="checkbox" id="hide_button_bar" onclick="KM.conf_misc_highlight();" />Hide button bar.<br>\
 				</div>\
             </div>\
             <br /><hr style="margin:10px;clear:both" />\
-            <div class="config_group_margin">\
-              <input type="checkbox" id="misc_save" onclick="KM.conf_misc_save_display();" />Save the current "Display Select" configuration as default.<br>\
-            </div>\
-            <hr style="margin:10px;clear:both" />\
             <div class="config_text_margin" id="conf_text" >\
-              <input type="button" id="conf_apply" onclick="KM.conf_misc_apply();" value="Apply" />all changes to the local browser configuration and sync with the remote server.\
+              <input type="button" id="conf_apply" onclick="KM.conf_apply();" value="Apply" />&nbsp;all changes to the local browser configuration and sync with the remote server.\
            </div>';
 
-
-    document.getElementById('misc_archive').checked = KM.config.misc.archive_button_enabled;
-    document.getElementById('misc_logs').checked = KM.config.misc.logs_button_enabled;
-    document.getElementById('misc_config').checked = KM.config.misc.config_button_enabled;
-	document.getElementById('misc_hide_button_bar').checked = KM.config.misc.hide_button_bar;
+    for (var b in KM.config.misc) {
+        try {
+            if (typeof(KM.config.misc[b]) === "boolean")
+                document.getElementById(b).checked = KM.config.misc[b];
+        } catch (e) {}
+    }
 };
 
-
-KM.conf_misc_save_display = function() {
-
-    // A function that saves the display select and color select
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.conf_config_track.display_modified();
-    KM.conf_misc_highlight_apply();
-};
-
-KM.conf_misc_highlight_apply = function () {
+KM.conf_misc_highlight = function () {
 
     // A function that highlights the 'need to apply' warning
     //
@@ -4229,14 +4173,23 @@ KM.conf_misc_highlight_apply = function () {
     //
     // returns:
     //
-
-    document.getElementById('conf_apply').style.fontWeight = 'bold';
-    document.getElementById('conf_apply').style.color = KM.BLUE;
-    document.getElementById('conf_text').style.color = KM.BLUE;
+    document.getElementById('misc_button').style.fontWeight = 'bold';
+    document.getElementById('misc_button').style.color = KM.BLUE;
+    
+    KM.conf_misc_update();
 };
 
+KM.conf_misc_update = function () {
+    for (var b in KM.config.misc) {
+        try {
+            if (typeof(KM.config.misc[b]) === "boolean")
+                KM.config.misc[b] = document.getElementById(b).checked;
+        } catch (e) {}
+    }
+}
 
-KM.conf_misc_apply = function () {
+
+KM.conf_apply = function () {
 
     // A function that checks and applys the changes
     //
@@ -4244,20 +4197,9 @@ KM.conf_misc_apply = function () {
     //
     // returns:
     //
-
-    KM.config.misc.archive_button_enabled = document.getElementById('misc_archive').checked;
-    KM.config.misc.logs_button_enabled = document.getElementById('misc_logs').checked;
-    KM.config.misc.config_button_enabled = document.getElementById('misc_config').checked;
-	KM.config.misc.hide_button_bar = document.getElementById('misc_hide_button_bar').checked;
-    
-    // reset the 'misc_save' checked box any warning highlight on the apply line
-    document.getElementById('misc_save').checked = false;
-    document.getElementById('conf_apply').style.fontWeight = 'normal';
-    document.getElementById('conf_apply').style.color = KM.BLACK;
-    document.getElementById('conf_text').style.color = KM.DARK_GREY;
-    KM.update_function_buttons(4); // update button enables
-    KM.conf_config_track.misc_modified();
+      
     KM.conf_config_track.sync();
+    KM.conf_backdrop_html(); 
 };
 
 /* ****************************************************************************
@@ -4334,18 +4276,18 @@ KM.conf_feed_html = function () {
             <div class="config_tick_margin">\
 			<div class="config_text">\
               <select style="width:190px" id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
-				for (var i=0;i<=KM.max_feed();i++) {
+				for (var i=0;i<KM.max_feed();i++) {
 					html_str+='<option value="'+i+'">/dev/video'+i+'</option>';			
 				};
 				html_str+='<option value="-1">Network Cam</option></select>\
 			  </select>\
 			  </div>\
 				<div class="config_text">\
-			  <input type="text" id="feed_url" style="width: 190px; margin-left: 1px;" onfocus="KM.conf_feed_highlight_apply();" /></div>\
+			  <input type="text" id="feed_url" style="width: 190px; margin-left: 1px;" onfocus="KM.conf_feed_highlight();" /></div>\
 			  <div class="config_text">\
-			  <input type="text" id="feed_lgn_name" style="width: 190px;  margin-left: 1px;" onfocus="KM.conf_feed_highlight_apply();" /></div>\
+			  <input type="text" id="feed_lgn_name" style="width: 190px;  margin-left: 1px;" onfocus="KM.conf_feed_highlight();" /></div>\
 			  <div class="config_text">\
-			  <input type="text" id="feed_width" size="4" onfocus="KM.conf_feed_highlight_apply();" /><span id="feed_text_4">px</span></div>\
+			  <input type="text" id="feed_width" size="4" onfocus="KM.conf_feed_highlight();" /><span id="feed_text_4">px</span></div>\
             </div></div>\
             <div class="config_tick_margin" id="feed_text_5">\
 			<div class="config_tick_margin">\
@@ -4356,7 +4298,7 @@ KM.conf_feed_html = function () {
             </div>\
             <div class="config_tick_margin">\
 			<div class="config_text">\
-			<select style="width:190px" id="feed_input" onchange="KM.conf_feed_highlight_apply();" disabled>\
+			<select style="width:190px" id="feed_input" onchange="KM.conf_feed_highlight();" disabled>\
 				<option value="0">0</option>\
 				<option value="1">1</option>\
 				<option value="2">2</option>\
@@ -4368,38 +4310,33 @@ KM.conf_feed_html = function () {
 				<option value="8">N/A</option>\
 			</select>\
 		</div> \
-              <div class="config_text"><input type="text" id="feed_proxy" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onfocus="KM.conf_feed_highlight_apply();" /></div>\
-			  <div class="config_text"><input type="password" id="feed_lgn_pw" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onfocus="KM.conf_feed_highlight_apply();" /></div>\
-			  <div class="config_text"><input type="text" id="feed_height" size="4" style="margin-top:1px;" onfocus="KM.conf_feed_highlight_apply();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;" id="feed_text_6">px</span></div>\
+              <div class="config_text"><input type="text" id="feed_proxy" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onfocus="KM.conf_feed_highlight();" /></div>\
+			  <div class="config_text"><input type="password" id="feed_lgn_pw" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onfocus="KM.conf_feed_highlight();" /></div>\
+			  <div class="config_text"><input type="text" id="feed_height" size="4" style="margin-top:1px;" onfocus="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;" id="feed_text_6">px</span></div>\
             </div></div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
             <div class="config_tick_margin" id="feed_text_7">\
-              <div class="config_text">Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onfocus="KM.conf_feed_highlight_apply();" value="'+KM.conf.camera+'"/></div>\
+              <div class="config_text">Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onfocus="KM.conf_feed_highlight();" value="'+KM.conf.camera+'"/></div>\
             </div>\
 			</div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
 			<div class="config_text_margin" id="feed_text_8">\
-              <input type="checkbox" id="feed_box" onclick="KM.conf_feed_highlight_apply();" />Enable motion highlighting. (Draw box around detected motion)\
+              <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight();" />Enable motion highlighting. (Draw box around detected motion)\
             </div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
             <div class="config_text_margin" id="feed_text_14">\
-              <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight_apply();" />Enable snapshot mode. Record an image in time lapse mode with a pause between images.\
+              <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight();" />Enable snapshot mode. Record an image in time lapse mode with a pause between images.\
             </div>\
             <div class="config_text_margin" style="width:412px;" id="feed_text_15">\
-              of : <input type="text" id="feed_snap" size="4" onfocus="KM.conf_feed_highlight_apply();" />Seconds, (300 Seconds recommended)\
+              of : <input type="text" id="feed_snap_interval" size="4" onfocus="KM.conf_feed_highlight();" />Seconds, (300 Seconds recommended)\
             </div>\
             <br /><hr style="margin:10px" class="clear_float"/>\
-            <br /><hr style="margin:10px" class="clear_float"/>\
-            <div class="config_text_margin" id="conf_text">\
-              <input type="button" id="conf_apply" onclick="KM.conf_feed_apply();" value="Apply" />all changes to the local browser configuration and sync with the remote server.\
-            </div>\
-          </div><br />';
+            </div><br />';
     
 
     if (KM.config.feeds[KM.conf.camera].feed_enabled) {
         html_str = html_str.replace(/disabled/g, '');
         html_str = html_str.replace(/gcam.png/, 'bcam.png');
-
         KM.conf_live_feed_daemon(KM.session_id.current, KM.conf.camera);
     }
     document.getElementById('config_html').innerHTML = html_str;
@@ -4421,24 +4358,24 @@ KM.conf_feed_html = function () {
             document.getElementById('feed_lgn_pw').disabled = true;
         }
     }
-
-    document.getElementById('feed_camera').selectedIndex = KM.conf.camera -1;
-    document.getElementById('feed_enabled').checked = KM.config.feeds[KM.conf.camera].feed_enabled;   
-	if (KM.config.feeds[KM.conf.camera].feed_device>-1)
-		document.getElementById('feed_device').selectedIndex = KM.config.feeds[KM.conf.camera].feed_device;
-	else
-		document.getElementById('feed_device').selectedIndex = KM.max_feed()+1;
-    document.getElementById('feed_input').selectedIndex = KM.config.feeds[KM.conf.camera].feed_input;
-    document.getElementById('feed_url').value = KM.config.feeds[KM.conf.camera].feed_url;
-    document.getElementById('feed_proxy').value = KM.config.feeds[KM.conf.camera].feed_proxy;
-    document.getElementById('feed_lgn_name').value = KM.config.feeds[KM.conf.camera].feed_lgn_name;
-    document.getElementById('feed_lgn_pw').value = KM.config.feeds[KM.conf.camera].feed_lgn_pw;
-    document.getElementById('feed_width').value = KM.config.feeds[KM.conf.camera].feed_width;
-    document.getElementById('feed_height').value = KM.config.feeds[KM.conf.camera].feed_height;
-    document.getElementById('feed_name').value = KM.config.feeds[KM.conf.camera].feed_name;
-    document.getElementById('feed_box').checked = KM.config.feeds[KM.conf.camera].feed_show_box;
-    document.getElementById('feed_snap_enabled').checked = KM.config.feeds[KM.conf.camera].feed_snap_enabled;
-    document.getElementById('feed_snap').value = KM.config.feeds[KM.conf.camera].feed_snap_interval;
+    document.getElementById('feed_camera').selectedIndex = KM.conf.camera - 1;
+    for (var s in KM.config.feeds[KM.conf.camera]) {
+        try {
+            if (s === 'feed_device') {
+                if (KM.config.feeds[KM.conf.camera][s]>-1)
+                    document.getElementById(s).selectedIndex = KM.config.feeds[KM.conf.camera][s];
+                else
+                    document.getElementById(s).selectedIndex = KM.max_feed();
+            } else if (typeof (KM.config.feeds[KM.conf.camera][s]) === "boolean") {
+                document.getElementById(s).checked = KM.config.feeds[KM.conf.camera][s];
+            } else if (s === 'feed_input') {
+                document.getElementById(s).selectedIndex = KM.config.feeds[KM.conf.camera][s];
+            } else {
+                document.getElementById(s).value = KM.config.feeds[KM.conf.camera][s];
+            }
+            
+        } catch (e) {}
+    }
 
     // reposition the masks
     var origin_y = document.getElementById('image').offsetTop;
@@ -4473,15 +4410,6 @@ KM.conf_feed_html = function () {
             }
         }
     };
-
-	for (var f in KM.config.feeds) {
-        try {
-            if (KM.conf_config_track.feed_modified[f] == true){
-                KM.conf_feed_highlight_apply();
-                break;
-            };
-        } catch (e) {};
-	};
 };
 
 
@@ -4502,8 +4430,7 @@ KM.conf_toggle_feed_mask = function (mask_num) {
         document.getElementById('mask_img_' + mask_num).src = 'images/mask_trans.png';
         KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '0' + KM.conf.mask.substr(mask_num);
     }
-    KM.conf_config_track.mask_modified(KM.conf.camera);
-    KM.conf_feed_highlight_apply();
+    KM.conf_feed_highlight();
 };
 
 
@@ -4541,8 +4468,7 @@ KM.conf_feed_mask_button = function (button_num) {
 	    KM.conf.mask = KM.conf.mask.substr(0, mask_num - 1) + '0' + KM.conf.mask.substr(mask_num);
 	}
     }
-    KM.conf_config_track.mask_modified(KM.conf.camera);
-    KM.conf_feed_highlight_apply();
+    KM.conf_feed_highlight();
 };
 
 
@@ -4572,14 +4498,13 @@ KM.conf_feed_enabled = function () {
     // returns:
     //
 
-    KM.conf_feed_highlight_apply();
+    KM.conf_feed_highlight();
     if (document.getElementById('feed_enabled').checked) {
         KM.conf_feed_ungrey();
     } else {
         KM.conf_feed_grey();
     }
     // have to generate new mask on feed enabled
-    KM.conf_config_track.mask_modified(KM.conf.camera);
 };
 
 KM.conf_feed_net_highlight = function () {
@@ -4602,9 +4527,9 @@ KM.conf_feed_net_highlight = function () {
         document.getElementById('feed_url').disabled = true;
         document.getElementById('feed_proxy').disabled = true;
         document.getElementById('feed_lgn_name').disabled = true;
-        document.getElementById('feed_lgn_pw').disabled = true;
-    KM.conf_feed_highlight_apply()
+        document.getElementById('feed_lgn_pw').disabled = true;    
     }
+    KM.conf_feed_highlight()
 };
 
 KM.conf_feed_grey = function () {
@@ -4622,7 +4547,7 @@ KM.conf_feed_grey = function () {
     var ids = ['mask_all' , 'mask_invert', 'mask_none',
     'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
     'feed_input', 'feed_proxy', 'feed_lgn_pw', 'feed_height', 'feed_name',
-    'feed_box', 'feed_snap_enabled', 'feed_snap']
+    'feed_show_box', 'feed_snap_enabled', 'feed_snap_interval']
 
     for (var i = 0; i < ids.length; i++) {
 		try {
@@ -4654,7 +4579,7 @@ KM.conf_feed_ungrey = function () {
     var ids = ['mask_all' , 'mask_invert', 'mask_none',
     'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
     'feed_input', 'feed_proxy', 'feed_lgn_pw', 'feed_height', 'feed_name',
-    'feed_box', 'feed_snap_enabled', 'feed_snap']
+    'feed_show_box', 'feed_snap_enabled', 'feed_snap_interval']
 
     for (var i = 0; i < ids.length; i++) {
 		try {
@@ -4673,7 +4598,7 @@ KM.conf_feed_ungrey = function () {
 };
 
 
-KM.conf_feed_highlight_apply = function () {
+KM.conf_feed_highlight = function () {
 
     // A function that highlight the 'need to apply' warning
     //
@@ -4682,28 +4607,30 @@ KM.conf_feed_highlight_apply = function () {
     // returns:
     //
 
-    document.getElementById('conf_apply').style.fontWeight = 'bold';
-    document.getElementById('conf_apply').style.color = KM.BLUE;
-    document.getElementById('conf_text').style.color = KM.BLUE;
+    document.getElementById('feed_button').style.fontWeight = 'bold';
+    document.getElementById('feed_button').style.color = KM.BLUE;    
 
 	KM.conf_feed_update();
 };
 
 KM.conf_feed_update = function () {
-	KM.config.feeds[KM.conf.camera].feed_enabled = document.getElementById('feed_enabled').checked;
-    if (document.getElementById('feed_device').selectedIndex == KM.max_feed()+1) {
-        KM.config.feeds[KM.conf.camera].feed_device=-1;
-    } else {
-        KM.config.feeds[KM.conf.camera].feed_device = document.getElementById('feed_device').selectedIndex;
-    };
-    KM.config.feeds[KM.conf.camera].feed_input = document.getElementById('feed_input').selectedIndex;
-    KM.config.feeds[KM.conf.camera].feed_url = document.getElementById('feed_url').value;
-    KM.config.feeds[KM.conf.camera].feed_proxy = document.getElementById('feed_proxy').value;
-    KM.config.feeds[KM.conf.camera].feed_lgn_name = document.getElementById('feed_lgn_name').value;
-    KM.config.feeds[KM.conf.camera].feed_lgn_pw = document.getElementById('feed_lgn_pw').value;
-    KM.config.feeds[KM.conf.camera].feed_name = document.getElementById('feed_name').value;
-    KM.config.feeds[KM.conf.camera].feed_show_box = document.getElementById('feed_box').checked;
-    KM.config.feeds[KM.conf.camera].feed_snap_enabled = document.getElementById('feed_snap_enabled').checked;
+    for (var s in KM.config.feeds[KM.conf.camera]) {
+        try {
+            if (s === 'feed_device') {
+                if (document.getElementById(s).selectedIndex == KM.max_feed())
+                    KM.config.feeds[KM.conf.camera][s]=-1;
+                else
+                    KM.config.feeds[KM.conf.camera][s] = document.getElementById(s).selectedIndex;
+            } else if (typeof (KM.config.feeds[KM.conf.camera][s]) === "boolean") {
+                KM.config.feeds[KM.conf.camera][s] = document.getElementById(s).checked;
+            } else if (s === 'feed_input') {
+                KM.config.feeds[KM.conf.camera][s] = document.getElementById(s).selectedIndex;  
+            } else {
+                KM.config.feeds[KM.conf.camera][s] = document.getElementById(s).value;
+            }
+            
+        } catch (e) {}
+    }	
 
     var tmp = '';
     KM.config.feeds[KM.conf.camera].feed_mask = '';
@@ -4717,7 +4644,6 @@ KM.conf_feed_update = function () {
     width = parseInt(width / 16) * 16;
     if (KM.config.feeds[KM.conf.camera].feed_width !== width) {
         // if the image size changes, change the mask
-        KM.conf_config_track.mask_modified(KM.conf.camera);
         KM.config.feeds[KM.conf.camera].feed_width = width;
     }
     // feed value back to gui in case parseInt changes it
@@ -4727,44 +4653,20 @@ KM.conf_feed_update = function () {
     if (isNaN(height)) height = 0;
     height = parseInt(height / 16) * 16;
     if (KM.config.feeds[KM.conf.camera].feed_height !== height) {
-        // if the image size changes, change the mask
-        KM.conf_config_track.mask_modified(KM.conf.camera);
-        KM.config.feed_height[KM.conf.camera] = height;
+        // if the image size changes, change the mask        
+        KM.config.feeds[KM.conf.camera].feed_height = height;
     }
     // feed value back to gui in case parseInt changes it
     document.getElementById('feed_height').value = height;
 
-    var snap = parseInt(document.getElementById('feed_snap').value, 10);
+    var snap = parseInt(document.getElementById('feed_snap_interval').value, 10);
     if (isNaN(snap)) snap = 0;
     KM.config.feeds[KM.conf.camera].feed_snap_interval = snap;
     // feed value back to gui in case parseInt changes it
-    document.getElementById('feed_snap').value = snap;
+    document.getElementById('feed_snap_interval').value = snap;
 
-	KM.conf_config_track.feed_modified(KM.conf.camera);
 
 };
-
-
-KM.conf_feed_apply = function () {
-
-    // A function that checks and applys the changes
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-
-
-    // reset any warning highlight on the apply line
-    document.getElementById('conf_apply').style.fontWeight = 'normal';
-    document.getElementById('conf_apply').style.color = KM.BLACK;
-    document.getElementById('conf_text').style.color = KM.DARK_GREY;
-
-
-    KM.conf_config_track.sync();
-};
-
 
 KM.conf_live_feed_daemon = function (session_id, feed) {
 
@@ -4803,18 +4705,23 @@ Displays and processes the themes config screen
 **************************************************************************** */
 
 KM.conf_theme_html = function() {
-    document.getElementById('config_html').innerHTML = '<div style="height:50px;line-height:50px;background-color:#000000;color:#c1c1c1;margin:10px;padding-left:10px"><input type="radio" name="theme" value="0" onchange="KM.background_button_clicked(0);">Dark theme</div>' +
-						'<div style="height:50px;line-height:50px;background-color:#ffffff;color:#505050;margin:10px;padding-left:10px"><input type="radio" name="theme" value="1" onchange="KM.background_button_clicked(1);">Light theme</div>'+
-						'<input type="button" id="conf_apply" onclick="KM.conf_theme_apply();" value="Save">';
+    document.getElementById('config_html').innerHTML = '<div style="height:50px;line-height:50px;background-color:#000000;color:#c1c1c1;margin:10px;padding-left:10px"><input type="radio" name="theme" value="0" onchange="KM.background_button_clicked(0);KM.conf_theme_highlight();">Dark theme</div>' +
+						'<div style="height:50px;line-height:50px;background-color:#ffffff;color:#505050;margin:10px;padding-left:10px"><input type="radio" name="theme" value="1" onchange="KM.background_button_clicked(1);KM.conf_theme_highlight();">Light theme</div>';
     document.getElementsByName('theme')[KM.config.misc.color_select].checked = true;
-
-    //KM.config.color_select = ;
+    
 }
 
-KM.conf_theme_apply = function() {
-	KM.conf_config_track.misc_modified();
-    KM.conf_config_track.sync()
-}
+KM.conf_theme_highlight = function () {
+
+    // A function that highlight the 'need to apply' warning
+    //
+    // expects:
+    //
+    // returns:
+    //
+    document.getElementById('theme_button').style.fontWeight = 'bold';
+    document.getElementById('theme_button').style.color = KM.BLUE;    
+};
 
 /* ****************************************************************************
 Config display - motion error screen
@@ -5123,7 +5030,6 @@ KM.init2 = function () {
 	//
 	// returns :
 	//
-        KM.conf_config_track.init();
         KM.browser.setTitle();
         KM.background_button_clicked(KM.config.misc.color_select);
         KM.enable_display_buttons(KM.config.misc.display_select);
