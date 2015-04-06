@@ -81,11 +81,6 @@ class Kmotion:
         for d in self.daemons:
             d.start()
         self.log('daemons started...', logger.DEBUG)
-            
-        purge_str = '#' * 1000 + '99999999'
-        for fifo in ['fifo_settings_wr']:
-            with open(os.path.join(self.kmotion_dir, 'www', fifo), 'w') as pipeout:
-                pipeout.write(purge_str)
                 
         self.log('waiting daemons ...', logger.DEBUG)    
         self.wait_termination()

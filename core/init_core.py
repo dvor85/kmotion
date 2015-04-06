@@ -148,9 +148,9 @@ class InitCore:
         fifo_settings = '%s/www/fifo_settings_wr' % self.kmotion_dir
         if not os.path.exists(fifo_settings):
             # os.mkfifo(fifo_settings)
-            subprocess.call(['mkfifo', fifo_settings])
-        os.chown(fifo_settings, uid, gid)
-        os.chmod(fifo_settings, 0660)       
+            subprocess.call(['mkfifo', fifo_settings])            
+            os.chown(fifo_settings, uid, gid)
+            os.chmod(fifo_settings, 0660)       
         
     
     def gen_vhost(self):

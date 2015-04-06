@@ -40,24 +40,20 @@ class Kmotion_setd(Process):
                 www_rc = 'www_rc'
             
             self.www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
+            must_reload = False
             del(self.config["ramdisk_dir"],
                 self.config["version"],
                 self.config["user"],
                 self.config["title"])
             
             for section in self.config.keys():
-                if section.startswith('_'):
-                    continue
                 if section == 'feeds':                    
                     for feed in self.config[section].keys():
-                        if feed.startswith('_'):
-                            continue
+                        must_reload = True
                         feed_section = 'motion_feed%02i' % int(feed)
                         if not self.www_parser.has_section(feed_section):
                             self.www_parser.add_section(feed_section)
                         for k, v in self.config[section][feed].items():
-                            if k.startswith('_'):
-                                continue
                             self.www_parser.set(feed_section, k, str(v))
                             if k == 'feed_mask':
                                 self.create_mask(feed, str(v))
@@ -71,13 +67,12 @@ class Kmotion_setd(Process):
                     if not self.www_parser.has_section(section):
                         self.www_parser.add_section(section)
                     for k, v in self.config[section].items():
-                        if k.startswith('_'):
-                            continue
                         self.www_parser.set(section, k, str(v))
                     
                     
             mutex_www_parser_wr(self.kmotion_dir, self.www_parser, www_rc)
-            subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
+            if must_reload:
+                subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
                                         
     def create_mask(self, feed, mask_hex_str):   
         """

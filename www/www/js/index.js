@@ -3912,13 +3912,16 @@ KM.conf_config_track = function() {
                 delete(config.misc.archive_button_enabled);
                 delete(config.misc.config_button_enabled);
                 delete(config.misc.hide_button_bar); 
-            };
+            }
+            delete(config._misc_modified);
             
             if (!config._display_modified) {
                 delete(config.display_feeds);
                 delete(config.misc.color_select);
                 delete(config.misc.display_select);
             }
+            delete(config._display_modified);
+           
             
             for (var feed in config.feeds) {
                 try {
@@ -3927,9 +3930,11 @@ KM.conf_config_track = function() {
                             delete(config.feeds[feed]);                            
                         }
                     } else if (!config.feeds[feed]["_mask_modified"]) { 
-                        delete(config.feeds[feed]["feed_mask"]);
-                        delete(config.feeds[feed]["_mask_modified"]);
+                        delete(config.feeds[feed]["feed_mask"]);                        
                     }
+                    delete(config.feeds[feed]["_mask_modified"]);
+                    delete(config.feeds[feed]["_modified"]);
+                    
                 } catch (e) {}
             }
             
