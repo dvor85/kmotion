@@ -56,12 +56,15 @@ class ConfigRW():
                   "feeds": {},
                   "display_feeds": {}
                   }
+        exclude_options = ('feed_reboot_url',)
                 
         for section in self.www_parser.sections():
             try:
                 conf = {}
                 for k, v in self.www_parser.items(section):
                     try:
+                        if k in exclude_options:
+                            continue
                         if 'display_feeds_' in k:                        
                             display = self.parseStr(k.replace('display_feeds_', ''))
                             config['display_feeds'][display] = [self.parseStr(i) for i in v.split(',')]   
