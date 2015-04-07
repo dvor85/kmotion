@@ -3877,6 +3877,7 @@ KM.conf_config_track = function() {
     // synchronises these changes with 'www_rc' and requests config reloads.
     
     var config = {};    
+    var save_display = false;
     
     return {
     
@@ -3885,10 +3886,23 @@ KM.conf_config_track = function() {
         },
    
         reset: function() {
+            save_display = false;
             KM.conf_config_track.init();
-        },       
+        },    
+
+        saveDisplay: function(state) {
+            save_display = state;
+        },
+        
+        get_saveDisplay: function() {
+            return save_display;
+        },
 
         sync: function(conf) {
+            if (save_display) {
+                delete(config['display_feeds']);
+                delete(config.misc['display_select']);
+            };
             diffObjects = function(obj1, obj2) {
                 if (obj1 === null || typeof obj1 !== 'object') {
                     if (obj1 !== obj2)
@@ -3896,13 +3910,16 @@ KM.conf_config_track = function() {
                     else
                         return null;
                 }
-             
-                var temp = obj1.constructor(); // give temp the original obj's constructor
-                for (var key in obj1) {
-                    var tk = diffObjects(obj1[key], obj2[key]);
-                    if (tk !== null)
-                        temp[key] = tk;
-                }             
+                if (obj2) {
+                    var temp = obj1.constructor(); // give temp the original obj's constructor
+                    for (var key in obj1) {
+                        var tk = diffObjects(obj1[key], obj2[key]);
+                        if (tk !== null)
+                            temp[key] = tk;
+                    }                          
+                } else {
+                    var temp = JSON.parse(JSON.stringify(obj1)); 
+                }
                 return temp;
             };
             
@@ -4153,17 +4170,36 @@ KM.conf_misc_html = function() {
 				</div>\
             </div>\
             <br /><hr style="margin:10px;clear:both" />\
+            <div class="config_group_margin">\
+            <input type="checkbox" id="save_display" onclick="KM.conf_misc_highlight();" />Save the current "Display Select" configuration as default.<br>\
+            </div>\
+            <br /><hr style="margin:10px;clear:both" />\
             <div class="config_text_margin" id="conf_text" >\
               <input type="button" id="conf_apply" onclick="KM.conf_apply();" value="Apply" />&nbsp;all changes to the local browser configuration and sync with the remote server.\
            </div>';
 
     for (var b in KM.config.misc) {
         try {
-            if (typeof(KM.config.misc[b]) === "boolean")
+            if (typeof(KM.config.misc[b]) === "boolean") {                
                 document.getElementById(b).checked = KM.config.misc[b];
+            }
         } catch (e) {}
     }
+    document.getElementById('save_display').checked = KM.conf_config_track.get_saveDisplay();
 };
+
+KM.conf_save_display = function() {		
+		
+    // A function that saves the display select and color select		
+    //		
+    // expects:		
+    //		
+    // returns:		
+    //		
+		
+    	
+    KM.conf_misc_highlight();		
+ };
 
 KM.conf_misc_highlight = function () {
 
@@ -4182,11 +4218,13 @@ KM.conf_misc_highlight = function () {
 KM.conf_misc_update = function () {
     for (var b in KM.config.misc) {
         try {
-            if (typeof(KM.config.misc[b]) === "boolean")
+            if (typeof(KM.config.misc[b]) === "boolean") {
                 KM.config.misc[b] = document.getElementById(b).checked;
+            }
         } catch (e) {}
     }
-}
+    KM.conf_config_track.saveDisplay(document.getElementById('save_display').checked);
+};
 
 
 KM.conf_apply = function () {

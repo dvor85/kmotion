@@ -47,11 +47,11 @@ class Kmotion_setd(Process):
             for section in self.config.keys():
                 if section == 'feeds':                    
                     for feed in self.config[section].keys():
-                        must_reload = True
                         feed_section = 'motion_feed%02i' % int(feed)
                         if not self.www_parser.has_section(feed_section):
                             self.www_parser.add_section(feed_section)
                         for k, v in self.config[section][feed].items():
+                            must_reload = True
                             self.www_parser.set(feed_section, k, str(v))
                             if k == 'feed_mask':
                                 self.create_mask(feed, str(v))
@@ -71,7 +71,7 @@ class Kmotion_setd(Process):
                     
             mutex_www_parser_wr(self.kmotion_dir, self.www_parser, www_rc)
             if must_reload and www_rc == 'www_rc':
-                self.log('Reload kmotion...', feed.CRIT)
+                self.log('Reload kmotion...', logger.CRIT)
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
                                         
     def create_mask(self, feed, mask_hex_str):   
