@@ -890,12 +890,16 @@ KM.get_jpeg = function (feed) {
     return  '/kmotion_ramdisk/'+KM.pad_out2(feed)+'/last.jpg?'+Math.random();
 }
 
+KM.onerror_get_jpeg = function (img_obj, feed) {
+    setTimeout(function() {img_obj.src = KM.get_jpeg(feed)}, 1000);
+}
+
 KM.update_jpegs = function () {
     var feed;
-	for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
+	for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {    
         try {  
             feed = KM.config.display_feeds[KM.config.misc.display_select][i]
-            if (KM.config.feeds[feed].feed_enabled && (KM.item_in_array(feed, KM.live.latest_events))) {	
+            if ((KM.config.feeds[feed].feed_enabled) && (KM.item_in_array(feed, KM.live.latest_events))) {
                 document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
             }
         } catch (e) {}
@@ -1001,11 +1005,15 @@ KM.init_display_grid = function (display_select) {
 	var jpeg = gcam_jpeg;
 	var text = 'No Video';
 	var text_color = KM.WHITE;
-    if (html_count>KM.max_feed()) return;
+    var onerr = "";
 	
     try {
-        var feed = KM.config.display_feeds[display_num][html_count];
+        var feed = KM.config.display_feeds[display_num][html_count++];
+        if (feed>KM.max_feed()) {
+            return;
+        }
         if (KM.config.feeds[feed].feed_enabled) {
+            onerr = 'onerror="KM.onerror_get_jpeg(this, ' + feed + ')"; ';
             jpeg = KM.get_jpeg(feed);	    
             text_color = KM.BLUE;	 
             if (KM.config.feeds[feed].feed_name) {
@@ -1016,7 +1024,7 @@ KM.init_display_grid = function (display_select) {
             }
         }
     } catch (e) {}
-    html_count++;
+    
     text = feed + ' : ' + text;
     
     
@@ -1029,7 +1037,7 @@ KM.init_display_grid = function (display_select) {
     var l7 = 'src="' + jpeg + '"; ';
     var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
     var l9 = 'alt="">';
-    html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9;
+    html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + onerr + l9;
 
     var l10 = '<span id="text_' + feed + '"; ';
     var l11 = 'style="position:absolute; ';
@@ -1351,7 +1359,7 @@ KM.camera_jpeg_clicked = function (camera) {
     if (KM.live.last_camera_select !== 0) {
 		var camera_last_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(KM.live.last_camera_select);
 		var camera_old=KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
-		if (KM.config.feeds[KM.live.last_camera_select].feed_enabled) {
+		if (KM.config.feeds[KM.live.last_camera_select] && KM.config.feeds[KM.live.last_camera_select].feed_enabled) {
 		    KM.config.display_feeds[KM.config.misc.display_select][camera_pos]=KM.live.last_camera_select;
 		    if (camera_last_pos>0) {
 			KM.config.display_feeds[KM.config.misc.display_select][camera_last_pos]=camera_old;
