@@ -857,7 +857,7 @@ live display
 **************************************************************************** */
 
 
-KM.update_events = function () {
+KM.update_feeds = function () {
 
     // A function that get the latest jpeg filenames and event status from
     // the server with an 'xmlHttp' call then splits the returned data and
@@ -875,6 +875,9 @@ KM.update_events = function () {
 	    xmlHttp.onreadystatechange = null; // plug memory leak
 	    var jdata = JSON.parse(xmlHttp.responseText);
 		KM.live.latest_events = jdata.events;
+        KM.text_refresh();
+        KM.update_jpegs();
+        
 	    }
     };
 
@@ -1012,30 +1015,31 @@ KM.init_display_grid = function (display_select) {
                 KM.config.feeds[feed].feed_name = text;
             }
         }
-        text = feed + ' : ' + text;
-
-        
-        var l1 = '<img id="image_' + feed + '" ';
-        var l2 = 'style="position:absolute; ';
-        var l3 = 'left:' + left + 'px; ';
-        var l4 = 'top:' + top + 'px; ';
-        var l5 = 'width:' + width + 'px; ';
-        var l6 = 'height:' + height + 'px;" ';
-        var l7 = 'src="' + jpeg + '"; ';
-        var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
-        var l9 = 'alt="">';
-        html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9;
-
-        var l10 = '<span id="text_' + feed + '"; ';
-        var l11 = 'style="position:absolute; ';
-        var l12 = 'left:' + (left + text_left) + 'px; ';
-        var l13 = 'top:' +  (top + text_top) + 'px;';
-        var l14 = 'font-weight: bold;';
-        var l15 = 'color:' + text_color  + ';';
-        var l16 = '">' + text + '</span>';
-        html = html + l10 + l11 + l12 + l13 + l14 + l15 + l16;
     } catch (e) {}
     html_count++;
+    text = feed + ' : ' + text;
+    
+    
+    var l1 = '<img id="image_' + feed + '" ';
+    var l2 = 'style="position:absolute; ';
+    var l3 = 'left:' + left + 'px; ';
+    var l4 = 'top:' + top + 'px; ';
+    var l5 = 'width:' + width + 'px; ';
+    var l6 = 'height:' + height + 'px;" ';
+    var l7 = 'src="' + jpeg + '"; ';
+    var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
+    var l9 = 'alt="">';
+    html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + l9;
+
+    var l10 = '<span id="text_' + feed + '"; ';
+    var l11 = 'style="position:absolute; ';
+    var l12 = 'left:' + (left + text_left) + 'px; ';
+    var l13 = 'top:' +  (top + text_top) + 'px;';
+    var l14 = 'font-weight: bold;';
+    var l15 = 'color:' + text_color  + ';';
+    var l16 = '">' + text + '</span>';
+    html = html + l10 + l11 + l12 + l13 + l14 + l15 + l16;
+    
     }
 
 
@@ -1418,9 +1422,7 @@ KM.display_live_normal = function () {
             
             KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
             if (KM.session_id.current === session_id) {
-                KM.update_events();
-                KM.text_refresh();
-                KM.update_jpegs();                 
+                KM.update_feeds();
                 KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000/KM.live.fps));
             }
         }
@@ -4997,13 +4999,6 @@ KM.init1 = function () {
     // returns :
     //
 
-   // KM.feed_cache_setup();
-    // setTimeout(function() {			
-				// KM.update_events();				
-				// setTimeout(arguments.callee,1000);
-			
-	// }, 1000);
-    KM.update_events();
     var callback = KM.init2;
     KM.load_settings(callback);
 };
@@ -5020,12 +5015,12 @@ KM.init2 = function () {
     // returns :
     //
 
-    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {init_interface(); }, 1000));
+    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {init_interface(); }, 1));
 
 
     function init_interface() {
 
-	// A function that performs final initialization and 'msg' handleing
+	// A function that performs final initialization
 	//
 	// expects :
 	//
