@@ -41,9 +41,9 @@ class Kmotion_setd(Process):
             if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
                 www_rc = 'www_rc'
             
-            self.www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
             must_reload = False
             
+            self.www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
             for section in self.config.keys():
                 if section == 'feeds':                    
                     for feed in self.config[section].keys():
@@ -52,9 +52,7 @@ class Kmotion_setd(Process):
                             self.www_parser.add_section(feed_section)
                         for k, v in self.config[section][feed].items():
                             must_reload = True
-                            self.www_parser.set(feed_section, k, str(v))
-                            if k == 'feed_mask':
-                                self.create_mask(feed, str(v))
+                            self.www_parser.set(feed_section, k, str(v))                            
                 elif section == 'display_feeds':
                     misc_section = 'misc'
                     if not self.www_parser.has_section(misc_section):
@@ -67,77 +65,12 @@ class Kmotion_setd(Process):
                         self.www_parser.add_section(section)
                     for k, v in self.config[section].items():
                         self.www_parser.set(section, k, str(v))
-                    
-                    
             mutex_www_parser_wr(self.kmotion_dir, self.www_parser, www_rc)
+            
             if must_reload and www_rc == 'www_rc':
                 self.log('Reload kmotion...', logger.CRIT)
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
                                         
-    def create_mask(self, feed, mask_hex_str):   
-        """
-        Create a motion PGM mask from 'mask_hex_string' for feed 'feed'. Save it
-        as ../core/masks/mask??.png.
-        
-        args    : kmotion_dir ...  the 'root' directory of kmotion 
-                  feed ...         the feed number
-                  mask_hex_str ... the encoded mask hex string
-        excepts : 
-        return  : none
-        """
-    
-        self.log('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
-        try:
-            image_width = int(self.config['feeds'][feed]['feed_width']) 
-            image_height = int(self.config['feeds'][feed]['feed_height'])
-        except:
-            image_width = self.www_parser.getint('motion_feed%02i' % int(feed), 'feed_width') 
-            image_height = self.www_parser.getint('motion_feed%02i' % int(feed), 'feed_height')            
-        self.log('create_mask() - width: %i height: %i' % (image_width, image_height), logger.DEBUG)
-        
-        black_px = '\x00' 
-        white_px = '\xFF' 
-        
-        mask = ''
-        mask_hex_split = mask_hex_str.split('#')
-        px_yptr = 0
-        
-        for y in range(15):
-            
-            tmp_dec = int(mask_hex_split[y], 16)
-            px_xptr = 0
-            image_line = ''
-            
-            for x in range(15, 0, -1):
-            
-                px_mult = (image_width - px_xptr) / x
-                px_xptr += px_mult
-                
-                bin_ = tmp_dec & 16384
-                tmp_dec <<= 1
-                
-                if bin_ == 16384:
-                    image_line += black_px * px_mult
-                else:
-                    image_line += white_px * px_mult
-            
-                    
-            px_mult = (image_height - px_yptr) / (15 - y)
-            px_yptr += px_mult
-                
-            mask += image_line * px_mult
-        
-        masks_dir = os.path.join(self.kmotion_dir, 'core/masks')
-        if not os.path.isdir(masks_dir):
-            os.makedirs(masks_dir)    
-        with open(os.path.join(masks_dir, 'mask%0.2i.pgm' % int(feed)), 'wb') as f_obj:
-            f_obj.write('P5\n')
-            f_obj.write('%i %i\n' % (image_width, image_height))
-            f_obj.write('255\n')
-            f_obj.write(mask)
-        self.log('create_mask() - mask written', logger.DEBUG)
-        
-        
     def run(self):
         while True:
             try:    

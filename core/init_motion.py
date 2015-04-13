@@ -34,6 +34,68 @@ class InitMotion:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
         self.feed_list.sort()
+        
+    def create_mask(self, feed):   
+        """
+        Create a motion PGM mask from 'mask_hex_string' for feed 'feed'. Save it
+        as ../core/masks/mask??.png.
+        
+        args    : kmotion_dir ...  the 'root' directory of kmotion 
+                  feed ...         the feed number
+                  mask_hex_str ... the encoded mask hex string
+        excepts : 
+        return  : none
+        """
+    
+        mask_hex_str = self.www_parser.get('motion_feed%02i' % feed, 'feed_mask')
+        self.log('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
+        
+        image_width = self.www_parser.getint('motion_feed%02i' % feed, 'feed_width') 
+        image_height = self.www_parser.getint('motion_feed%02i' % feed, 'feed_height')
+                    
+        self.log('create_mask() - width: %i height: %i' % (image_width, image_height), logger.DEBUG)
+        
+        black_px = '\x00' 
+        white_px = '\xFF' 
+        
+        mask = ''
+        mask_hex_split = mask_hex_str.split('#')
+        px_yptr = 0
+        
+        for y in range(15):
+            
+            tmp_dec = int(mask_hex_split[y], 16)
+            px_xptr = 0
+            image_line = ''
+            
+            for x in range(15, 0, -1):
+            
+                px_mult = (image_width - px_xptr) / x
+                px_xptr += px_mult
+                
+                bin_ = tmp_dec & 16384
+                tmp_dec <<= 1
+                
+                if bin_ == 16384:
+                    image_line += black_px * px_mult
+                else:
+                    image_line += white_px * px_mult
+            
+                    
+            px_mult = (image_height - px_yptr) / (15 - y)
+            px_yptr += px_mult
+                
+            mask += image_line * px_mult
+        
+        masks_dir = os.path.join(self.kmotion_dir, 'core/masks')
+        if not os.path.isdir(masks_dir):
+            os.makedirs(masks_dir)    
+        with open(os.path.join(masks_dir, 'mask%0.2i.pgm' % feed), 'wb') as f_obj:
+            f_obj.write('P5\n')
+            f_obj.write('%i %i\n' % (image_width, image_height))
+            f_obj.write('255\n')
+            f_obj.write(mask)
+        self.log('create_mask() - mask written', logger.DEBUG)
                 
     def init_motion_out(self):
         """
@@ -149,20 +211,17 @@ control_localhost on
 
 gap 2
 pre_capture 1
-post_capture 16
+post_capture 10
 quality 85
 webcam_localhost on
 '''
-            
                 # pal or ntsc,
-                if self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_pal'):
-                    print >> f_obj1, 'norm 0' 
-                else:
-                    print >> f_obj1, 'norm 1' 
-                    
+                print >> f_obj1, 'norm 1'
+                
                 # feed mask, 
                 if self.www_parser.get('motion_feed%02i' % feed, 'feed_mask') != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
-                    print >> f_obj1, 'mask_file %s/core/masks/mask%0.2d.pgm' % (self.kmotion_dir, feed)  
+                    self.create_mask(feed)
+                    print >> f_obj1, 'mask_file %s/core/masks/mask%0.2i.pgm' % (self.kmotion_dir, feed)  
                     
                 # framerate,
                 print >> f_obj1, 'framerate 3'  # default for feed updates
@@ -184,7 +243,6 @@ webcam_localhost on
                     print >> f_obj1, user_conf
                 
                 print >> f_obj1, '''
-                
 # ------------------------------------------------------------------------------
 # 'override' section
 # ------------------------------------------------------------------------------
@@ -198,7 +256,7 @@ snapshot_interval 1
                 feed_device = int(self.www_parser.get('motion_feed%02i' % feed, 'feed_device'))
                 if feed_device > -1:  # /dev/video? device
                     print >> f_obj1, 'videodevice /dev/video%s' % feed_device
-                    print >> f_obj1, 'input %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_input')
+                    print >> f_obj1, 'input %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_input') 
                 else:  # netcam
                     print >> f_obj1, 'netcam_url  %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_url')
                     print >> f_obj1, 'netcam_proxy %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_proxy')
@@ -213,7 +271,7 @@ snapshot_interval 1
                      
                 # always on for feed updates
                 print >> f_obj1, 'output_normal off'
-                print >> f_obj1, 'jpeg_filename %s/%%Y%%m%%d/%0.2d/snap/%%H%%M%%S' % (self.images_dbase_dir, feed)
+                print >> f_obj1, 'jpeg_filename %s/%%Y%%m%%d/%0.2i/snap/%%H%%M%%S' % (self.images_dbase_dir, feed)
                     
                 print >> f_obj1, '' 
                 

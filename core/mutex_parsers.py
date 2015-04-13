@@ -16,7 +16,7 @@ def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):
         excepts : 
         return  : 
     """
-    www_rc_mutex = Mutex(kmotion_dir, 'www_rc')
+    www_rc_mutex = Mutex(kmotion_dir, www_rc)
     www_rc_file = '%s/www/%s' % (kmotion_dir, www_rc)
     www_rc_mutex.acquire()
     try:
@@ -57,7 +57,7 @@ def mutex_www_parser_rd(kmotion_dir, www_rc='www_rc'):
         """
         
     parser = ConfigParser.SafeConfigParser()
-    www_rc_mutex = Mutex(kmotion_dir, 'www_rc')
+    www_rc_mutex = Mutex(kmotion_dir, www_rc)
     www_rc_mutex.acquire()
     try:
         parser.read('%s/www/%s' % (kmotion_dir, www_rc))
