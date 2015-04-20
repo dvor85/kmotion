@@ -30,7 +30,7 @@ class Archive():
     def date_feed_avail_data(self, feeds):
 
         date_feed_obj = {}       
-        dates = [i for i in os.listdir(self.images_dbase_dir) if len(i) == 8] 
+        dates = [i for i in os.listdir(self.images_dbase_dir) if len(i) == 8]
         dates.sort(reverse=True)
         for date in dates:
             try:
@@ -65,7 +65,7 @@ class Archive():
         movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)
         if os.path.isdir(movies_dir):
             movies = os.listdir(movies_dir)
-            movies.sort(reverse=True)
+            movies.sort()
             journal['movies'] = []
             for m in movies:
                 mf = os.path.join(movies_dir, m)

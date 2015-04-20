@@ -388,6 +388,15 @@ KM.secs_hh_mm_ss = function (secs) {
     return KM.pad_out2(hh) + ':' + KM.pad_out2(mm) + ':' + KM.pad_out2(ss);
 };
 
+KM.hhmmss_secs = function (hhmmss) {
+    // convert HHMMSS string to an integer number
+    hhmmss = KM.pad_out6(hhmmss);
+    var hh=parseInt(hhmmss.slice(0, 2), 10);
+    var mm=parseInt(hhmmss.slice(2, 4), 10);
+    var ss=parseInt(hhmmss.slice(4, 6), 10);
+    return (hh * 60 * 60) + (mm * 60) + ss;
+}
+
 
 KM.expand_chars = function(text)  {
 
@@ -1462,7 +1471,7 @@ KM.display_archive_ = function () {
     var smovie_show =   false;
     var snap_show =     false;
 
-    var dates =         []; // array of avaliable dates
+    var dates =         {}; // array of avaliable dates
     var cameras =       []; // multi-dimensional array of cameras per date
     var titles =        []; // multi-dimensional array of titles per date
     var movie_flags =   []; // multi-dimensional array per date per cam
@@ -1487,14 +1496,7 @@ KM.display_archive_ = function () {
     var movie_frame =    0; // the current movies frame
     var movie_index =    0; // the current movies index, -1 = no movie playing
 
-    var smovie_start =  []; // smovie start secs
-    var smovie_sitems = []; // smovie num items in start secs dir
-    var smovie_end =    []; // smovie end secs
-    var smovie_eitems = []; // smovie num items in end secs dir
-    var smovie_fps =    []; // smovie fps
-    var smovie_frame =   0; // the current smovies frame
-    var smovie_index =   0; // the current smovie index
-
+    
     var snap_init =     []; // snapshot init secs
     var snap_intvl =    []; // snapshot intervals secs
 
@@ -1548,7 +1550,7 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	if (dates.length === 0) {
+    if (dates === {}) {
 	    var html  = '<div class="archive_msg" style="text-align: center"><br><br>';
 	    html += 'There are currently no recorded events or snapshots to display.<br><br>';
 	    html += 'To enable event recording select either \'frame mode\' or ';
@@ -1560,9 +1562,10 @@ KM.display_archive_ = function () {
 
 	} else {
 
-	    update_title_noclock();
-	    populate_date_dropdown();
+        populate_date_dropdown();
 	    populate_camera_dropdown();
+	    update_title_noclock();
+	    
 	    mode_setto_event();
 
 	    document.getElementById('date_select').disabled =   false;
@@ -1571,8 +1574,8 @@ KM.display_archive_ = function () {
 	    document.getElementById('mode_select').disabled =   false;
 
 	    var callback = init_to_event_mode;
-	    populate_frame_dbase(callback, dates[document.getElementById('date_select').selectedIndex],
-	    cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex], session_id);
+	    populate_frame_dbase(callback, document.getElementById('date_select').value,
+                                       document.getElementById('camera_select').value, session_id);
 	}
     }
 
@@ -1611,8 +1614,8 @@ KM.display_archive_ = function () {
 	mode_setto_event();
 	update_title_noclock(); // strip the clock
 	blank_button_bar();
-	var date = dates[document.getElementById('date_select').selectedIndex];
-	var camera = cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
+	var date = document.getElementById('date_select').value;
+	var camera = document.getElementById('camera_select').value;
 	init_events_html(date, camera);
 	populate_tline();
     }
@@ -1709,11 +1712,11 @@ KM.display_archive_ = function () {
 	    title  + '" alt="timeline">';
 	}
 	document.getElementById('timeline').innerHTML = tline_html;
-	KM.show_downloading_msg();
+	show_downloading_msg();
     }
 
 
-    KM.show_downloading_msg = function () {
+    function show_downloading_msg() {
 
 	// A function that shows the 'downloading' message
 	//
@@ -1744,19 +1747,19 @@ KM.display_archive_ = function () {
 
 	// add the avaliable dates
 	var new_opt = '', date = '';
-	for (var i = 0; i < dates.length; i++) {
-	    new_opt = document.createElement('option');
-	    date = dates[i];
+	for (var date in dates) {
+	    new_opt = document.createElement('option');	    
 	    new_opt.text = date.slice(0, 4) + ' / ' + date.slice(4, 6) + ' / ' + date.slice(6);
+        new_opt.value = date;
 	    try {
 	      date_select.add(new_opt, null); // standards compliant; doesn't work in IE
 	    }
 	    catch(ex) {
 	      date_select.add(new_opt); // IE only
 	    }
-	var new_obj = null; // stop memory leak
-	document.getElementById('date_select').selectedIndex = 0;
-	}
+    }    
+    document.getElementById('date_select').selectedIndex = 0;
+	
     }
 
 
@@ -1772,8 +1775,8 @@ KM.display_archive_ = function () {
 
 	// remove all 'camera_select' options
 	var camera_select = document.getElementById('camera_select');
-	var camera_index = camera_select.selectedIndex;
-	var camera_title = camera_select.options[camera_index].text;
+	var selected_index = camera_select.selectedIndex;
+	var selected_feed = parseInt(camera_select.value);
 	
 	
 	for (var i = camera_select.options.length - 1; i > -1; i--) {
@@ -1781,24 +1784,25 @@ KM.display_archive_ = function () {
 	}
 
 	// add the avaliable cameras based on 'archive.dates'
-	var date_index = document.getElementById('date_select').selectedIndex;
+	var date = document.getElementById('date_select').value;
 	var new_opt = '';
 	camera_index = 0;
-	for (var i = 0; i < cameras[date_index].length; i++) {
+	for (var feed in dates[date]) {
 	    new_opt = document.createElement('option');
-	    new_opt.text = KM.pad_out2(cameras[date_index][i]) + ' : ' + titles[date_index][i];
-		if (new_opt.text === camera_title) {
-			camera_index = i;
-		}
+	    new_opt.text = KM.pad_out2(feed) + ' : ' + dates[date][feed]['title'];
+        new_opt.value = feed;		
 	    try {
 	      camera_select.add(new_opt, null); // standards compliant; doesn't work in IE
 	    }
 	    catch(ex) {
 	      camera_select.add(new_opt); // IE only
-	    }
-	var new_obj = null; // stop memory leak
-	camera_select.selectedIndex = camera_index;
+	    }        
 	}
+    if (!isNaN(selected_feed)) {
+        camera_select.value = selected_feed;
+    } else {
+        camera_select.selectedIndex = 0;
+    }
     }
 
 
@@ -1812,30 +1816,20 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	var index = cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
+	//var index = dates[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
 
 	var view_select = document.getElementById('view_select');
 	for (var i = view_select.options.length - 1; i > -1; i--) {
 	    view_select.remove(i);
 	}
 
-	var movie_enabled =  movie_flags[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-	var smovie_enabled = smovie_flags[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-	var snap_enabled =   snap_flags[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-
-	// if both 'movie' and 'smovie' avaliable, choose the latest ending
-	if (movie_enabled && smovie_enabled) {
-	    if (smovie_end[smovie_end.length - 1] >= movie_end[movie_end.length - 1]) {
-		movie_enabled = false;
-	    } else {
-		smovie_enabled = false;
-	    }
-	}
+	var movie_enabled =  dates[document.getElementById('date_select').value][document.getElementById('camera_select').value]['movie_flag'];
+	var snap_enabled =   dates[document.getElementById('date_select').value][document.getElementById('camera_select').value]['snap_flag'];
 
 	var drop_opts = [];
 	drop_opts[0] = 'No filter';
 
-	if ((movie_enabled || smovie_enabled) && snap_enabled) {
+	if (movie_enabled && snap_enabled) {
 	    drop_opts[1] = 'Filter event movies';
 	    drop_opts[2] = 'Filter snapshots';
 	}
@@ -1845,13 +1839,11 @@ KM.display_archive_ = function () {
 	    new_opt.text = drop_opts[i];
 
 	    try { view_select.add(new_opt, null); } // standards compliant; doesn't work in IE
-	    catch(ex) { view_select.add(new_opt); } // IE only
+	    catch(e) { view_select.add(new_opt); } // IE only
 	}
-
-	var new_obj = null; // stop memory leak
+	
 	document.getElementById('view_select').selectedIndex = 0;
 	movie_show =  movie_enabled;
-	smovie_show = smovie_enabled;
 	snap_show =   snap_enabled;
     }
 
@@ -1875,31 +1867,20 @@ KM.display_archive_ = function () {
 	    src = './images/tline_g0.png';
 
 	    if (snap_show) { // show snapshot data
-		if (snap_tblock((i - 1) * tline_block, i * tline_block)) src = './images/tline_b1.png';
-	    }
-
-	    if (smovie_show) { // show smovie data
-		level = 0;
-		tmp = smovie_tblock((i - 1) * tline_block, (i * tline_block) - 1);
-		if (tmp > thold * 5)      level = 6;
-		else if (tmp > thold * 4) level = 5;
-		else if (tmp > thold * 3) level = 4;
-		else if (tmp > thold * 2) level = 3;
-		else if (tmp > thold)     level = 2;
-		else if (tmp > 0)         level = 1;
-		if (level !== 0) src = './images/tline_r' + level + '.png';
-	    }
-
-	    else if (movie_show) { // show movie data
-		level = 0;
-		tmp = movie_tblock((i - 1) * tline_block, (i * tline_block) - 1);
-		if (tmp > thold * 5)      level = 6;
-		else if (tmp > thold * 4) level = 5;
-		else if (tmp > thold * 3) level = 4;
-		else if (tmp > thold * 2) level = 3;
-		else if (tmp > thold)     level = 2;
-		else if (tmp > 0)         level = 1;
-		if (level !== 0) src = './images/tline_r' + level + '.png';
+            if (snap_tblock((i - 1) * tline_block, i * tline_block)) 
+                src = './images/tline_b1.png';
+	    } 
+        if (movie_show) { // show movie data
+            level = 0;
+            tmp = movie_tblock((i - 1) * tline_block, (i * tline_block) - 1);
+            if (tmp > thold * 5)      level = 6;
+            else if (tmp > thold * 4) level = 5;
+            else if (tmp > thold * 3) level = 4;
+            else if (tmp > thold * 2) level = 3;
+            else if (tmp > thold)     level = 2;
+            else if (tmp > 0)         level = 1;
+            if (level !== 0) 
+                src = './images/tline_r' + level + '.png';
 	    }
 
 	    document.getElementById('tslot_' + i).src = src;
@@ -1953,24 +1934,13 @@ KM.display_archive_ = function () {
 	function movie_tblock(from_secs, to_secs) {
 	    // return seconds of timeblock filled by movie
 	    var secs = 0;
-	    for (var i = 0; i < movie_start.length; i++) {
-		if (movie_start[i] <= to_secs && movie_end[i] >= from_secs) {
-		    secs += Math.min(movie_end[i], to_secs) - Math.max(movie_start[i], from_secs);
-		}
-	    }
-	    return secs;
-	}
-
-
-	function smovie_tblock(from_secs, to_secs) {
-	    // return seconds of timeblock filled by smovie
-	    var tmp =  0;
-	    var secs = 0;
-	    for (var i = 0; i < smovie_start.length; i++) {
-		if (smovie_start[i] <= to_secs && smovie_end[i] >= from_secs) {
-		    tmp = Math.min(smovie_end[i], to_secs);
-		    secs += tmp - smovie_start[i];
-		}
+        var start,end;
+	    for (var i = 0; i < movies['movies'].length; i++) {
+            start = KM.hhmmss_secs(movies['movies'][i]['start']);
+            end = KM.hhmmss_secs(movies['movies'][i]['end']);
+            if (start <= to_secs && end >= from_secs) {
+                secs += Math.min(end, to_secs) - Math.max(start, from_secs);
+            }
 	    }
 	    return secs;
 	}
@@ -1990,45 +1960,30 @@ KM.display_archive_ = function () {
 	//
 
 	var html = '', span_html = '', duration = 0;
-
+    var start, end;
+    
 	if (movie_show) { // movie events
-	    var hlight = top_10pc(movie_start, movie_end);
-	    for (var i = 0; i < movie_start.length; i++) {
-
-		span_html = 'onclick="KM.arch_event_clicked(' + movie_start[i]  + ')"';
-		duration = movie_end[i] - movie_start[i];
-		if (KM.item_in_array(duration , hlight)) span_html += ' style="color:#D90000"';
-		var src = 'images_dbase/' + date + '/' + KM.pad_out2(camera) + '/snap/' + KM.secs_hhmmss(movie_start[i]) + '.jpg';
-		//html += '<span ' + span_html + ' onmouseover="showhint(\'<img width=256px src='+src+'>\')" onmouseout="hidehint()" onclick="hidehint()">';
-		html += '<span ' + span_html + '>';
-		html += '&nbsp;Movie event&nbsp;&nbsp;';
-		html += KM.secs_hh_mm_ss(movie_start[i]);
-		html += '&nbsp;&nbsp;-&nbsp;&nbsp;';
-		html += KM.secs_hh_mm_ss(movie_end[i]);
-		html += '&nbsp;&nbsp;duration&nbsp;&nbsp;';
-		html += KM.pad_out4(duration);
-		html += '&nbsp;&nbsp;secs&nbsp;&nbsp ... &nbsp;&nbsp;click to view<br>';
-		html += '</span>';
+	    var hlight = top_10pc();
+	    for (var i=0; i<movies['movies'].length; i++) {
+            start = KM.hhmmss_secs(movies['movies'][i]['start']);
+            end = KM.hhmmss_secs(movies['movies'][i]['end']);
+            span_html = 'onclick="KM.arch_event_clicked(' + i  + ')"';
+            duration = end - start;
+            if (KM.item_in_array(duration, hlight)) 
+                span_html += ' style="color:#D90000"';
+            //var src = 'images_dbase/' + date + '/' + KM.pad_out2(camera) + '/snap/' + KM.secs_hhmmss(movies[movie]['start']) + '.jpg';
+            //html += '<span ' + span_html + ' onmouseover="showhint(\'<img width=256px src='+src+'>\')" onmouseout="hidehint()" onclick="hidehint()">';
+            html += '<span ' + span_html + '>';
+            html += '&nbsp;Movie event&nbsp;&nbsp;';
+            html += KM.secs_hh_mm_ss(start);
+            html += '&nbsp;&nbsp;-&nbsp;&nbsp;';
+            html += KM.secs_hh_mm_ss(end);
+            html += '&nbsp;&nbsp;duration&nbsp;&nbsp;';
+            html += KM.pad_out4(duration);
+            html += '&nbsp;&nbsp;secs&nbsp;&nbsp ... &nbsp;&nbsp;click to view<br>';
+            html += '</span>';
 	    }
 
-	} else if (smovie_show) { // smovie events
-	    var hlight = top_10pc(smovie_start, smovie_end);
-	    for (var i = 0; i < smovie_start.length; i++) {
-
-		span_html = 'onclick="KM.arch_event_clicked(' + smovie_start[i]  + ')"';
-		duration = smovie_end[i] - smovie_start[i];
-		if (KM.item_in_array(duration , hlight)) span_html += ' style="color:#D90000"';
-
-		html += '<span ' + span_html + '>';
-		html += '&nbsp;Frame movie event&nbsp;&nbsp;';
-		html += KM.secs_hh_mm_ss(smovie_start[i]);
-		html += '&nbsp;&nbsp;-&nbsp;&nbsp;';
-		html += KM.secs_hh_mm_ss(smovie_end[i]);
-		html += '&nbsp;&nbsp;duration&nbsp;&nbsp;';
-		html += KM.pad_out4(duration);
-		html += '&nbsp;&nbsp;secs&nbsp;&nbsp ... &nbsp;&nbsp;click to view<br>';
-		html += '</span>';
-	    }
 	}
 
 	if (html.length === 0) {
@@ -2042,11 +1997,15 @@ KM.display_archive_ = function () {
 
 	document.getElementById('display_html').innerHTML = html;
 
-	function top_10pc(start, end) {
-	    // return a list of the top 10% event durations
+	function top_10pc() {
+	    // return a list of the top 10% event durations        
 	    var top = [];
-	    for (var i = 0; i < start.length; i++) {
-		top[i] = end[i] - start[i];
+        var start, end;
+        
+	    for (var i=0; i<movies['movies'].length; i++) {
+            start = KM.hhmmss_secs(movies['movies'][i]['start']);
+            end = KM.hhmmss_secs(movies['movies'][i]['end']);
+            top[i] = end - start;
 	    }
 	    top = top.sort(function(a,b){return a - b});
 	    var num_hlight = Math.max(1, parseInt(top.length / 10, 10));
@@ -2069,12 +2028,12 @@ KM.display_archive_ = function () {
 	KM.session_id.current++;
 	var session_id = KM.session_id.current;
 	wipe_tline();
-	KM.show_downloading_msg();	
+	show_downloading_msg();	
 	populate_camera_dropdown();
 	var callback = init_to_event_mode;	
 	populate_frame_dbase(callback, 
-						dates[document.getElementById('date_select').selectedIndex],
-						cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex], 
+						document.getElementById('date_select').value,
+						document.getElementById('camera_select').value, 
 						session_id);		
     };
 
@@ -2093,11 +2052,11 @@ KM.display_archive_ = function () {
 	KM.session_id.current++;
 	var session_id = KM.session_id.current;
 	wipe_tline();
-	KM.show_downloading_msg();
+	show_downloading_msg();
 	mode_setto_event();
 	var callback = init_to_event_mode;
-	populate_frame_dbase(callback, dates[document.getElementById('date_select').selectedIndex],
-	cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex], session_id);
+	populate_frame_dbase(callback, document.getElementById('date_select').value,
+                                   document.getElementById('camera_select').value, session_id);
     };
 
 
@@ -2114,28 +2073,21 @@ KM.display_archive_ = function () {
 	wipe_tline();
 	KM.show_downloading_msg();
 
-	var movie_enabled =  movie_flags[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-	var smovie_enabled = smovie_flags[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-	var snap_enabled =   snap_flags[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-
-	// if both 'movie' and 'smovie' avaliable, choose 'smovie'
-
+	var movie_enabled =  dates[document.getElementById('date_select').value][document.getElementById('camera_select').value]['movie_flag'];
+	var snap_enabled =   dates[document.getElementById('date_select').value][document.getElementById('camera_select').value]['snap_flag'];
 
 	var view = document.getElementById('view_select').selectedIndex;
 
 	// no filtering
 	movie_show =  movie_enabled;
-	smovie_show = smovie_enabled;
 	snap_show =   snap_enabled;
-	if (view === 0) {
-	    if (movie_enabled && smovie_enabled){ smovie_enabled = false; smovie_show=false; }
-	} else if (view === 1) {
-	    if (movie_enabled && smovie_enabled){ movie_enabled = false; movie_show=false; }
+
+	if (view === 1) {
+	    if (movie_enabled){ movie_enabled = false; movie_show=false; }
 	    snap_show = false;
 
 	} else if (view === 2) {
 	    movie_show =  false;
-	    smovie_show = false;
 	}
 
 	// 'init_to_event_mode2' so as not to re-init the dropdown to default
@@ -2160,8 +2112,8 @@ KM.display_archive_ = function () {
 	    update_title_noclock(); // strip the clock
 	    remove_tline_marker();  // don't wipe tline
 	    blank_button_bar();
-	    var date = dates[document.getElementById('date_select').selectedIndex];
-	    var camera = cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
+	    var date = document.getElementById('date_select').value;
+	    var camera = document.getElementById('camera_select').value;
 	    init_events_html(date, camera);
 	    document.onkeydown=null; //stop memory leak
 
@@ -2171,7 +2123,7 @@ KM.display_archive_ = function () {
 	    play_mode = true;
 	    play_accel = 4; // play forward
 	    update_button_bar_play_mode();
-	    play_forward(-1); // ie from the start
+	    play_movie(-1); // ie from the start
 		videoPlayer.set_play_accel(play_accel);
 	}
     };
@@ -2215,8 +2167,8 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	var feed = cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-	var title = titles[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
+	var feed = document.getElementById('camera_select').value;
+	var title = dates[document.getElementById('date_select').value][document.getElementById('camera_select').value]['title'];
 	var time = KM.secs_hh_mm_ss(secs+videoPlayer.get_time());
 	document.getElementById('config_clock').innerHTML = '' +
 	'(' + KM.pad_out2(feed) + ':' + title + ' ' + time + ')';
@@ -2234,8 +2186,8 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	var feed = cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-	var title = titles[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
+	var feed = dates[document.getElementById('date_select').value][document.getElementById('camera_select').value];
+	var title = dates[document.getElementById('date_select').value][document.getElementById('camera_select').value]['title'];
 	document.getElementById('config_clock').innerHTML = '' +
 	'(' + KM.pad_out2(feed) + ':' + title + ')';
 	feed = null; // stop memory leak
@@ -2499,7 +2451,7 @@ KM.display_archive_ = function () {
 	    //}
 
 	    //if (old_play_accel < 4 && play_accel > 3) {
-		//play_forward();
+		//play_movie();
 	    //}
 
 		videoPlayer.set_play_accel(play_accel);
@@ -2517,11 +2469,11 @@ KM.display_archive_ = function () {
 		play_mode = true;
 		play_accel = 4; // play forward
 		update_button_bar_play_mode();
-		play_forward();
+		play_movie();
 
 	    } else if (button == 4) { // +frame
 		play_accel = 4; // play forward
-		play_forward();
+		play_movie();
 
 	    } else if (button == 5) { // +event
 		next_event();
@@ -2531,12 +2483,12 @@ KM.display_archive_ = function () {
     };
 
 
-    function tline_clicked(tline_secs) {
+    function tline_clicked(movie_id) {
 
 	// A function called when a the time line is clicked
 	//
 	// expects:
-	// 'tline_secs' ... the timeline secs
+	// 'movie_id' ... the movie index
 	//
 	// returns:
 	//
@@ -2549,7 +2501,7 @@ KM.display_archive_ = function () {
 	play_accel = videoPlayer.get_play_accel();
 	play_mode = true;
 	update_button_bar_play_mode();
-	play_forward(tline_secs);
+	play_movie(movie_id);
 
     }
 
@@ -2564,44 +2516,34 @@ KM.display_archive_ = function () {
 	//
 
 
-    function play_forward(from_secs) {
+    function play_movie(movie_id) {
 
 	// A function that plays the archive forward. If 'from_secs' is
-	// specified play forward from 'from_secs' else play forward from
+	// specified play forward from 'movie_id' else play forward from
 	// current position.
 	//
 	// expects:
-	// 'from_secs'  ... play the archive 'from_secs'
+	// 'movie_id'  ... play the archive 'movie_id'
 	//
 	// returns:
 	//
-
-	//movie_index=0;
-	//for (movie_index=0;i<=movie_start.length-1;movie_index++)
-	//{
-	//	if (from_secs==movie_start[movie_index])
-	//		break;
-	//}
-	//alert (movie_start);
-	//alert (movie_index);
 
 	KM.session_id.current++;
 	var session_id = KM.session_id.current;
 	KM.kill_timeout_ids(KM.ARCH_LOOP);
 
-	if (from_secs !== undefined) {
-	    display_secs = from_secs;
-	    update_tline_marker(display_secs);
-	    next_movie_frame('reset');
-	    next_smovie_frame(0, 0, 'reset');
+	if (movies['movies'][movie_id] !== undefined) {
+	    display_secs = KM.hhmmss_secs(movies['movies'][movie_id]['start']);
+	    update_tline_marker(display_secs);	   
 	    reset_jpeg_html(); // set to jpeg HTML
+        build_video_player(movie_id);        
 	    jpeg_html = true;
 	}
 
-	var date = dates[document.getElementById('date_select').selectedIndex];
-	var cam = cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
+	var date = document.getElementById('date_select').value;
+	var cam = document.getElementById('camera_select').value;
 
-	function next_frame(skip) {
+	function next_frame() {
 	    // reference time to calculate inter frame pauses
 	    ref_time_ms = (new Date()).getTime();
 	    KM.kill_timeout_ids(KM.ARCH_LOOP);
@@ -2611,28 +2553,6 @@ KM.display_archive_ = function () {
 
 		// normal archive playback
 		var next_snap_obj = next_snap_frame(date, cam);
-
-		if (movie_show) { // if a movie check for next frame ...
-		    var next_movie_obj =  next_movie_frame();
-		    if (next_movie_obj.valid && ((next_movie_obj.secs <= next_snap_obj.secs) || !snap_show || !next_snap_obj.valid)) {
-			var callback = movie_pause;
-			if (next_movie_obj.reset_html) {
-			    jpeg_html = false;
-			    reset_swf_html(next_movie_obj, session_id, callback);
-			} else {
-			    show_movie_frame(next_movie_obj, session_id, callback);
-			}
-			return;
-		    }
-
-		} else if (smovie_show) { // if a smovie check for next frame ...
-		    var next_smovie_obj = next_smovie_frame(date, cam);
-		    if (next_smovie_obj.valid && ((next_smovie_obj.secs <= next_snap_obj.secs) || !snap_show || !next_snap_obj.valid)) {
-			var callback = smovie_pause;
-			KM.display_smovie(next_smovie_obj, session_id, callback);
-			return;
-		    }
-		}
 
 		// if a snapshot check for next frame ...
 		if (snap_show && next_snap_obj.valid) {
@@ -2650,63 +2570,6 @@ KM.display_archive_ = function () {
 	    }
 	}
 
-	function movie_pause(next_movie_obj) {
-	    // update vars only after successfull image display,
-
-	    // note, only 'reset_swf_html' has the data to update 'movie_frames'
-	    // you have to actually load the 'swf' to get the data
-
-	    if (next_movie_obj.frames !== undefined) {
-		movie_frames = next_movie_obj.frames;
-	    }
-
-	    display_secs = next_movie_obj.secs;
-	    movie_frame =  next_movie_obj.frame;
-	    movie_index =  next_movie_obj.index;
-
-	    update_title_clock(display_secs);
-	    update_tline_marker(display_secs);
-
-	    if (play_mode) { // only loop if in play mode
-		var taken_ms = (new Date()).getTime() - ref_time_ms;
-		var sec_per_frame = (1000 / movie_fps[movie_index]) / play_accel_mult[play_accel - 4];
-		var delay = sec_per_frame - taken_ms;
-
-		var skip = 0;
-		if (delay < 0) {
-		    skip = - delay / sec_per_frame;
-		    delay = 0;
-		}
-
-		var delay = Math.max(0, ((1000 / movie_fps[movie_index]) / play_accel_mult[play_accel - 4]) - taken_ms);
-		KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {next_frame(skip); }, delay));
-	    }
-	}
-
-	function smovie_pause(next_smovie_obj) {
-	    // update vars only after successfull image display
-	    display_secs = next_smovie_obj.secs;
-	    smovie_frame = next_smovie_obj.frame;
-	    smovie_index = next_smovie_obj.index;
-
-	    update_title_clock(display_secs);
-	    update_tline_marker(display_secs);
-
-	    if (play_mode) { // only loop if in play mode
-		var taken_ms = (new Date()).getTime() - ref_time_ms;
-		var sec_per_frame = (1000 / smovie_fps[smovie_index]) / play_accel_mult[play_accel - 4];
-		var delay = sec_per_frame - taken_ms;
-
-		var skip = 0;
-		if (delay < 0) {
-		    skip = - delay / sec_per_frame;
-		    delay = 0;
-		}
-		var delay = Math.max(0, ((1000 / smovie_fps[smovie_index]) / play_accel_mult[play_accel - 4]) - taken_ms);
-		KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {next_frame(skip); }, delay));
-	    }
-	}
-
 	function snap_pause(next_snap_obj) {
 	    // update vars only after successfull image display
 	    display_secs = next_snap_obj.secs;
@@ -2720,126 +2583,8 @@ KM.display_archive_ = function () {
 		KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {next_frame(0); }, delay));
 	    }
 	}
-	next_frame();
+	//next_frame();
     }
-
-
-
-    function next_movie_frame(cmd) {
-
-	// A function that calculates the next avaliable movie frame then
-	// returns an object 'obj'.
-	//
-	// If 'cmd' == 'reset' stop blindly following the current frame 'stream'
-	// and re-scan for the next frame when next called, this is an expensive
-	// operation.
-	//
-	// expects :
-	// 'cmd'            ... 'reset' ?
-	//
-	// returns :
-	// 'obj.valid'      ... bool true if next movie frame is avaliable
-	// 'obj.frame'      ... the frame count for the next frame
-	// 'obj.index'      ... the index into movie/start/end lists
-	// 'obj.secs'       ... the seconds count for the next frame
-	// 'obj.reset_html' ... bool true if 'set_swf_html' call needed
-
-	if (cmd === 'reset') {
-	    movie_index = -1;
-
-	} else {
-
-	    if (movie_index !== -1) {
-
-		var next_frame = movie_frame + 1;
-		if (next_frame <= movie_frames) {
-		    var next_secs = Math.round(((next_frame / movie_frames) * (movie_end[movie_index] - movie_start[movie_index])) + movie_start[movie_index]);
-		    return {valid: true, frame: next_frame, secs: next_secs, index: movie_index, reset_html: false};
-		} else {
-		    movie_index = -1;
-		}
-	    }
-
-	    // else search for the next movie event using 'display_secs'
-	    for (var i = 0; i < movie_start.length; i++) {
-		if ((movie_start[i] <= display_secs && movie_end[i] > display_secs) || movie_start[i] > display_secs) {
-		    return {valid: true, frame: 1, secs: movie_start[i], index: i, reset_html: true};
-		}
-	    }
-
-	    return {valid: false, frame: 0, secs: 0, index: 0, reset_html: false};
-	}
-    }
-
-
-    function next_smovie_frame(date, cam, cmd) {
-
-	// A function that calculates the next avaliable smovie frame then
-	// returns an object 'obj'.
-	//
-	// If 'cmd' == 'reset' stop blindly following the current frame 'stream'
-	// and re-scan for the next frame when next called, this is an expensive
-	// operation.
-	//
-	// expects :
-	// 'date'              ... the displayed date
-	// 'cam'               ... the displayed camera
-	// 'cmd'               ... 'reset' ?
-	//
-	// returns :
-	// 'obj.valid'         ... bool true if next smovie frame is avaliable
-	// 'obj.secs'          ... the seconds count (dir) for the next frame
-	// 'obj.frame'         ... the frame count 0 - fps
-	// 'obj.fq_image_name' ... the fully qualified next snapshot image name
-
-	if (cmd === 'reset') {
-	    smovie_index = -1;
-
-	} else {
-
-	    if (smovie_index !== -1) {
-
-		var next_frame = smovie_frame + 1;
-		var next_sec = display_secs;
-
-		if (next_sec === smovie_end[smovie_index] && next_frame === smovie_eitems[smovie_index]) {
-		    smovie_index = -1; // end of smovie
-
-		} else {
-
-		    if (next_frame >= smovie_fps[smovie_index]) {
-			next_frame = 0;
-			next_sec++;
-		    }
-
-		    return {valid: true, frame: next_frame, secs: next_sec, index: smovie_index,
-		    fq_image_name: '/images_dbase/' + date + '/' + KM.pad_out2(cam) + '/smovie/' + KM.secs_hhmmss(next_sec) + '/' + KM.pad_out2(next_frame) + '.jpg'};
-		}
-	    }
-
-	    // search for the next smovie event using 'display_secs'
-	    for (var i = 0; i < smovie_start.length; i++) {
-		if (smovie_start[i] <= display_secs && smovie_end[i] > display_secs) {
-
-		    var tmp_frame = smovie_fps[i] - 1;
-		    if (smovie_start[i] === display_secs) {
-			tmp_frame = smovie_fps[i] - smovie_sitems[i];
-		    }
-
-		    return {valid: true, frame: smovie_fps[i] - smovie_sitems[i], secs: display_secs, index: i,
-		    fq_image_name: '/images_dbase/' + date + '/' + KM.pad_out2(cam) + '/smovie/' + KM.secs_hhmmss(display_secs) + '/' + KM.pad_out2(tmp_frame) + '.jpg'};
-
-		} else if (smovie_start[i] > display_secs) {
-
-		    return {valid: true, frame: (smovie_fps[i] - smovie_sitems[i]), secs: smovie_start[i], index: i,
-		    fq_image_name: '/images_dbase/' + date + '/' + KM.pad_out2(cam) + '/smovie/' + KM.secs_hhmmss(smovie_start[i]) + '/' + KM.pad_out2(smovie_fps[i] - smovie_sitems[i]) + '.jpg'};
-		}
-	    }
-
-	    return {valid: false, frame: 0, secs: 0, index: 0, fq_image_name: ''};
-	}
-    }
-
 
     function next_snap_frame(date, cam) {
 
@@ -2905,7 +2650,7 @@ KM.display_archive_ = function () {
     function next_event() {
 
 	// A function that searches for the next avaliable event and calls
-	// 'play_forward'
+	// 'play_movie'
 	//
 	// expects :
 	//
@@ -2916,7 +2661,7 @@ KM.display_archive_ = function () {
 	if (movie_show) {
 	    for (var i = 0; i < movie_start.length; i++) {
 		if (movie_start[i] > display_secs) {
-		    play_forward(movie_start[i]);
+		    play_movie(movie_start[i]);
 		    break;
 		}
 	    }
@@ -2924,7 +2669,7 @@ KM.display_archive_ = function () {
 	} else if (smovie_show) {
 	    for (var i = 0; i < smovie_start.length; i++) {
 		if (smovie_start[i] > display_secs) {
-		    play_forward(smovie_start[i]);
+		    play_movie(smovie_start[i]);
 		    break;
 		}
 	    }
@@ -3081,123 +2826,6 @@ KM.display_archive_ = function () {
     }
 
 
-    function prev_movie_frame(cmd) {
-
-	// A function that calculates the prev avaliable movie frame then
-	// returns an object 'obj'.
-	//
-	// If 'cmd' == 'reset' stop blindly following the current frame 'stream'
-	// and re-scan for the prev frame when next called, this is an expensive
-	// operation.
-	//
-	// expects :
-	// 'cmd'            ... 'reset' ?
-	//
-	// returns :
-	// 'obj.valid'      ... bool true if prev movie frame is avaliable
-	// 'obj.frame'      ... the frame count for the prev frame
-	// 'obj.index'      ... the index into movie/start/end lists
-	// 'obj.secs'       ... the seconds count for the prev frame
-	// 'obj.reset_html' ... bool true if 'set_swf_html' call needed
-
-	if (cmd === 'reset') {
-	    movie_index = -1;
-
-	} else {
-
-	    if (movie_index !== -1) {
-
-		var prev_frame = movie_frame - 1;
-		if (prev_frame > 0) {
-		    var prev_secs = Math.round(((prev_frame / movie_frames) * (movie_end[movie_index] - movie_start[movie_index])) + movie_start[movie_index]);
-		    return {valid: true, frame: prev_frame, secs: prev_secs, index: movie_index, reset_html: false};
-		} else {
-		    movie_index = -1;
-		}
-	    }
-
-	    // else search for the prev movie event using 'display_secs'
-	    for (var i = movie_start.length; i > -1; i--) {
-		if ((movie_start[i] < display_secs && movie_end[i] >= display_secs) || movie_end[i] < display_secs) {
-		    return {valid: true, frame: 9999, secs: movie_end[i], index: i, reset_html: true};
-		}
-	    }
-
-	    return {valid: false, frame: 0, secs: 0, index: 0, reset_html: false};
-	}
-    }
-
-
-    function prev_smovie_frame(date, cam, cmd) {
-
-	// A function that calculates the prev avaliable smovie frame then
-	// returns an object 'obj'.
-	//
-	// If 'cmd' == 'reset' stop blindly following the current frame 'stream'
-	// and re-scan for the prev frame when next called, this is an expensive
-	// operation.
-	//
-	// expects :
-	// 'date'              ... the displayed date
-	// 'cam'               ... the displayed camera
-	// 'cmd'               ... 'reset' ?
-	//
-	// returns :
-	// 'obj.valid'         ... bool true if next smovie frame is avaliable
-	// 'obj.secs'          ... the seconds count (dir) for the next frame
-	// 'obj.frame'         ... the frame count 0 - fps
-	// 'obj.fq_image_name' ... the fully qualified next snapshot image name
-
-	if (cmd === 'reset') {
-	    smovie_index = -1;
-
-	} else {
-
-	    if (smovie_index !== -1) {
-
-		var prev_frame = smovie_frame - 1;
-		var prev_sec = display_secs;
-
-		if (prev_sec === smovie_start[smovie_index] && prev_frame === (smovie_fps[smovie_index] - smovie_sitems[smovie_index] - 1)) {
-		    smovie_index = -1; // end of smovie
-
-		} else {
-
-		    if (prev_frame < 0) {
-			prev_frame = smovie_fps[smovie_index] - 1;
-			prev_sec--;
-		    }
-
-		    return {valid: true, frame: prev_frame, secs: prev_sec, index: smovie_index,
-		    fq_image_name: '/images_dbase/' + date + '/' + KM.pad_out2(cam) + '/smovie/' + KM.secs_hhmmss(prev_sec) + '/' + KM.pad_out2(prev_frame) + '.jpg'};
-		}
-	    }
-
-	    // search for the prev smovie event using 'display_secs'
-	    for (var i = smovie_start.length; i > -1; i--) {
-		if (smovie_start[i] < display_secs && smovie_end[i] >= display_secs) {
-
-		    var tmp_frame = smovie_fps[i] - 1;
-		    if (smovie_end[i] === display_secs) {
-			tmp_frame = smovie_eitems[i] - 1;
-		    }
-
-		    return {valid: true, frame: tmp_frame, secs: display_secs, index: i,
-		    fq_image_name: '/images_dbase/' + date + '/' + KM.pad_out2(cam) + '/smovie/' + KM.secs_hhmmss(display_secs) + '/' + KM.pad_out2(tmp_frame) + '.jpg'};
-
-		} else if (smovie_end[i] < display_secs) {
-
-		    return {valid: true, frame: (smovie_eitems[i] - 1), secs: smovie_end[i], index: i,
-		    fq_image_name: '/images_dbase/' + date + '/' + KM.pad_out2(cam) + '/smovie/' + KM.secs_hhmmss(smovie_end[i]) + '/' + (KM.pad_out2(smovie_eitems[i] - 1)) + '.jpg'};
-
-		}
-	    }
-
-	    return {valid: false, frame: 0, secs: 0, index: 0, fq_image_name: ''};
-	}
-    }
-
-
     function prev_snap_frame(date, cam) {
 
 	// A function that calculates the prev avaliable snapshot and returns an
@@ -3249,7 +2877,7 @@ KM.display_archive_ = function () {
     function prev_event() {
 
 	// A function that searches for the prev avaliable event and calls
-	// 'play_forward'
+	// 'play_movie'
 	//
 	// expects :
 	//
@@ -3260,7 +2888,7 @@ KM.display_archive_ = function () {
 	if (movie_show) {
 	    for (var i = movie_start.length; i > -1; i--) {
 		if (movie_end[i] < display_secs) {
-		    play_forward(movie_start[i]);
+		    play_movie(movie_start[i]);
 		    break;
 		}
 	    }
@@ -3268,7 +2896,7 @@ KM.display_archive_ = function () {
 	} else if (smovie_show) {
 	    for (var i = smovie_start.length; i > -1; i--) {
 		if (smovie_end[i] < display_secs) {
-		    play_forward(smovie_start[i]);
+		    play_movie(smovie_start[i]);
 		    break;
 		}
 	    }
@@ -3276,28 +2904,7 @@ KM.display_archive_ = function () {
     }
 
 
-    function show_movie_frame(movie_obj, session_id, callback) {
-
-	// A function that displays the selected movie frame
-	//
-	// expects :
-	// 'movie_obj'  ... the movie object
-	// 'session_id' ... the current 'session_id'
-	// 'callback'   ... the function to be called on completion
-	//
-	// returns :
-	//
-
-	// abort cleanly if new session
-	if (session_id === KM.session_id.current) {
-	    movie_id.GotoFrame(movie_obj.frame);
-	    KM.cull_timeout_ids(KM.ARCH_LOOP);
-	    KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {callback(movie_obj); }, 1));
-	}
-    }
-
-
-    function reset_swf_html(movie_obj, session_id, callback) {
+    function build_video_player(movie_id) {
 
 	// A closure that sets the movie (swf) HTML, and displays the image
 	// nearest to 'movie_obj.secs', once completed 'callback' is called
@@ -3309,40 +2916,27 @@ KM.display_archive_ = function () {
 	//
 	// returns :
 	//
+    
+	gen_movie_obj();	
 
-	gen_movie_obj(movie_obj, session_id);
-	if (session_id === KM.session_id.current) {
-	    //disable_button_bar(); // enabled by 'arch_movie_loaded', yuk !
-	    movie_obj_loaded(movie_obj, session_id, callback);
-	}
-
-	function gen_movie_obj(movie_obj, session_id) {
+	function gen_movie_obj() {
 	    // generate the troublesome movie object
-	    var date = dates[document.getElementById('date_select').selectedIndex];
-	    var camera = cameras[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-	    var file_ext = movie_ext[movie_obj.index];
-	    var name = 'images_dbase/' + date + '/' + KM.pad_out2(camera) + '/movie/' + KM.secs_hhmmss(movie_start[movie_obj.index]) + file_ext;
+	    var date = document.getElementById('date_select').value;
+	    var camera = document.getElementById('camera_select').value;	    
+	    var name = movies['movies'][movie_id]['file'];
+        var file_ext = name.substr(name.lastIndexOf('.'));
+        var start = KM.hhmmss_secs(movies['movies'][movie_id]['start']);
+        var end = KM.hhmmss_secs(movies['movies'][movie_id]['end']);
+        var next_id = parseInt(movie_id)+1;
+        //next_id = (KM.hhmmss_secs(movies['movies'][next_id]))?next_id:movie_id;
 
 	    document.getElementById('display_html').innerHTML = '<div id="movie" style="overflow:hidden;background-color:#000000;width:100%;height:100%"> </div>';
 		
-
-
-		function dump(obj, objName){
-			var result = "";
-			for (var i in obj) // обращение к свойствам объекта по индексу
-			result += objName + "." + i + " = " + obj[i] + "<br />\n";
-			return result;
-		}
+		videoPlayer.set_movie_duration(end-start);
+		videoPlayer.set_cur_event_secs(start);
+		videoPlayer.set_next_movie(next_id);
 		
-		
-		videoPlayer.set_movie_duration(movie_end[movie_obj.index]-movie_start[movie_obj.index]+3);
-		videoPlayer.set_cur_event_secs(movie_obj.secs);
-		videoPlayer.set_next_event_secs(movie_obj.secs);
-		if (movie_obj.valid)
-		{
-			videoPlayer.set_next_event_secs(movie_start[movie_obj.index+1]);
-		}
-		update_title_clock(movie_obj.secs);
+		update_title_clock(start);
 
 		//flv
 		switch (file_ext) {
@@ -3370,60 +2964,8 @@ KM.display_archive_ = function () {
 			break;		
 		}
 	}
-
-
-
-	function movie_obj_loaded(movie_obj, session_id, callback) {
-	    // wait until movie object is loaded then set the frame and call
-	    // 'callback'
-
-	    try {
-	    if (movie_id.PercentLoaded() === 100) {
-
-		if (KM.browser.browser_IE) { // love IE :)
-		    movie_obj.frames = movie_id.TotalFrames;
-		} else {
-		    movie_obj.frames = movie_id.TotalFrames();
-		}
-
-		// special case, start of movie
-		if (movie_obj.secs === movie_start[movie_obj.index]) {
-		    movie_id.GotoFrame(1);
-		    movie_obj.frame = 1;
-		}
-
-		// special case, end of movie
-		else if (movie_obj.secs === movie_end[movie_obj.index]) {
-		    movie_id.GotoFrame(movie_obj.frames);
-		    movie_obj.frame = movie_obj.frames;
-		}
-
-		// else calculate it !
-		else {
-		    var offset = movie_obj.secs - movie_start[movie_obj.index];
-		    movie_obj.frame = parseInt(movie_obj.frames * ((movie_end[movie_obj.index] - movie_start[movie_obj.index]) / offset), 10);
-		    movie_id.GotoFrame(movie_obj.frame);
-		}
-
-		enable_button_bar();
-
-		// calculation of delay else this 1st frame is overwritten too quick
-		var delay = (1000 / movie_fps[movie_obj.index]) / play_accel_mult[play_accel - 4];
-
-		// if new session, do nothing, no callback
-		if (session_id === KM.session_id.current) {
-		    KM.cull_timeout_ids(KM.ARCH_LOOP);
-		    KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {callback(movie_obj); }, delay));
-		}
-
-	    } else {
-		KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {movie_obj_loaded(movie_obj, session_id, callback); }, 10));
-	    }
-	  } catch (e) {}
-	}
     }
-
-
+    
     function display_snap(snap_obj, session_id, callback) {
 
 	// A function that displays a jpeg at 'fq_image_name', when displayed it
@@ -3465,18 +3007,6 @@ KM.display_archive_ = function () {
 
     KM.display_smovie = display_snap;
 
-	// A function that displays a jpeg at 'fq_image_name', when displayed it
-	// 'callback' is called
-	//
-	// expects:
-	// 'movie_obj'   ... the movie object
-	// 'session_id'  ... the current session id
-	// 'callback'    ... the function to be called on completion.
-	//
-	// returns:
-	//
-
-
     function reset_jpeg_html() {
 
 	// A function that sets the jpeg HTML
@@ -3490,40 +3020,7 @@ KM.display_archive_ = function () {
 	document.getElementById('display_html').innerHTML = html;
     }
 
-
-    function cache_image(fq_image_name, callback) {
-
-	// A function that caches a jpeg at 'fq_image_name', when cached
-	// 'callback' is called
-	//
-	// expects:
-	// 'fq_image_name' ... the fully qualified image name
-	// 'callback'      ... the function to be called on completion.
-	//
-	// returns:
-	// 'bool'          ... cache successful
-
-	cache_ptr++; // caching fq_image_names as a browser workaround
-	cache_ptr = (cache_ptr > 3)?0:cache_ptr;
-
-	// start the timeout clock ...
-	KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {callback(false); }, 5000));
-
-	cache_jpeg[cache_ptr].onerror = function () {
-	    KM.kill_timeout_ids(KM.ARCH_LOOP); // kill the timeout clock
-	    KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {callback(false); }, 1));
-	};
-
-	cache_jpeg[cache_ptr].onload = function () {
-	    KM.kill_timeout_ids(KM.ARCH_LOOP); // kill the timeout clock
-	    KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {callback(true); }, 1));
-	};
-	try {
-		cache_jpeg[cache_ptr].src = fq_image_name;
-	} catch (e) {}
-    }
-
-
+    
     function populate_dates_cams_dbase(callback, session_id) {
 
 	// A closure that populates the dates cameras, titles, movie_flags,
@@ -3549,9 +3046,10 @@ KM.display_archive_ = function () {
 	    xmlHttp.onreadystatechange = function () {
             if (xmlHttp.readyState === 4) {
                 xmlHttp.onreadystatechange = null; // plug memory leak
-                movies = JSON.parse(xmlHttp.responseText);
+                dates = JSON.parse(xmlHttp.responseText);
                 if (KM.session_id.current === session_id) {
-                    got_coded_str = true;                    
+                    got_coded_str = true;    
+                    callback(session_id);
                 }
             }
 	    };
@@ -3649,18 +3147,15 @@ KM.display_archive_ = function () {
 	    xmlHttp.onreadystatechange = function () {
 		if (xmlHttp.readyState === 4) {
 		    xmlHttp.onreadystatechange = null; // plug memory leak
-		    var coded_str = xmlHttp.responseText.trim();
-		    // final integrity check - if this data gets corrupted we are
-		    // in a world of hurt ...
-		    // 'coded_str.substr(coded_str.length - 4)' due to IE bug !
-		    if (parseInt(coded_str.substr(coded_str.length - 8), 10) === coded_str.length - 13
-		    && KM.session_id.current === session_id) {
-			got_coded_str = true;
-			decode_coded_str(coded_str);
+		    movies = JSON.parse(xmlHttp.responseText);
+		   
+		    if (KM.session_id.current === session_id) {
+                got_coded_str = true;
+                callback();
 		    }
 		}
 	    };
-	    xmlHttp.open('GET', '/cgi_bin/xmlHttp_arch.php?'+Math.random()+'&date=' + date + '&cam=' + camera + '&func=index', true);
+	    xmlHttp.open('GET', '/ajax/archive?'+Math.random()+'&date=' + date + '&feed=' + camera + '&func=index', true);
 	    xmlHttp.send(null);
 	}
 
@@ -5063,7 +4558,7 @@ KM.videoPlayer = function() {
     var tm=0;
     var paused=false;
     var movie_duration=0;
-    var next_event_secs=0;
+    var next_movie=0;
     var cur_event_secs=0;
     var current_play_accel=0;
 
@@ -5076,8 +4571,8 @@ KM.videoPlayer = function() {
         cur_event_secs = secs;
     },
     
-    set_next_event_secs: function(secs) {
-        next_event_secs = secs;
+    set_next_movie: function(movie_id) {
+        next_movie = movie_id;
     },
     
     set_movie_duration: function(dur) {
@@ -5111,7 +4606,7 @@ KM.videoPlayer = function() {
 
     ktVideoFinished : function () {
         tm=0;
-        KM.arch_event_clicked(next_event_secs);
+        KM.arch_event_clicked(next_movie);
     },
 
     ktVideoScrolled : function (time) {
@@ -5206,7 +4701,7 @@ KM.videoPlayer = function() {
 
     html5VideoFinished : function () {
         tm=0;
-        KM.arch_event_clicked(next_event_secs);
+        KM.arch_event_clicked(next_movie);
     },
 
     html5playerPlayPause : function () {
