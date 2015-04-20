@@ -5,6 +5,7 @@ Returns the archive data index's
 """
 
 import os, sys, json, datetime
+import traceback
 
 
 
@@ -58,17 +59,16 @@ class Archive():
                 print('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
         self.feed_list.sort()
         
-        feeds_list = []
-        feed_obj = {}
+        feeds_list = {}        
         for feed in self.feed_list:
             try:
-                feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % int(feed))
+                feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
                 if os.path.isdir(feed_dir):
-                    title = 'Camera %s' % feed 
+                    title = 'Camera %02i' % feed 
                     with open(os.path.join(feed_dir, 'title'), 'r') as f_obj: 
                         title = f_obj.read()
                 
-                    feed_obj[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir , 'movie')),
+                    feeds_list[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir , 'movie')),
                                        'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
                                        'title': title}
                     
@@ -76,7 +76,6 @@ class Archive():
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
                     
-            feeds_list.append(feed_obj)
         return json.dumps(feeds_list)
         
 
@@ -88,13 +87,13 @@ class Archive():
         return json.dumps(dates)
     
     def hhmmss_secs(self, hhmmss_str):
-        return int(hhmmss_str[0,2]) * 3600 + int(hhmmss_str[2,2]) * 60 + int(hhmmss_str[4,2])
+        return int(hhmmss_str[0:2]) * 3600 + int(hhmmss_str[2:4]) * 60 + int(hhmmss_str[4:6])
                 
     
     def journal_data(self, date, feed):
         
         journal = {}
-        movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)
+        movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)    
         if os.path.isdir(movies_dir):
             movies = os.listdir(movies_dir)
             movies.sort()
