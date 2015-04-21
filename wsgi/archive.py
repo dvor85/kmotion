@@ -106,11 +106,17 @@ class Archive():
                 movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))             
                 journal['movies'].append(movie)
         
-        snaps_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, feed)
+        snaps_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, feed)        
         if os.path.isdir(snaps_dir):
-            snaps = [os.path.normpath(m.replace(self.images_dbase_dir, '/images_dbase/')) for m in os.listdir(snaps_dir)]
+            snaps = os.listdir(snaps_dir)
             snaps.sort()
-            journal['snaps'] = snaps
+            journal['snaps'] = []
+            for m in snaps:
+                mf = os.path.join(snaps_dir, m)
+                snap = {}
+                snap['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
+                snap['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
+                journal['snaps'].append(snap)
              
         return json.dumps(journal)
         
