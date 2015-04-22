@@ -70,12 +70,11 @@ KM.live = {
     fps: 1
 };
 
-
 KM.conf = {
     session_id:	     0, // the session id
     camera:          1, // the current camera
     mask:           '', // the current expanded mask string
-    error_str:      '', // the error string
+    error_lines:    [], // the error string
     error_search_str: /failed|error/i
 };
 
@@ -199,14 +198,12 @@ KM.timeout_ids = function () {
 
 KM.timeout = KM.timeout_ids();
 
+// add a timeout id
 KM.add_timeout_id = KM.timeout.add_id;
-    // add a timeout id
-
+// cull all but the last timeout id, freeing memory
 KM.cull_timeout_ids = KM.timeout.cull_ids;
-    // cull all but the last timeout id, freeing memory
-
+// kill all ids, freeing memory
 KM.kill_timeout_ids = KM.timeout.kill_ids;
-    // kill all ids, freeing memory
 
 
 KM.get_xmlHttp_obj = function () {
@@ -702,7 +699,7 @@ KM.display_button_clicked = function (button) {
         KM.update_display_buttons(button);
         KM.config.misc.display_select = button;
         KM.live.last_camera_select = 0;
-        KM.display_live_normal();
+        KM.display_live();
 
     }
 };
@@ -726,7 +723,7 @@ KM.camera_func_button_clicked = function (button) {
             if (KM.config.misc.display_select == 1) {
                 // if '1' change view directly as a special case               
                 KM.live.last_camera_select = 0;
-                KM.display_live_normal();
+                KM.display_live();
                
             }
         
@@ -754,7 +751,7 @@ KM.function_button_clicked = function (button) {
                 document.onkeydown=null; //stop memory leak
                 KM.enable_display_buttons(KM.config.misc.display_select);
                 KM.enable_camera_buttons();	    
-                KM.display_live_normal();
+                KM.display_live();
                 break;
 
             case 2: // 'archive button'
@@ -836,529 +833,9 @@ live display
 **************************************************************************** */
 
 
-KM.update_feeds = function () {
-
-    // A function that get the latest jpeg filenames and event status from
-    // the server with an 'xmlHttp' call then splits the returned data and
-    // stores it in 'KM.feeds.latest_jpegs' and 'KM.feeds.latest_events'.
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    var xmlHttp = KM.get_xmlHttp_obj();
-
-    xmlHttp.onreadystatechange = function () {
-	if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-	    xmlHttp.onreadystatechange = null; // plug memory leak
-	    var jdata = JSON.parse(xmlHttp.responseText);
-		KM.live.latest_events = jdata.events;
-        KM.text_refresh();
-        KM.update_jpegs();
-        
-	    }
-    };
-
-    xmlHttp.open('GET', '/ajax/feeds?'+Math.random() + '&rdd='+encodeURIComponent(KM.config.ramdisk_dir), true);
-    xmlHttp.send(null);
-	
-};
-
 KM.get_jpeg = function (feed) {
     return  '/kmotion_ramdisk/'+KM.pad_out2(feed)+'/last.jpg?'+Math.random();
 }
-
-KM.reload_image = function (img_obj, feed) {
-    var group='reload_'+feed;
-    function refresh() {
-        KM.kill_timeout_ids(group);
-        img_obj.src = KM.get_jpeg(feed);
-    }    
-    KM.add_timeout_id(group, setTimeout(function() {refresh();}, 500));    
-}
-
-KM.update_jpegs = function () {
-    var feed;
-	for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {    
-        try {  
-            feed = KM.config.display_feeds[KM.config.misc.display_select][i]
-            if ((KM.config.feeds[feed].feed_enabled) && (KM.item_in_array(feed, KM.live.latest_events))) {
-                document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
-            }
-        } catch (e) {}
-	}       
-};
-
-KM.text_refresh = function () {
-
-    // A function that refresh the display text colors, 'white' for feed
-    // disabled, 'blue' for no motion 'red' for motion.
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    var text_color,feed;
-    for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
-        try {
-            feed = KM.config.display_feeds[KM.config.misc.display_select][i]
-            text_color = KM.WHITE;           
-            if (KM.config.feeds[feed].feed_enabled) {
-                text_color = KM.BLUE;
-                if (KM.item_in_array(feed, KM.live.latest_events)) {
-                    text_color = KM.RED;
-                }
-            }
-            document.getElementById("text_" + feed).style.color = text_color;
-        } catch (e) {}
-    }
-};
-
-KM.init_display_grid = function (display_select) {
-
-    // a closure that calculates and generates the HTML for a display grid of
-    // 'display_select' assigning consecutive jpeg and text id's and updates
-    // 'main_display' HTML.
-
-    var PADDING = 3;  // padding between camera displays
-
-    var left_margin =  0;
-    var top_margin =   0;
-    var total_width =  0;
-    var total_height = 0;
-
-    var html = '';
-    var html_count = 0;
-
-    clear_html();
-    construct_grid_html(display_select);
-    set_html();
-
-
-    function clear_html() {
-        // reset the constructed html string and counter
-        html = '';
-        html_count = 0;
-    }
-
-
-    function set_html() {
-        // set the constructed html string
-        document.getElementById('main_display').innerHTML = html;
-    }
-
-
-    function construct_cell_html(display_num, left, top, width, height, alt_jpeg,
-    text_left, text_top) {
-
-	// A function that constructs the HTML for one cell given a list of
-	// parameters and sequentialy tags it as 'image_#' with an associated
-	// 'text_#
-	//
-	// expects :
-	// 'display_num' ... the cell number
-	// 'left'        ... cells left px
-	// 'right'       ... cells right px
-	// 'width'       ... cells width px
-	// 'height'      ... cells height px
-	// 'alt_jpeg'    ... bool, use alt jpegs in P in P mode
-	// 'text_left'   ... offset left for text
-	// 'text_top'    ... offset top for text
-	//
-	// returns :
-	//
-
-    
-    
-	var gcam_jpeg = 'images/gcam.png';
-	var bcam_jpeg = 'images/bcam.png';
-	if (alt_jpeg === true) {
-	    gcam_jpeg = 'images/gcam_alt.png';
-	    bcam_jpeg = 'images/bcam_alt.png';
-	}
-	if (typeof text_left  === 'undefined') {
-	    text_left = 10;
-	}
-	if (typeof text_top === 'undefined') {
-	    text_top = 10;
-	}
-
-	var jpeg = gcam_jpeg;
-	var text = 'No Video';
-	var text_color = KM.WHITE;
-    var onerr = "";
-	
-    try {
-        var feed = KM.config.display_feeds[display_num][html_count++];
-        if (feed>KM.max_feed()) {
-            return;
-        }
-        if (KM.config.feeds[feed].feed_enabled) {
-            onerr = 'onerror="KM.reload_image(this, ' + feed + ')"; ';
-            jpeg = KM.get_jpeg(feed);	    
-            text_color = KM.BLUE;	 
-            if (KM.config.feeds[feed].feed_name) {
-                text = KM.config.feeds[feed].feed_name;                
-            } else {                
-                text = 'Cam ' + (html_count+1);
-                KM.config.feeds[feed].feed_name = text;
-            }
-        }
-    } catch (e) {}
-    
-    text = feed + ' : ' + text;
-    
-    
-    var l1 = '<img id="image_' + feed + '" ';
-    var l2 = 'style="position:absolute; ';
-    var l3 = 'left:' + left + 'px; ';
-    var l4 = 'top:' + top + 'px; ';
-    var l5 = 'width:' + width + 'px; ';
-    var l6 = 'height:' + height + 'px;" ';
-    var l7 = 'src="' + jpeg + '"; ';
-    var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
-    var l9 = 'alt="">';
-    html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + onerr + l9;
-
-    var l10 = '<span id="text_' + feed + '"; ';
-    var l11 = 'style="position:absolute; ';
-    var l12 = 'left:' + (left + text_left) + 'px; ';
-    var l13 = 'top:' +  (top + text_top) + 'px;';
-    var l14 = 'font-weight: bold;';
-    var l15 = 'color:' + text_color  + ';';
-    var l16 = '">' + text + '</span>';
-    html = html + l10 + l11 + l12 + l13 + l14 + l15 + l16;
-    
-    }
-
-
-    function set_display_area() {
-
-	// A function that calculates and sets the top and left margins plus
-	// the width and height of the display area while keeping to a 1.33
-	// aspect ratio and PADDING * 2 for outer borders
-	//
-	// expects :
-	//
-	// returns :
-	//
-
-    var scaled_width = KM.browser.main_display_width - PADDING * 2;
-    var scaled_height = KM.browser.main_display_height - PADDING * 2;
-
-	// calculate the scaled size keeping aspect ratio 384 / 288 = 1.33
-	var scale=KM.browser.main_display_width / KM.browser.main_display_height;
-	if (scale > 2) {
-		scale=2;
-	} else if (scale < 1) {
-		scale=1;
-	}
-
-	if ((scaled_width / scaled_height) < scale) {
-	    scaled_height = scaled_width / scale;
-	} else {
-	    scaled_width = scaled_height * scale;
-	}
-	left_margin = ((KM.browser.main_display_width - scaled_width) / 2);
-	top_margin = PADDING;
-	total_width = scaled_width;
-	total_height = scaled_height;
-    }
-
-
-    function construct_grid_html(display_select) {
-
-	// A function that constructs the HTML for all cells for a given
-	// 'display_select' and updates 'main_display' HTML.
-	//
-	// expects :
-        // 'display_select' ... where
-        // 1 ... symetrical    1 grid
-        // 2 ... symetrical    4 grid
-        // 3 ... symetrical    9 grid
-        // 4 ... symetrical   16 grid
-        // 5 ... asymmetrical  6 grid
-        // 6 ... asymmetrical 13 grid
-        // 7 ... asymmetrical  8 grid
-        // 8 ... asymmetrical 10 grid
-        // 9 ... P in P        2 grid
-        // 10... P in P        2 grid
-        // 11... P in P        2 grid
-        // 12... P in P        2 grid
-	//
-	// returns :
-	//
-
-    set_display_area();
-
-    var row, col, rows, cols, inner_jpeg_width, inner_jpeg_height,
-    jpeg_width, jpeg_height;
-
-    switch (display_select) {
-	case 1:  // symetrical 1 grid
-	    rows = 1;
-	    cols = 1;
-
-	    jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-	    jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
-	    for (row = 0; row < rows; row++) {
-		for (col = 0; col < cols; col++) {
-		    construct_cell_html(display_select,
-		    left_margin + (col * (jpeg_width + PADDING)),
-		    top_margin + (row * (jpeg_height + PADDING)),
-		    jpeg_width, jpeg_height);
-		}
-	    }
-	    break;
-
-	case 2:  // symetrical 4 grid
-	    rows = 2;
-	    cols = 2;
-
-	    jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-	    jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
-
-	    for (row = 0; row < rows; row++) {
-		for (col = 0; col < cols; col++) {
-		    construct_cell_html(display_select,
-		    left_margin + (col * (jpeg_width + PADDING)),
-		    top_margin + (row * (jpeg_height + PADDING)),
-		    jpeg_width, jpeg_height);
-		}
-	    }
-	    break;
-
-	case 3:  // symetrical 9 grid
-	    rows = 3;
-	    cols = 3;
-
-	    jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-	    jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
-
-	    for (row = 0; row < rows; row++) {
-		for (col = 0; col < cols; col++) {
-		    construct_cell_html(display_select,
-		    left_margin + (col * (jpeg_width + PADDING)),
-		    top_margin + (row * (jpeg_height + PADDING)),
-		    jpeg_width, jpeg_height);
-		}
-	    }
-	    break;
-
-	case 4:  // symetrical 16 grid
-
-	    cols = Math.ceil(Math.sqrt(KM.max_feed()));//5;//
-		rows = Math.ceil((KM.max_feed())/cols);
-		//console.log(cols);
-		//console.log(rows);
-
-	    jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-	    jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
-
-	    for (row = 0; row < rows; row++) {
-		for (col = 0; col < cols; col++) {
-		    construct_cell_html(display_select,
-		    left_margin + (col * (jpeg_width + PADDING)),
-		    top_margin + (row * (jpeg_height + PADDING)),
-		    jpeg_width, jpeg_height);
-		}
-	    }
-	    break;
-
-	case 5:  // asymmetrical 6 grid
-	    rows = [0, 1, 2, 2, 2];
-	    cols = [2, 2, 0, 1, 2];
-
-	    jpeg_width = (total_width - (PADDING * 2)) / 3;
-	    jpeg_height = (total_height - (PADDING * 2)) / 3;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
-
-	    for (var i = 0; i < 5; i++) {
-		row = rows[i];
-		col = cols[i];
-		construct_cell_html(display_select,
-		left_margin + (col * (jpeg_width + PADDING)),
-		top_margin + (row * (jpeg_height + PADDING)),
-		jpeg_width, jpeg_height);
-	    }
-	    break;
-
-	case 6:  // asymmetrical 13 grid
-	    rows = [0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
-	    cols = [2, 3, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3];
-
-	    jpeg_width = (total_width - (PADDING * 3)) / 4;
-	    jpeg_height = (total_height - (PADDING * 3)) / 4;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
-
-	    for (i = 0; i < 12; i++) {
-		row = rows[i];
-		col = cols[i];
-		construct_cell_html(display_select,
-		left_margin + (col * (jpeg_width + PADDING)),
-		top_margin + (row * (jpeg_height + PADDING)),
-		jpeg_width, jpeg_height);
-	    }
-	    break;
-
-	case 7:  // asymmetrical 8 grid
-	    rows = [0, 1, 2, 3, 3, 3, 3];
-	    cols = [3, 3, 3, 0, 1, 2, 3];
-
-	    jpeg_width = (total_width - (PADDING * 3)) / 4;
-	    jpeg_height = (total_height - (PADDING * 3)) / 4;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    (jpeg_width * 3) + (PADDING * 2), (jpeg_height * 3) + (PADDING * 2));
-
-	    for (i = 0; i < 7; i++) {
-		row = rows[i];
-		col = cols[i];
-		construct_cell_html(display_select,
-		left_margin + (col * (jpeg_width + PADDING)),
-		top_margin + (row * (jpeg_height + PADDING)),
-		jpeg_width, jpeg_height);
-	    }
-	    break;
-
-	case 8:  // asymmetrical 10 grid
-	    rows = [0, 0, 1, 1, 2, 2, 3, 3];
-	    cols = [2, 3, 2, 3, 0, 1, 0, 1];
-
-	    jpeg_width = (total_width - (PADDING * 3)) / 4;
-	    jpeg_height = (total_height - (PADDING * 3)) / 4;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
-
-	    for (i = 0; i < 8; i++) {
-		row = rows[i];
-		col = cols[i];
-		construct_cell_html(display_select,
-		left_margin + (col * (jpeg_width + PADDING)),
-		top_margin + (row * (jpeg_height + PADDING)),
-		jpeg_width, jpeg_height);
-	    }
-
-	    construct_cell_html(display_select,
-	    left_margin + (jpeg_width * 2) + (PADDING * 2),
-	    top_margin + (jpeg_height * 2) + (PADDING * 2),
-	    (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
-	    break;
-
-	case 9:  // P in P 2 grid
-	    jpeg_width = total_width;
-	    jpeg_height = total_height;
-
-	    inner_jpeg_width = jpeg_width * 0.28;
-	    inner_jpeg_height = jpeg_height * 0.28;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    jpeg_width, jpeg_height, false,
-	    (jpeg_width * 0.02) + inner_jpeg_width + 10,
-	    (jpeg_height * 0.02) + 10);
-
-	    construct_cell_html(display_select,
-	    left_margin + (jpeg_width * 0.02),
-	    top_margin + (jpeg_height * 0.02),
-	    inner_jpeg_width, inner_jpeg_height, true);
-	    break;
-
-	case 10:  // P in P 2 grid
-	    jpeg_width = total_width;
-	    jpeg_height = total_height;
-
-	    inner_jpeg_width = jpeg_width * 0.28;
-	    inner_jpeg_height = jpeg_height * 0.28;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    jpeg_width, jpeg_height, false,
-	    (jpeg_width * 0.02) + 10,
-	    (jpeg_height * 0.02) + 10);
-
-	    construct_cell_html(display_select,
-	    left_margin + jpeg_width - inner_jpeg_width - (jpeg_width * 0.02),
-	    top_margin + (jpeg_height * 0.02),
-	    inner_jpeg_width, inner_jpeg_height, true);
-	    break;
-
-	case 11:  // P in P 2 grid
-	    jpeg_width = total_width;
-	    jpeg_height = total_height;
-
-	    inner_jpeg_width = jpeg_width * 0.28;
-	    inner_jpeg_height = jpeg_height * 0.28;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    jpeg_width, jpeg_height, false,
-	    (jpeg_width * 0.02) + 10,
-	    (jpeg_height * 0.02) + 10);
-
-	    construct_cell_html(display_select,
-	    left_margin + (jpeg_width * 0.02),
-	    top_margin + jpeg_height - inner_jpeg_height - (jpeg_height * 0.02),
-	    inner_jpeg_width, inner_jpeg_height, true);
-	    break;
-
-	case 12:  // P in P 2 grid
-	    jpeg_width = total_width;
-	    jpeg_height = total_height;
-
-	    inner_jpeg_width = jpeg_width * 0.28;
-	    inner_jpeg_height = jpeg_height * 0.28;
-
-	    construct_cell_html(display_select, left_margin, top_margin,
-	    jpeg_width, jpeg_height, false,
-	    (jpeg_width * 0.02) + 10,
-	    (jpeg_height * 0.02) + 10);
-
-	    construct_cell_html(display_select,
-	    left_margin + jpeg_width - inner_jpeg_width - (jpeg_width * 0.02),
-	    top_margin + jpeg_height - inner_jpeg_height - (jpeg_height * 0.02),
-	    inner_jpeg_width, inner_jpeg_height, true);
-	    break;
-	}
-    }
-};
-
-KM.camera_jpeg_clicked = function (camera) {
-
-    // A function that intelligently porcesses a click on camera jpeg 'camera'
-    // If camera button has previously been selected change camera jpeg feed
-    // else change to full screen mode showing clicked camera jpeg feed.
-    //
-    // expects :
-    // 'camera' ... the clicked camera
-    //
-    // returns :
-    //
-    var camera_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(camera);
-    if (KM.live.last_camera_select !== 0) {
-		var camera_last_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(KM.live.last_camera_select);
-		var camera_old=KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
-		if (KM.config.feeds[KM.live.last_camera_select] && KM.config.feeds[KM.live.last_camera_select].feed_enabled) {
-		    KM.config.display_feeds[KM.config.misc.display_select][camera_pos]=KM.live.last_camera_select;
-		    if (camera_last_pos>0) {
-			KM.config.display_feeds[KM.config.misc.display_select][camera_last_pos]=camera_old;
-		    }
-		}
-        KM.live.last_camera_select = 0;
-    } else {
-        KM.config.display_feeds[1][0] = KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
-        KM.config.misc.display_select = 1;
-        KM.update_display_buttons(1);
-        
-    }
-   
-    KM.display_live_normal();
-   
-};
 
 
 /* ****************************************************************************
@@ -1369,7 +846,7 @@ them.
 **************************************************************************** */
 
 
-KM.display_live_normal = function () {
+KM.display_live_ = function () {
 
     // A closure that constantly refreshes the display grid loading feed jpegs
     // and displaying them. If selected interleave feed jpeg refreshes. If
@@ -1380,24 +857,26 @@ KM.display_live_normal = function () {
     // returns:
     //
 
-    // setup for grid display
-    KM.session_id.current++;
-    KM.set_main_display_size(); // in case user has 'zoomed' browser view
-    KM.init_display_grid(KM.config.misc.display_select);
+    function init() {
+        // setup for grid display
+        KM.session_id.current++;
+        KM.set_main_display_size(); // in case user has 'zoomed' browser view
+        init_display_grid(KM.config.misc.display_select);
 
-    // exit if no feeds enabled, else 100% CPU usage
-    var no_feeds = true;
-    var feed;
-    for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
-        try {
-            feed = KM.config.display_feeds[KM.config.misc.display_select][i];
-            if (KM.config.feeds[feed].feed_enabled) {
-                no_feeds = false;
-            }
-        } catch (e) {}
+        // exit if no feeds enabled, else 100% CPU usage
+        var no_feeds = true;
+        var feed;
+        for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
+            try {
+                feed = KM.config.display_feeds[KM.config.misc.display_select][i];
+                if (KM.config.feeds[feed].feed_enabled) {
+                    no_feeds = false;
+                }
+            } catch (e) {}
+        }
+        if (no_feeds) return; // no feeds
+        refresh(KM.session_id.current); 
     }
-    if (no_feeds) return; // no feeds
-    refresh(KM.session_id.current);   
 
     function refresh(session_id) {
 
@@ -1412,11 +891,538 @@ KM.display_live_normal = function () {
         // refresh the grid display     
         KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls            
         if (KM.session_id.current === session_id) {                
-            KM.update_feeds();
+            update_feeds();
             KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000/KM.live.fps));
         }
     }
-};
+    
+    function reload_image(img_obj, feed) {
+        var group='reload_'+feed;
+        function refresh() {
+            KM.kill_timeout_ids(group);
+            img_obj.src = KM.get_jpeg(feed);
+        }    
+        KM.add_timeout_id(group, setTimeout(function() {refresh();}, 500));    
+    }
+    
+    function camera_jpeg_clicked(camera) {
+
+        // A function that intelligently porcesses a click on camera jpeg 'camera'
+        // If camera button has previously been selected change camera jpeg feed
+        // else change to full screen mode showing clicked camera jpeg feed.
+        //
+        // expects :
+        // 'camera' ... the clicked camera
+        //
+        // returns :
+        //
+        var camera_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(camera);
+        if (KM.live.last_camera_select !== 0) {
+            var camera_last_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(KM.live.last_camera_select);
+            var camera_old=KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
+            if (KM.config.feeds[KM.live.last_camera_select] && KM.config.feeds[KM.live.last_camera_select].feed_enabled) {
+                KM.config.display_feeds[KM.config.misc.display_select][camera_pos]=KM.live.last_camera_select;
+                if (camera_last_pos>0) {
+                KM.config.display_feeds[KM.config.misc.display_select][camera_last_pos]=camera_old;
+                }
+            }
+            KM.live.last_camera_select = 0;
+        } else {
+            KM.config.display_feeds[1][0] = KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
+            KM.config.misc.display_select = 1;
+            KM.update_display_buttons(1);
+            
+        }
+       
+        init();
+    };
+    
+    function init_display_grid(display_select) {
+
+        // a closure that calculates and generates the HTML for a display grid of
+        // 'display_select' assigning consecutive jpeg and text id's and updates
+        // 'main_display' HTML.
+
+        var PADDING = 3;  // padding between camera displays
+
+        var left_margin =  0;
+        var top_margin =   0;
+        var total_width =  0;
+        var total_height = 0;
+
+        var html = '';
+        var html_count = 0;
+
+        clear_html();
+        construct_grid_html(display_select);
+        set_html();
+
+
+        function clear_html() {
+            // reset the constructed html string and counter
+            html = '';
+            html_count = 0;
+        }
+
+
+        function set_html() {
+            // set the constructed html string
+            document.getElementById('main_display').innerHTML = html;
+        }
+
+
+        function construct_cell_html(display_num, left, top, width, height, alt_jpeg,
+        text_left, text_top) {
+
+        // A function that constructs the HTML for one cell given a list of
+        // parameters and sequentialy tags it as 'image_#' with an associated
+        // 'text_#
+        //
+        // expects :
+        // 'display_num' ... the cell number
+        // 'left'        ... cells left px
+        // 'right'       ... cells right px
+        // 'width'       ... cells width px
+        // 'height'      ... cells height px
+        // 'alt_jpeg'    ... bool, use alt jpegs in P in P mode
+        // 'text_left'   ... offset left for text
+        // 'text_top'    ... offset top for text
+        //
+        // returns :
+        //
+
+        
+        
+        var gcam_jpeg = 'images/gcam.png';
+        var bcam_jpeg = 'images/bcam.png';
+        if (alt_jpeg === true) {
+            gcam_jpeg = 'images/gcam_alt.png';
+            bcam_jpeg = 'images/bcam_alt.png';
+        }
+        if (typeof text_left  === 'undefined') {
+            text_left = 10;
+        }
+        if (typeof text_top === 'undefined') {
+            text_top = 10;
+        }
+
+        var jpeg = gcam_jpeg;
+        var text = 'No Video';
+        var text_color = KM.WHITE;
+        var onerr = "";
+        
+        try {
+            var feed = KM.config.display_feeds[display_num][html_count++];
+            if (feed>KM.max_feed()) {
+                return;
+            }
+            if (KM.config.feeds[feed].feed_enabled) {
+                onerr = 'onerror="KM.reload_image(this, ' + feed + ')"; ';
+                jpeg = KM.get_jpeg(feed);	    
+                text_color = KM.BLUE;	 
+                if (KM.config.feeds[feed].feed_name) {
+                    text = KM.config.feeds[feed].feed_name;                
+                } else {                
+                    text = 'Cam ' + (html_count+1);
+                    KM.config.feeds[feed].feed_name = text;
+                }
+            }
+        } catch (e) {}
+        
+        text = feed + ' : ' + text;
+        
+        
+        var l1 = '<img id="image_' + feed + '" ';
+        var l2 = 'style="position:absolute; ';
+        var l3 = 'left:' + left + 'px; ';
+        var l4 = 'top:' + top + 'px; ';
+        var l5 = 'width:' + width + 'px; ';
+        var l6 = 'height:' + height + 'px;" ';
+        var l7 = 'src="' + jpeg + '"; ';
+        var l8 = 'onClick="KM.camera_jpeg_clicked(' + feed + ')"; ';
+        var l9 = 'alt="">';
+        html = html + l1 + l2 + l3 + l4 + l5 + l6 + l7 + l8 + onerr + l9;
+
+        var l10 = '<span id="text_' + feed + '"; ';
+        var l11 = 'style="position:absolute; ';
+        var l12 = 'left:' + (left + text_left) + 'px; ';
+        var l13 = 'top:' +  (top + text_top) + 'px;';
+        var l14 = 'font-weight: bold;';
+        var l15 = 'color:' + text_color  + ';';
+        var l16 = '">' + text + '</span>';
+        html = html + l10 + l11 + l12 + l13 + l14 + l15 + l16;
+        
+        }
+
+
+        function set_display_area() {
+
+        // A function that calculates and sets the top and left margins plus
+        // the width and height of the display area while keeping to a 1.33
+        // aspect ratio and PADDING * 2 for outer borders
+        //
+        // expects :
+        //
+        // returns :
+        //
+
+        var scaled_width = KM.browser.main_display_width - PADDING * 2;
+        var scaled_height = KM.browser.main_display_height - PADDING * 2;
+
+        // calculate the scaled size keeping aspect ratio 384 / 288 = 1.33
+        var scale=KM.browser.main_display_width / KM.browser.main_display_height;
+        if (scale > 2) {
+            scale=2;
+        } else if (scale < 1) {
+            scale=1;
+        }
+
+        if ((scaled_width / scaled_height) < scale) {
+            scaled_height = scaled_width / scale;
+        } else {
+            scaled_width = scaled_height * scale;
+        }
+        left_margin = ((KM.browser.main_display_width - scaled_width) / 2);
+        top_margin = PADDING;
+        total_width = scaled_width;
+        total_height = scaled_height;
+        }
+
+
+        function construct_grid_html(display_select) {
+
+        // A function that constructs the HTML for all cells for a given
+        // 'display_select' and updates 'main_display' HTML.
+        //
+        // expects :
+            // 'display_select' ... where
+            // 1 ... symetrical    1 grid
+            // 2 ... symetrical    4 grid
+            // 3 ... symetrical    9 grid
+            // 4 ... symetrical   16 grid
+            // 5 ... asymmetrical  6 grid
+            // 6 ... asymmetrical 13 grid
+            // 7 ... asymmetrical  8 grid
+            // 8 ... asymmetrical 10 grid
+            // 9 ... P in P        2 grid
+            // 10... P in P        2 grid
+            // 11... P in P        2 grid
+            // 12... P in P        2 grid
+        //
+        // returns :
+        //
+
+        set_display_area();
+
+        var row, col, rows, cols, inner_jpeg_width, inner_jpeg_height,
+        jpeg_width, jpeg_height;
+
+        switch (display_select) {
+        case 1:  // symetrical 1 grid
+            rows = 1;
+            cols = 1;
+
+            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
+            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+            for (row = 0; row < rows; row++) {
+            for (col = 0; col < cols; col++) {
+                construct_cell_html(display_select,
+                left_margin + (col * (jpeg_width + PADDING)),
+                top_margin + (row * (jpeg_height + PADDING)),
+                jpeg_width, jpeg_height);
+            }
+            }
+            break;
+
+        case 2:  // symetrical 4 grid
+            rows = 2;
+            cols = 2;
+
+            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
+            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+
+            for (row = 0; row < rows; row++) {
+            for (col = 0; col < cols; col++) {
+                construct_cell_html(display_select,
+                left_margin + (col * (jpeg_width + PADDING)),
+                top_margin + (row * (jpeg_height + PADDING)),
+                jpeg_width, jpeg_height);
+            }
+            }
+            break;
+
+        case 3:  // symetrical 9 grid
+            rows = 3;
+            cols = 3;
+
+            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
+            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+
+            for (row = 0; row < rows; row++) {
+            for (col = 0; col < cols; col++) {
+                construct_cell_html(display_select,
+                left_margin + (col * (jpeg_width + PADDING)),
+                top_margin + (row * (jpeg_height + PADDING)),
+                jpeg_width, jpeg_height);
+            }
+            }
+            break;
+
+        case 4:  // symetrical 16 grid
+
+            cols = Math.ceil(Math.sqrt(KM.max_feed()));//5;//
+            rows = Math.ceil((KM.max_feed())/cols);
+            //console.log(cols);
+            //console.log(rows);
+
+            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
+            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+
+            for (row = 0; row < rows; row++) {
+            for (col = 0; col < cols; col++) {
+                construct_cell_html(display_select,
+                left_margin + (col * (jpeg_width + PADDING)),
+                top_margin + (row * (jpeg_height + PADDING)),
+                jpeg_width, jpeg_height);
+            }
+            }
+            break;
+
+        case 5:  // asymmetrical 6 grid
+            rows = [0, 1, 2, 2, 2];
+            cols = [2, 2, 0, 1, 2];
+
+            jpeg_width = (total_width - (PADDING * 2)) / 3;
+            jpeg_height = (total_height - (PADDING * 2)) / 3;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+
+            for (var i = 0; i < 5; i++) {
+            row = rows[i];
+            col = cols[i];
+            construct_cell_html(display_select,
+            left_margin + (col * (jpeg_width + PADDING)),
+            top_margin + (row * (jpeg_height + PADDING)),
+            jpeg_width, jpeg_height);
+            }
+            break;
+
+        case 6:  // asymmetrical 13 grid
+            rows = [0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
+            cols = [2, 3, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3];
+
+            jpeg_width = (total_width - (PADDING * 3)) / 4;
+            jpeg_height = (total_height - (PADDING * 3)) / 4;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+
+            for (i = 0; i < 12; i++) {
+            row = rows[i];
+            col = cols[i];
+            construct_cell_html(display_select,
+            left_margin + (col * (jpeg_width + PADDING)),
+            top_margin + (row * (jpeg_height + PADDING)),
+            jpeg_width, jpeg_height);
+            }
+            break;
+
+        case 7:  // asymmetrical 8 grid
+            rows = [0, 1, 2, 3, 3, 3, 3];
+            cols = [3, 3, 3, 0, 1, 2, 3];
+
+            jpeg_width = (total_width - (PADDING * 3)) / 4;
+            jpeg_height = (total_height - (PADDING * 3)) / 4;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            (jpeg_width * 3) + (PADDING * 2), (jpeg_height * 3) + (PADDING * 2));
+
+            for (i = 0; i < 7; i++) {
+            row = rows[i];
+            col = cols[i];
+            construct_cell_html(display_select,
+            left_margin + (col * (jpeg_width + PADDING)),
+            top_margin + (row * (jpeg_height + PADDING)),
+            jpeg_width, jpeg_height);
+            }
+            break;
+
+        case 8:  // asymmetrical 10 grid
+            rows = [0, 0, 1, 1, 2, 2, 3, 3];
+            cols = [2, 3, 2, 3, 0, 1, 0, 1];
+
+            jpeg_width = (total_width - (PADDING * 3)) / 4;
+            jpeg_height = (total_height - (PADDING * 3)) / 4;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+
+            for (i = 0; i < 8; i++) {
+            row = rows[i];
+            col = cols[i];
+            construct_cell_html(display_select,
+            left_margin + (col * (jpeg_width + PADDING)),
+            top_margin + (row * (jpeg_height + PADDING)),
+            jpeg_width, jpeg_height);
+            }
+
+            construct_cell_html(display_select,
+            left_margin + (jpeg_width * 2) + (PADDING * 2),
+            top_margin + (jpeg_height * 2) + (PADDING * 2),
+            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+            break;
+
+        case 9:  // P in P 2 grid
+            jpeg_width = total_width;
+            jpeg_height = total_height;
+
+            inner_jpeg_width = jpeg_width * 0.28;
+            inner_jpeg_height = jpeg_height * 0.28;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            jpeg_width, jpeg_height, false,
+            (jpeg_width * 0.02) + inner_jpeg_width + 10,
+            (jpeg_height * 0.02) + 10);
+
+            construct_cell_html(display_select,
+            left_margin + (jpeg_width * 0.02),
+            top_margin + (jpeg_height * 0.02),
+            inner_jpeg_width, inner_jpeg_height, true);
+            break;
+
+        case 10:  // P in P 2 grid
+            jpeg_width = total_width;
+            jpeg_height = total_height;
+
+            inner_jpeg_width = jpeg_width * 0.28;
+            inner_jpeg_height = jpeg_height * 0.28;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            jpeg_width, jpeg_height, false,
+            (jpeg_width * 0.02) + 10,
+            (jpeg_height * 0.02) + 10);
+
+            construct_cell_html(display_select,
+            left_margin + jpeg_width - inner_jpeg_width - (jpeg_width * 0.02),
+            top_margin + (jpeg_height * 0.02),
+            inner_jpeg_width, inner_jpeg_height, true);
+            break;
+
+        case 11:  // P in P 2 grid
+            jpeg_width = total_width;
+            jpeg_height = total_height;
+
+            inner_jpeg_width = jpeg_width * 0.28;
+            inner_jpeg_height = jpeg_height * 0.28;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            jpeg_width, jpeg_height, false,
+            (jpeg_width * 0.02) + 10,
+            (jpeg_height * 0.02) + 10);
+
+            construct_cell_html(display_select,
+            left_margin + (jpeg_width * 0.02),
+            top_margin + jpeg_height - inner_jpeg_height - (jpeg_height * 0.02),
+            inner_jpeg_width, inner_jpeg_height, true);
+            break;
+
+        case 12:  // P in P 2 grid
+            jpeg_width = total_width;
+            jpeg_height = total_height;
+
+            inner_jpeg_width = jpeg_width * 0.28;
+            inner_jpeg_height = jpeg_height * 0.28;
+
+            construct_cell_html(display_select, left_margin, top_margin,
+            jpeg_width, jpeg_height, false,
+            (jpeg_width * 0.02) + 10,
+            (jpeg_height * 0.02) + 10);
+
+            construct_cell_html(display_select,
+            left_margin + jpeg_width - inner_jpeg_width - (jpeg_width * 0.02),
+            top_margin + jpeg_height - inner_jpeg_height - (jpeg_height * 0.02),
+            inner_jpeg_width, inner_jpeg_height, true);
+            break;
+        }
+        }
+    };
+    
+    function update_feeds() {
+
+        // A function that get the latest jpeg filenames and event status from
+        // the server with an 'xmlHttp' call then splits the returned data and
+        // stores it in 'KM.feeds.latest_jpegs' and 'KM.feeds.latest_events'.
+        //
+        // expects :
+        //
+        // returns :
+        //
+
+        var xmlHttp = KM.get_xmlHttp_obj();
+
+        xmlHttp.onreadystatechange = function () {
+        if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
+            xmlHttp.onreadystatechange = null; // plug memory leak
+            KM.live.latest_events = JSON.parse(xmlHttp.responseText);
+            text_refresh();
+            update_jpegs();
+            
+            }
+        };
+
+        xmlHttp.open('GET', '/ajax/feeds?'+Math.random() + '&rdd='+encodeURIComponent(KM.config.ramdisk_dir), true);
+        xmlHttp.send(null);
+    };
+    
+    function text_refresh() {
+
+        // A function that refresh the display text colors, 'white' for feed
+        // disabled, 'blue' for no motion 'red' for motion.
+        //
+        // expects :
+        //
+        // returns :
+        //
+
+        var text_color,feed;
+        for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
+            try {
+                feed = KM.config.display_feeds[KM.config.misc.display_select][i]
+                text_color = KM.WHITE;           
+                if (KM.config.feeds[feed].feed_enabled) {
+                    text_color = KM.BLUE;
+                    if (KM.item_in_array(feed, KM.live.latest_events)) {
+                        text_color = KM.RED;
+                    }
+                }
+                document.getElementById("text_" + feed).style.color = text_color;
+            } catch (e) {}
+        }
+    };
+    
+    function update_jpegs() {
+        var feed;
+        for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {    
+            try {  
+                feed = KM.config.display_feeds[KM.config.misc.display_select][i]
+                if ((KM.config.feeds[feed].feed_enabled) && (KM.item_in_array(feed, KM.live.latest_events))) {
+                    document.getElementById('image_'+feed).src=KM.get_jpeg(feed);
+                }
+            } catch (e) {}
+        }       
+    };
+    
+    return {
+        init: init,
+        camera_jpeg_clicked: camera_jpeg_clicked,
+        reload_image: reload_image
+    }
+}();
+
+KM.display_live = KM.display_live_.init;
+KM.camera_jpeg_clicked = KM.display_live_.camera_jpeg_clicked;
+KM.reload_image = KM.display_live_.reload_image;
 
 
 /* ****************************************************************************
@@ -2517,6 +2523,8 @@ KM.display_archive_ = function () {
         var snap = new Image();
         var snap_id = -1;
         var direct = 1;
+        var delay = 1000;
+        var time = 0;
         
         
         function set_player(params) {
@@ -2524,15 +2532,20 @@ KM.display_archive_ = function () {
             player = document.getElementById(params.id);
             snap.width = params.width;
             snap.height = params.height;
+            snap.onload = function() {reload()};
             player.appendChild(snap);
             snap_id = params.snap_id;            
             playpause();
         }              
         
-        function reload(session_id) {            
+        function reload() {            
             if (KM.session_id.current === session_id) {
-                KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, 1000/fps));
+                KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, delay-get_delta()));
             }
+        }
+        
+        function get_delta() {
+            return Math.min(100, new Date().getTime()-time);
         }
         
         function play() {
@@ -2540,10 +2553,11 @@ KM.display_archive_ = function () {
             snap_id+=direct;
             if (movies['snaps'][snap_id]) {
                 snap.src = movies['snaps'][snap_id]['file'];
+                time = new Date().getTime();
                 display_secs = movies['snaps'][snap_id]['start'];
                 update_title_clock(display_secs);
-                update_tline_marker(display_secs);
-                reload(session_id);
+                update_tline_marker(display_secs);                
+                //reload(session_id);
             }            
         }
         
@@ -2560,7 +2574,7 @@ KM.display_archive_ = function () {
         function set_accel(val) {
             direct = Math.sign(val);
             fps = Math.abs(val);
-            
+            delay = 1000/fps;
         }
         
         return {
@@ -2762,6 +2776,7 @@ KM.display_logs = function () {
     //
 
     KM.session_id.current++;
+    var events;
     var session_id = KM.session_id.current;
 	var backdrop_width = KM.browser.main_display_width * 0.8;
 	var backdrop_height = KM.browser.main_display_height - 75;
@@ -2782,10 +2797,8 @@ KM.display_logs = function () {
     '<p style="text-align: center">Downloading Logs ...</p>' +
     '</div>';
 
-    function show_logs(dblob) {
+    function show_logs() {
         // show the logs
-        var events = JSON.parse(dblob).split('\n');
-        events.pop(); // remove the 'ck' line
         var log_html = '';
         for (var i = 1; i < events.length; i++) {
 	    if (events[i].indexOf('Incorrect') !== -1 || events[i].indexOf('Deleting current') !== -1) {
@@ -2817,11 +2830,11 @@ KM.display_logs = function () {
         xmlHttp.onreadystatechange = function () {
             if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
                 xmlHttp.onreadystatechange = null; // plug memory leak
-                var dblob = xmlHttp.responseText.trim();
+                events = JSON.parse(xmlHttp.responseText);
                               
                 if (KM.session_id.current === session_id) {
                     got_logs = true;					
-                    show_logs(dblob);
+                    show_logs();
                 }
             }
         };
@@ -2831,6 +2844,7 @@ KM.display_logs = function () {
 
     function retry() {
         KM.kill_timeout_ids(KM.LOGS);
+        events = null;
         if (!got_logs) {            
             request();
             KM.add_timeout_id(KM.LOGS, setTimeout(function () {retry(); }, 5000));
@@ -2915,63 +2929,6 @@ KM.conf_config_track = function() {
     }
 }();
 
-
-KM.conf_error_daemon = function (session_id) {
-
-    // A closure that acts as a daemon updateing 'KM.conf.error_str' with
-    // motions output every 2 seconds. If errors are detected in this string
-    // enable the 'Motion Errors' button and colour it red.
-    //
-    // expects:
-    //
-    // returns:
-    //
-
-    KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 1));
-
-    function request() {
-        // local 'xmlHttp' object to enable multiple instances, one for each
-        // function call.
-        var xmlHttp = KM.get_xmlHttp_obj();
-        xmlHttp.onreadystatechange = function () {
-            if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                xmlHttp.onreadystatechange = null; // plug memory leak
-                var data = xmlHttp.responseText.trim();
-                
-                if (KM.session_id.current === session_id) {
-                    KM.conf.error_str = JSON.parse(data);
-					// scan the string looking for errors
-					var error_lines = KM.conf.error_str.split("\n");
-					var error_flag = false;
-					for (var i = 0; i < error_lines.length; i++) {
-						if (error_lines[i].search(KM.conf.error_search_str) !== -1) {
-							error_flag = true;
-						}
-					}
-					if (error_flag) {
-						KM.conf_highlight_error_button(); // control the 'server error' button
-					} else {
-						//KM.conf_disable_error_button();
-					}
-				}
-			}	
-		};
-		xmlHttp.open('GET', '/ajax/outs?'+Math.random(), true);
-		xmlHttp.send(null);
-    }
-
-    function reload() {
-        KM.kill_timeout_ids(KM.ERROR_DAEMON);
-        request();
-        // check for current session id        
-        if (KM.session_id.current === session_id) {             
-            KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 2000));
-			//if (KM.conf.error_str!="")
-			//	KM.kill_timeout_ids(KM.ERROR_DAEMON);
-			//KM.conf_error_html();
-        }         
-    }
-};
 
 
 /* ****************************************************************************
@@ -3085,7 +3042,7 @@ KM.conf_select_errors = function() {
     //
     // returns:
     //
-    //KM.conf.error_str="";
+    //KM.conf.error_lines="";
     KM.session_id.current++;
     KM.conf_error_daemon(KM.session_id.current);
     KM.conf_error_html();
@@ -3722,6 +3679,64 @@ Displays the motion error code
 **************************************************************************** */
 
 
+KM.conf_error_daemon = function (session_id) {
+
+    // A closure that acts as a daemon updateing 'KM.conf.error_lines' with
+    // motions output every 2 seconds. If errors are detected in this string
+    // enable the 'Motion Errors' button and colour it red.
+    //
+    // expects:
+    //
+    // returns:
+    //
+
+    KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 1));
+
+    function request() {
+        // local 'xmlHttp' object to enable multiple instances, one for each
+        // function call.
+        var xmlHttp = KM.get_xmlHttp_obj();
+        xmlHttp.onreadystatechange = function () {
+            if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
+                xmlHttp.onreadystatechange = null; // plug memory leak
+                var data = xmlHttp.responseText.trim();
+                
+                if (KM.session_id.current === session_id) {
+                    KM.conf.error_lines = JSON.parse(data);
+					// scan the string looking for errors					
+					var error_flag = false;
+					for (var i = 0; i < KM.conf.error_lines.length; i++) {
+						if (KM.conf.error_lines[i].search(KM.conf.error_search_str) !== -1) {
+							error_flag = true;
+                            break;
+						}
+					}
+					if (error_flag) {
+						KM.conf_highlight_error_button(); // control the 'server error' button
+					} else {
+						//KM.conf_disable_error_button();
+					}
+				}
+			}	
+		};
+		xmlHttp.open('GET', '/ajax/outs?'+Math.random(), true);
+		xmlHttp.send(null);
+    }
+
+    function reload() {
+        KM.kill_timeout_ids(KM.ERROR_DAEMON);
+        KM.conf.error_lines = null;
+        request();
+        // check for current session id        
+        if (KM.session_id.current === session_id) {             
+            KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 2000));
+			//if (KM.conf.error_lines!="")
+			//	KM.kill_timeout_ids(KM.ERROR_DAEMON);
+			//KM.conf_error_html();
+        }         
+    }
+};
+
 KM.conf_error_html = function() {
 
     // A function that generates the error backdrop HTML. It sisplay the motion
@@ -3733,17 +3748,13 @@ KM.conf_error_html = function() {
     //
     // returns:
     //
-	
-    var error_lines = KM.conf.error_str.split("\n");
-	KM.conf.error_str=null;
 	var error_str = '';
-    for (var i = error_lines.length-1; i>=0; i--) {
-	//for (var i = 0; i<error_lines.length; i++) {
-        if (error_lines[i].search(KM.conf.error_search_str) !== -1) {
-			error_str += '<span style="color:' + KM.RED + ';">' + error_lines[i] + '</span><br>';
+    for (var i = KM.conf.error_lines.length-1; i>=0; i--) {
+        if (KM.conf.error_lines[i].search(KM.conf.error_search_str) !== -1) {
+			error_str += '<span style="color:' + KM.RED + ';">' + KM.conf.error_lines[i] + '</span><br>';
         }
 		else {
-			error_str += error_lines[i]+'<br>';
+			error_str += KM.conf.error_lines[i]+'<br>';
 		}
     }
     document.getElementById('config_html').innerHTML = error_str;
