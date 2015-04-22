@@ -11,11 +11,14 @@ class Logs():
         logs_mutex = Mutex(self.kmotion_dir, 'logs')
         logs_mutex.acquire()
         try:                       
-            with open(os.path.join(self.kmotion_dir, 'www/logs')) as f_obj:
-                data = f_obj.read()
+            with open(os.path.join(self.kmotion_dir, 'www/logs'), 'r') as f_obj:
+                lines = f_obj.readlines()
+        
+            if len(lines) > 500:
+                lines = lines[-500:]
         finally:
             logs_mutex.release()
     
-        return json.dumps(data)
+        return json.dumps(lines)
         
 

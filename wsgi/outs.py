@@ -7,9 +7,12 @@ class Outs():
         self.environ = environ
         
     def main(self):        
-        with open(os.path.join(self.kmotion_dir, 'www/motion_out')) as f_obj:
-            data = f_obj.read()
+        with open(os.path.join(self.kmotion_dir, 'www/motion_out'), 'r') as f_obj:
+            lines = f_obj.readlines()
+        
+        if len(lines) > 500:
+            lines = lines[-500:]
     
-        return json.dumps(data)
+        return json.dumps(lines)
 
 
