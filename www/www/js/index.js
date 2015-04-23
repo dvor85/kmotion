@@ -871,6 +871,7 @@ KM.display_live_ = function () {
         
         function is_loaded(feed) {
             var res = (loads[feed] === true); 
+            delete loads[feed];
             return res;
         }
         
@@ -1404,15 +1405,17 @@ KM.display_live_ = function () {
         var max_counter = 0; //счетчик одновременных обновлений
         for (var i=0;i<display_feeds_sorted.length;i++) {    
             try {  
-                feed = display_feeds_sorted[i]
-                if (KM.config.feeds[feed].feed_enabled){
-                    image_feed = document.getElementById('image_'+feed);
+                feed = display_feeds_sorted[i];
+                image_feed = document.getElementById('image_'+feed);
+                if (image_feed.onclick === null)
+                    image_feed.onclick = function(feed) {return function() {camera_jpeg_clicked(feed)}}(feed);
+                    
+                if (KM.config.feeds[feed].feed_enabled){                    
                     if (image_feed.onload === null)
                         image_feed.onload = function(feed) {return function() {image_loads.onload(feed)}}(feed);
                     if (image_feed.onerror === null)
                         image_feed.onerror = function(feed) {return function() {image_loads.onerror(feed)}}(feed);
-                    if (image_feed.onclick === null)
-                        image_feed.onclick = function(feed) {return function() {camera_jpeg_clicked(feed)}}(feed);
+                    
                     
                    /* console.log('error = ' + image_loads.is_error(feed));
                     console.log('update_counter = ' + (update_counter[feed]>=KM.getRandomInt(5,10)));
@@ -2848,18 +2851,18 @@ KM.display_logs = function () {
     function show_logs() {
         // show the logs
         var log_html = '';
-        for (var i = 1; i < events.length; i++) {
-	    if (events[i].indexOf('Incorrect') !== -1 || events[i].indexOf('Deleting current') !== -1) {
-                log_html += '<span style="color:' + KM.RED + ';">' + format_event(events[i]) + '</span>';
+        for (var i=events.length-1; i >= 0; i--) {
+            if (events[i].indexOf('Incorrect') !== -1 || events[i].indexOf('Deleting current') !== -1) {
+                    log_html += '<span style="color:' + KM.RED + ';">' + format_event(events[i]) + '</span>';
+                }
+                else if (events[i].indexOf('Deleting') !== -1 || events[i].indexOf('Initial') !== -1) {
+                    log_html +=  '<span style="color:' + KM.BLUE + ';">' + format_event(events[i]) + '</span>';
+                }
+                else {
+                    log_html += format_event(events[i]);
+                }
             }
-            else if (events[i].indexOf('Deleting') !== -1 || events[i].indexOf('Initial') !== -1) {
-                log_html +=  '<span style="color:' + KM.BLUE + ';">' + format_event(events[i]) + '</span>';
-            }
-            else {
-                log_html += format_event(events[i]);
-            }
-        }
-        document.getElementById('logs_html').innerHTML = log_html;
+            document.getElementById('logs_html').innerHTML = log_html;
     }
 
     function format_event(event) {

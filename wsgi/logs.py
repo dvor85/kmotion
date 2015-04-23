@@ -12,7 +12,7 @@ class Logs():
         logs_mutex.acquire()
         try:                       
             with open(os.path.join(self.kmotion_dir, 'www/logs'), 'r') as f_obj:
-                lines = f_obj.readlines()
+                lines = f_obj.read().split('\n')
         
             if len(lines) > 500:
                 lines = lines[-500:]

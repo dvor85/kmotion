@@ -49,7 +49,7 @@ class WWWLog:
         error_flag = False
         
         with open(self.log_file, 'r') as f_obj:
-            events = f_obj.read().split('$')
+            events = f_obj.read().split('\n')
             
         for i in range(len(events) - 1, -1, -1):
             
@@ -124,11 +124,11 @@ class WWWLog:
             mutex.acquire()
             with open(self.log_file, 'r+') as f_obj:
                 events = f_obj.read().split('\n')
+                events.append(new_event)
                 if len(events) > 500:  # truncate logs
-                    events.pop()
-                events = '\n' + new_event + '\n'.join(events)
+                    events = events[-500:]
                 f_obj.seek(0)
-                f_obj.write(events)
+                f_obj.write('\n'.join(events))
                 f_obj.truncate()
         finally:
             mutex.release()
