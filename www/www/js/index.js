@@ -207,17 +207,16 @@ KM.load_settings = function (callback) {
 	// local 'xmlHttp' object to enable multiple instances, one for each
 	// function call.
 	var xmlHttp = KM.get_xmlHttp_obj();
-	var got_settings = false;
+	var _got = false;
 	function request() {
 	    xmlHttp.onreadystatechange = function () {
             if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
                 xmlHttp.onreadystatechange = null; // plug memory leak
                 try {
                     KM.config = JSON.parse(xmlHttp.responseText);
-                    got_settings = true;
+                    _got = true;
                     set_settings(callback);
-                } catch(e) {
-                }
+                } catch(e) {console.log('Error while getting config!')}
                 
             }
 	    };
@@ -227,7 +226,7 @@ KM.load_settings = function (callback) {
 
 	function retry() {
         KM.kill_timeout_ids(KM.GET_DATA);
-	    if (!got_settings) {
+	    if (!_got) {
             request();
             KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {retry(); }, 5000));
 	    }
@@ -817,6 +816,7 @@ KM.display_live_ = function () {
     var last_camera_select = 0; // the last camera selected
     var latest_events = [];
     var fps = 1;
+    var max_streams = 10;
     var update_counter = {};
 
     function init() {
@@ -870,20 +870,23 @@ KM.display_live_ = function () {
         }
         
         function is_loaded(feed) {
-            var res = (loads[feed] === true); 
-            delete loads[feed];
-            return res;
+            return (loads[feed] === true); 
         }
         
         function is_error(feed) {
             return (loads[feed] === false); 
         }
         
+        function reset(feed) {
+            delete loads[feed];
+        }
+        
         return {
             onload: onload,
             onerror: onerror,
             is_loaded: is_loaded,
-            is_error: is_error
+            is_error: is_error,
+            reset: reset
         }
     }();
     
@@ -1341,11 +1344,12 @@ KM.display_live_ = function () {
 
         xmlHttp.onreadystatechange = function () {
         if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-            xmlHttp.onreadystatechange = null; // plug memory leak
-            latest_events = JSON.parse(xmlHttp.responseText);
-            text_refresh();
-            update_jpegs();
-            
+                xmlHttp.onreadystatechange = null; // plug memory leak
+                try {
+                    latest_events = JSON.parse(xmlHttp.responseText);
+                    text_refresh();
+                    update_jpegs();
+                } catch(e) {console.log('Error while updating feeds!')}
             }
         };
 
@@ -1384,12 +1388,15 @@ KM.display_live_ = function () {
     }
     
     function display_feeds_compare_by_latest(a, b) {
-        if (KM.item_in_array(a, latest_events)) {
+        var a_in = KM.item_in_array(a, latest_events);
+        var b_in = KM.item_in_array(b, latest_events);
+        if (a_in && b_in) {
+            return 0;
+        } else if (a_in) {
             return -1;
         } else {
             return 1;
-        }     
-        return 0;
+        }
     }
     
     function update_jpegs() { 
@@ -1402,7 +1409,7 @@ KM.display_live_ = function () {
         console.log('display_feeds_sorted = ' + display_feeds_sorted);
         console.log('display_feeds_a = ' + KM.config.display_feeds[KM.config.misc.display_select]);*/
         
-        var max_counter = 0; //счетчик одновременных обновлений
+        var stream_counter = 0; //счетчик одновременных обновлений
         for (var i=0;i<display_feeds_sorted.length;i++) {    
             try {  
                 feed = display_feeds_sorted[i];
@@ -1441,13 +1448,14 @@ KM.display_live_ = function () {
                        (display_feeds_sorted.length == 1) || 
                        (KM.item_in_array(feed, latest_events))) && 
                        
-                       (image_loads.is_loaded(feed) && (max_counter<10)))  {
+                       (image_loads.is_loaded(feed) && (stream_counter<max_streams)))  {
                        
                             /*console.log('\n');
                             console.log('UPDATE FEED ' + feed);
                             console.log('\n');*/
                             update_counter[feed] = 0;
-                            max_counter++;
+                            stream_counter++;
+                            image_loads.reset(feed);
                             image_feed.src=KM.get_jpeg(feed);
                             
                     } else {
@@ -2666,10 +2674,13 @@ KM.display_archive_ = function () {
 	    xmlHttp.onreadystatechange = function () {
             if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
                 xmlHttp.onreadystatechange = null; // plug memory leak
-                cameras = JSON.parse(xmlHttp.responseText);
-                if (KM.session_id.current === session_id) {
-                    _got = true;    
-                    callback(session_id);
+                
+                if (KM.session_id.current === session_id) {   
+                    try {
+                        cameras = JSON.parse(xmlHttp.responseText);                       
+                        _got = true; 
+                        callback(session_id);
+                    } catch(e) {console.log('Error while getting cameras!')}
                 }
             }
 	    };	    
@@ -2712,12 +2723,13 @@ KM.display_archive_ = function () {
 	    xmlHttp.onreadystatechange = function () {
             if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
                 xmlHttp.onreadystatechange = null; // plug memory leak
-                dates = JSON.parse(xmlHttp.responseText);
-                if (KM.session_id.current === session_id) {
-                    _got = true;    
-                    //populate_date_dropdown();
-                    callback(session_id);
-                    //populate_cams_dbase(callback,  session_id);
+                
+                if (KM.session_id.current === session_id) {    
+                    try {
+                        dates = JSON.parse(xmlHttp.responseText);
+                        _got = true;    
+                        callback(session_id);
+                    } catch(e) {console.log('Error while getting dates!')}
                 }
             }
 	    };
@@ -2763,11 +2775,13 @@ KM.display_archive_ = function () {
 	    xmlHttp.onreadystatechange = function () {
 		if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
 		    xmlHttp.onreadystatechange = null; // plug memory leak
-		    movies = JSON.parse(xmlHttp.responseText);
 		   
 		    if (KM.session_id.current === session_id) {
-                _got = true;
-                callback(session_id);
+                try {
+                    movies = JSON.parse(xmlHttp.responseText);
+                    _got = true;
+                    callback(session_id);
+                } catch(e) {console.log('Error while getting movies!')}
 		    }
 		}
 	    };
@@ -2806,7 +2820,7 @@ KM.arch_change_mode = KM.display_archive_.change_mode;
 KM.arch_bar_button_clicked = KM.display_archive_.bar_button_clicked;
 KM.arch_event_clicked = KM.display_archive_.event_clicked;
 KM.arch_tline_clicked = KM.display_archive_.tline_clicked;
-KM.update_title_clock=KM.display_archive_.update_title_clock;
+KM.update_title_clock = KM.display_archive_.update_title_clock;
 
 
 /* ****************************************************************************
@@ -2880,12 +2894,14 @@ KM.display_logs = function () {
         var xmlHttp = KM.get_xmlHttp_obj();
         xmlHttp.onreadystatechange = function () {
             if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                xmlHttp.onreadystatechange = null; // plug memory leak
-                events = JSON.parse(xmlHttp.responseText);
+                xmlHttp.onreadystatechange = null; // plug memory leak                
                               
                 if (KM.session_id.current === session_id) {
-                    got_logs = true;					
-                    show_logs();
+                    try {
+                        events = JSON.parse(xmlHttp.responseText);
+                        got_logs = true;					
+                        show_logs();
+                    } catch(e) {console.log('Error while getting logs!')}
                 }
             }
         };
@@ -2926,8 +2942,10 @@ KM.display_config_ = function () {
     var error_search_str = /failed|error/i;
     
     function init() {
+        KM.session_id.current++;
         conf_config_track.init();
-        conf_backdrop_html();
+        conf_backdrop_html();        
+        conf_error_daemon(KM.session_id.current);
     }
     
     conf_config_track = function() {
@@ -3656,8 +3674,8 @@ KM.display_config_ = function () {
         // returns:
         //
         //error_lines="";
-        KM.session_id.current++;
-        conf_error_daemon(KM.session_id.current);
+        //KM.session_id.current++;
+        //conf_error_daemon(KM.session_id.current);
         conf_error_html();
     };
 
@@ -3672,7 +3690,7 @@ KM.display_config_ = function () {
         // returns:
         //
 
-        KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 1));
+        reload();
 
         function request() {
             // local 'xmlHttp' object to enable multiple instances, one for each
@@ -3708,9 +3726,10 @@ KM.display_config_ = function () {
         function reload() {
             KM.kill_timeout_ids(KM.ERROR_DAEMON);
             error_lines = null;
-            request();
+            
             // check for current session id        
-            if (KM.session_id.current === session_id) {             
+            if (KM.session_id.current === session_id) {   
+                request();            
                 KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 2000));
                 //if (error_lines!="")
                 //	KM.kill_timeout_ids(KM.ERROR_DAEMON);
@@ -3739,7 +3758,7 @@ KM.display_config_ = function () {
                 error_str += error_lines[i]+'<br>';
             }
         }
-        document.getElementById('config_html').innerHTML = error_str;
+        document.getElementById('config_html').innerHTML = error_str;        
     };
 
     function conf_highlight_error_button() {
@@ -3964,10 +3983,9 @@ KM.display_config_ = function () {
                 xmlHttp.onreadystatechange = function () {
                     if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
                         xmlHttp.onreadystatechange = null; // plug memory leak
-                        var dblob = xmlHttp.responseText.trim();
-                        dbase = JSON.parse(dblob);
                         
                         if (KM.session_id.current === session_id) {
+                            dbase = JSON.parse(xmlHttp.responseText);
                             update_all();
                         } 
                     }
@@ -3978,9 +3996,10 @@ KM.display_config_ = function () {
 
             function reload() {
                 KM.kill_timeout_ids(KM.CONFIG_LOOP);
-                request();
+                dbase = null;                
                 // check for current session id            
                 if (KM.session_id.current === session_id) {                
+                    request();
                     KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {reload(); }, 2000));
                 } 
             }
