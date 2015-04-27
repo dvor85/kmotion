@@ -1,33 +1,15 @@
 #!/usr/bin/env python
 
-# Copyright 2008 David Selby dave6502@googlemail.com
-
-# This file is part of kmotion.
-
-# kmotion is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# kmotion is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with kmotion.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Copys, moves or deletes files from images_dbase_dir/tmp to images_dbase_dir/snap
-generating a 'sanitized' snap sequence. Also updates journals. On SIGHUP
-force a config re-read.
+Copys, moves or deletes files 
 """
 
 import os, sys, time, signal, shutil, traceback
+from datetime import datetime
 import logger
 from mutex_parsers import *
-from mutex import Mutex
-from threading import Thread , Semaphore, Lock
+from threading import Thread, Semaphore, Lock
 from multiprocessing import Process
 
 
@@ -38,15 +20,14 @@ class Hkd2_Feed():
     
     def __init__(self, kmotion_dir, feed, semaphore):
         self.kmotion_dir = kmotion_dir  # the 'root' directory of kmotion
-        self.feed = int(feed)  # the feed number 1 - 16
+        self.feed = int(feed)  # the feed number
         self.ramdisk_dir = ''  # the 'root' dir of the ramdisk
         self.images_dbase_dir = ''  # the 'root' dir of the images dbase
         self.feed_snap_enabled = True  # feed snap enabled
         self.feed_snap_interval = ''  # snap interval in seconds
         self.feed_fps = ''  # frame fps
         self.feed_name = ''  # feed name
-        self.old_date = ''  # old date
-        self.epoch_time = time.time()  # secs since epoch
+        self.snap_time = time.time() 
         self.lock = Lock()
         self.semaphore = semaphore
         self.read_config()
@@ -76,13 +57,13 @@ class Hkd2_Feed():
         self.feed_snap_interval = parser.getint('motion_feed%02i' % self.feed, 'feed_snap_interval')
         self.feed_fps = parser.getint('motion_feed%02i' % self.feed, 'feed_fps')
         self.feed_name = parser.get('motion_feed%02i' % self.feed, 'feed_name')
+        self.inc_snap_time(self.feed_snap_interval)
         
     
     def main(self):
         """ 
         Copys, moves or deletes files from 'ramdisk_dir/kmotion' to
-        'images_dbase_dir/snap' generating a 'sanitized' snap sequence. Also
-        updates snap_journal.
+        'images_dbase_dir/snap' generating a 'sanitized' snap sequence.
         
         args    : 
         excepts : 
@@ -92,186 +73,65 @@ class Hkd2_Feed():
         try:
             self.lock.acquire()
             try:
-                date, time_ = self.current_date_time()
-                 
-                # if dates mismatch, its a new day 
-                if date != self.old_date: 
-                    
-                    self.old_date = date 
-                    log('service_snap() - new day, feed: %s date: %s' % (self.feed, date), logger.DEBUG) 
-                        
-                    feed_dir = '%s/%s/%02i' % (self.images_dbase_dir, date, self.feed)
-                    try:  # make sure 'feed_dir' exists, try in case motion creates dir
-                        os.makedirs(feed_dir)
-                    except OSError:
-                        pass
-                    
-                    # update the snap and smovie fps journals 
-                    self.update_snap_journal(date, self.feed_snap_enabled,
-                                             time_, self.feed_snap_interval)
-                    self.update_fps_journal(date, time_, self.feed_fps)
-                    self.update_title(date)
+                jpg_dir = '%s/%02i' % (self.ramdisk_dir, self.feed) 
+                jpg_list = os.listdir(jpg_dir)
+                jpg_list.sort()
                 
-                # process and sanitise snap timestamps
-                    
-                tmp_snap_dir = '%s/%02i' % (self.ramdisk_dir, self.feed) 
-                snap_list = os.listdir(tmp_snap_dir)
-                snap_list.sort()
+                self.update_title()
                 
-                # need this > 25 buffer to ensure kmotion can view jpegs before we 
+                # need this > 10 buffer to ensure kmotion can view jpegs before we 
                 # move or delete them
-                while (len(snap_list) >= 25):  
+                while (len(jpg_list) >= 10):  
+                    jpg = jpg_list.pop(0)
+                    jpg_time = os.path.getmtime(os.path.join(jpg_dir, jpg))
                     
-                    snap_date_time = snap_list[0][:-4]  # [:-4] to strip '.jpg'
-                    
-                    # if snap is disabled, delete old jpegs but keep time in sync
-                    if not self.feed_snap_enabled:
-                        log('service_snap() - ditch %s/%s.jpg' 
-                                   % (tmp_snap_dir, snap_date_time), logger.DEBUG)
-                        if snap_date_time != 'last':
-                            os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
-                            feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
-                            if os.path.isfile(feed_www_jpg):
-                                os.remove(feed_www_jpg)
-                        if snap_date_time > date + time_: 
-                            self.inc_date_time(2)
-                        snap_list = snap_list[1:]
-                        continue
-                    
-                    # if jpeg is in the past, delete it
-                    if snap_date_time < date + time_: 
-                        log('service_snap() - delete %s/%s.jpg' 
-                                   % (tmp_snap_dir, snap_date_time), logger.DEBUG)
-                        if snap_date_time != 'last':
-                            os.remove('%s/%s.jpg' % (tmp_snap_dir, snap_date_time))
-                            feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
-                            if os.path.isfile(feed_www_jpg):
-                                os.remove(feed_www_jpg)
-                        snap_list = snap_list[1:]
-                        continue
-                    
-                    # need date time update here in case 00:00 crossed
-                    date, time_ = self.current_date_time()
-                    snap_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, self.feed)
-                    
-                    # make sure 'snap_dir' exists, try in case motion creates dir
-                    if not os.path.isdir(snap_dir):
-                        try:  
-                            os.makedirs(snap_dir)
-                        except OSError:
-                            pass
+                    if jpg != 'last.jpg':
+                        p = {'src':os.path.join(jpg_dir, jpg),
+                             'dst':os.path.join(self.images_dbase_dir, 
+                                                datetime.fromtimestamp(jpg_time).strftime('%Y%m%d'), 
+                                                '%02i' % self.feed,
+                                                'snap', 
+                                                '%s.jpg' % datetime.fromtimestamp(jpg_time).strftime('%H%M%S'))}
                         
-                    # if jpeg is in the future, copy but don't delete
-                    p = {'src':os.path.join(tmp_snap_dir, '%s.jpg' % snap_date_time),
-                         'dst':os.path.join(snap_dir, '%s.jpg' % time_)}
-                    if snap_date_time > date + time_: 
-                        log('service_snap() - copy {src} to {dst}'.format(**p), logger.DEBUG)               
-                        shutil.copy(**p)
-                        self.inc_date_time(self.feed_snap_interval)
-                    # if jpeg is now, move it
-                    elif snap_date_time == date + time_:
-                                                
-                        log('service_snap() - move {src} to {dst}'.format(**p), logger.DEBUG) 
-                        shutil.move(**p)
-                        feed_www_jpg = '%s/www/%s.jpg' % (tmp_snap_dir, snap_date_time)
+                        if self.feed_snap_enabled and self.snap_time <= jpg_time:
+                            try:
+                                log('service_snap() - copy {src} to {dst}'.format(**p), logger.DEBUG)
+                                if not os.path.isdir(p['dst']):
+                                    os.makedirs(p['dst'])
+                                shutil.copy(**p)
+                                self.inc_snap_time(self.feed_snap_interval)
+                            except:
+                                exc_type, exc_value, exc_traceback = sys.exc_info()
+                                log('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+                            
+                        log('service_snap() - delete {src}'.format(**p), logger.DEBUG)    
+                        os.remove(os.path.join(jpg_dir, jpg))
+                        
+                        feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
                         if os.path.isfile(feed_www_jpg):
                             os.remove(feed_www_jpg)
-                        self.inc_date_time(self.feed_snap_interval)
-                        snap_list = snap_list[1:]
+                            
             finally:
                 self.lock.release() 
         finally:
             self.semaphore.release()
             
         
-        
-    def update_snap_journal(self, date, enabled, time_, pause):
-        """ 
-        Given the date, feed number, time and pause in seconds updates 
-        'snap_journal'
-        
-        args    : date ...    date 
-                  feed ...    feed 
-                  enabled ... feed enabled
-                  time_ ...   time
-                  pause ...   snap pause between frames in time
-        excepts : 
-        return  : none
-        """
-        
-        # add to 'snap_journal' #<snap start time_>$<snap pause secs_>
-        if not enabled:  # if snap disabled, write pause zero to journal 
-            pause = 0
-            
-        snap_journal = '%s/%s/%02i/snap_journal' % (self.images_dbase_dir, date, self.feed)
-      
-        with open(snap_journal, 'a') as f_obj:
-            f_obj.write('$%s#%s\n' % (time_, pause))
-              
-        
-    def update_fps_journal(self, date, time_, fps):
-        """ 
-        Given the date, feed number, time and fps updates 'fps_journal'
-        
-        args    : date ...    date 
-                  feed ...    feed 
-                  time_ ...   time
-                  fps ...     smovie fps
-        excepts : 
-        return  : none
-        """
-        
-        # add to 'fps_journal' #<fps start time_>$<frame fps>
-        smovie_fps_journal = '%s/%s/%02i/fps_journal' % (self.images_dbase_dir, date, self.feed)
-      
-        with open(smovie_fps_journal, 'a') as f_obj:
-            f_obj.write('$%s#%s\n' % (time_, fps))
-        
-        
-    def update_title(self, date):
-        """ 
-        Given the date and feed number updates 'title'
-        
-        args    : date ...   date 
-                  feed ...   feed 
-                  name ...   name
-        excepts : 
-        return  : none
-        """
+    def update_title(self):
         
         # updates 'name' with name string
-        title = '%s/%s/%02i/title' % (self.images_dbase_dir, date, self.feed)
-      
-        with open(title, 'w') as f_obj:
-            f_obj.write(self.feed_name)
+        title = '%s/%s/%02i/title' % (self.images_dbase_dir, time.strftime('%Y%m%d'), self.feed)
+        if not os.path.isdir(os.path.dirname(title)):
+            os.makedirs(os.path.dirname(title))
         
+        if not os.path.isfile(title):
+            with open(title, 'w') as f_obj:
+                f_obj.write(self.feed_name)
         
-    def inc_date_time(self, inc_secs):
-        """ 
-        Adds inc_secs seconds to the self.epoch_time
+    
+    def inc_snap_time(self, inc_sec):
+        self.snap_time = time.time() + inc_sec
         
-        args    : inc_secs ... the secs to increment
-        excepts : 
-        return  : 
-        """
-        
-        self.epoch_time += inc_secs
-        
-        
-    def current_date_time(self):
-        """ 
-        Returns the self.epoch_time as a tuple of two strings, YYYYMMDD and
-        HHMMSS
-        
-        args    : 
-        excepts : 
-        return  : (string, string) ...  YYYYMMDD and HHMMSS
-        """
-        
-        time_obj = time.localtime(self.epoch_time)
-        return (time.strftime('%Y%m%d', time_obj), time.strftime('%H%M%S', time_obj))
-            
-            
     
 class Kmotion_Hkd2(Process):
     

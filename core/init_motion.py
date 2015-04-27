@@ -213,7 +213,7 @@ gap 2
 pre_capture 1
 post_capture 10
 quality 85
-webcam_localhost on
+webcam_localhost off
 '''
                 # pal or ntsc,
                 print >> f_obj1, 'norm 1'
@@ -248,7 +248,7 @@ webcam_localhost on
 # ------------------------------------------------------------------------------
 
 snapshot_interval 1
-#webcam_localhost on
+webcam_localhost off
 '''
                 print >> f_obj1, 'target_dir %s' % self.ramdisk_dir
                 

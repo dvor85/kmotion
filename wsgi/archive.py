@@ -4,7 +4,8 @@
 Returns the archive data index's
 """
 
-import os, sys, json, datetime
+import os, sys, json
+from datetime import datetime
 import traceback
 
 
@@ -46,35 +47,25 @@ class Archive():
         elif self.func == 'feeds':
             return self.get_feeds(self.params['date'])
         
-    def get_feeds(self, date):
-        self.feed_list = []
+    def get_feeds(self, date):        
+        feeds_list = {}
         for section in self.www_rc_parser.sections():
             try:
                 if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed',''))
+                    feed = int(section.replace('motion_feed', ''))
                     if self.www_rc_parser.getboolean(section, 'feed_enabled'):                        
-                        self.feed_list.append(feed)
+                        feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
+                        if os.path.isdir(feed_dir):
+                            title = self.www_rc_parser.get(section, 'feed_name') 
+                            with open(os.path.join(feed_dir, 'title'), 'r') as f_obj: 
+                                title = f_obj.read()
+                
+                            feeds_list[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir , 'movie')),
+                                                'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
+                                                'title': title}
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
-        self.feed_list.sort()
-        
-        feeds_list = {}        
-        for feed in self.feed_list:
-            try:
-                feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
-                if os.path.isdir(feed_dir):
-                    title = 'Camera %02i' % feed 
-                    with open(os.path.join(feed_dir, 'title'), 'r') as f_obj: 
-                        title = f_obj.read()
-                
-                    feeds_list[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir , 'movie')),
-                                       'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
-                                       'title': title}
-                    
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
                     
         return json.dumps(feeds_list)
         
@@ -102,7 +93,7 @@ class Archive():
                 mf = os.path.join(movies_dir, m)
                 movie = {}
                 movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
-                movie['end'] = self.hhmmss_secs(datetime.datetime.fromtimestamp(os.path.getmtime(mf)).strftime('%H%M%S'))
+                movie['end'] = self.hhmmss_secs(datetime.fromtimestamp(os.path.getmtime(mf)).strftime('%H%M%S'))
                 movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))             
                 journal['movies'].append(movie)
         
