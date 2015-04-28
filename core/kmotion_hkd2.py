@@ -96,8 +96,8 @@ class Hkd2_Feed():
                         if self.feed_snap_enabled and self.snap_time <= jpg_time:
                             try:
                                 log('service_snap() - copy {src} to {dst}'.format(**p), logger.DEBUG)
-                                if not os.path.isdir(p['dst']):
-                                    os.makedirs(p['dst'])
+                                if not os.path.isdir(os.path.dirname(p['dst'])):
+                                    os.makedirs(os.path.dirname(p['dst']))
                                 shutil.copy(**p)
                                 self.inc_snap_time(self.feed_snap_interval)
                             except:

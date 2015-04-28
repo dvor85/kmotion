@@ -214,10 +214,9 @@ KM.load_settings = function (callback) {
                 xmlHttp.onreadystatechange = null; // plug memory leak
                 try {
                     KM.config = JSON.parse(xmlHttp.responseText);
-                    _got = true;
-                    set_settings(callback);
+                    _got = true;                    
                 } catch(e) {console.log('Error while getting config!')}
-                
+                set_settings(callback);
             }
 	    };
 	    xmlHttp.open('GET', '/ajax/config?read='+ Math.random(), true);
@@ -1582,7 +1581,6 @@ KM.display_archive_ = function () {
         //
         // returns:
         //
-        populate_view_dropdown();
         update_title_noclock();        
         mode_setto_event();
 
@@ -1594,24 +1592,6 @@ KM.display_archive_ = function () {
     }
 
     function init_to_event_mode() {
-
-	// A function that initialises the view dropdown menu, this has to be
-	// seperate due to view needing the frame dbase to see which is the
-	// latest recorded movie.
-	//
-	// The 3rd part of display archive init, split due to asynchronous
-	// nature of xmlhttp calls and the need for setTimeout's (yuk!)
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	populate_view_dropdown(); // needs to be here to get frames dbase info
-	init_to_event_mode2();
-    }
-
-    function init_to_event_mode2() {
 
 	// A function that initialises the archive display and the timeline.
 	// This is the 4th and final part of display archive init, split due to
@@ -1796,7 +1776,6 @@ KM.display_archive_ = function () {
 	// add the avaliable cameras based on 'archive.dates'
 	var date = document.getElementById('date_select').value;
 	var new_opt = '';
-	camera_index = 0;
 	for (var feed in cameras) {
 	    new_opt = document.createElement('option');
 	    new_opt.text = KM.pad_out2(feed) + ' : ' + cameras[feed]['title'];
@@ -1816,7 +1795,7 @@ KM.display_archive_ = function () {
     change_camera();
     }
 
-    function populate_view_dropdown(callback) {
+    function populate_view_dropdown() {
 
 	// A function that populates the view dropdown and selects the
 	// first one. View is dependent on camera.
@@ -1826,9 +1805,11 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	//var index = dates[document.getElementById('date_select').selectedIndex][document.getElementById('camera_select').selectedIndex];
-
-	var view_select = document.getElementById('view_select');
+    var view_select = document.getElementById('view_select');
+    var selected_index = view_select.selectedIndex;
+	var selected_value = parseInt(view_select.value);
+    
+	
 	for (var i = view_select.options.length - 1; i > -1; i--) {
 	    view_select.remove(i);
 	}
@@ -1847,14 +1828,18 @@ KM.display_archive_ = function () {
 	for (var i = 0; i < drop_opts.length; i++) {
 	    var new_opt = document.createElement('option');
 	    new_opt.text = drop_opts[i];
+        new_opt.value = i;
 
 	    try { view_select.add(new_opt, null); } // standards compliant; doesn't work in IE
 	    catch(e) { view_select.add(new_opt); } // IE only
 	}
 	
-	document.getElementById('view_select').selectedIndex = 0;
-	movie_show =  movie_enabled;
-	snap_show =   snap_enabled;
+	if (!isNaN(selected_value)) {
+        view_select.value = selected_value;
+    } else {
+        view_select.selectedIndex = 0;
+    }
+    change_view();
     }
 
     function populate_tline() {
@@ -2004,74 +1989,76 @@ KM.display_archive_ = function () {
 
     function change_date() {
 
-	// A function that is executed when the date is changed, re-inits
-	// 'camera', 'view' and 'mode' dropdowns, reloads the frame dbase and
-	// calls 'populate_tline'
-	//
-	// expects:
-	//
-	// returns:
-	//
+        // A function that is executed when the date is changed, re-inits
+        // 'camera', 'view' and 'mode' dropdowns, reloads the frame dbase and
+        // calls 'populate_tline'
+        //
+        // expects:
+        //
+        // returns:
+        //
 
-	KM.session_id.current++;
-	var session_id = KM.session_id.current;
-	wipe_tline();
-	show_downloading_msg();
-    populate_cams_dbase(callback_populate_cams_dbase, document.getElementById('date_select').value, session_id);
+        KM.session_id.current++;
+        var session_id = KM.session_id.current;
+        wipe_tline();
+        display_secs = 0;
+        show_downloading_msg();
+        populate_cams_dbase(callback_populate_cams_dbase, document.getElementById('date_select').value, session_id);
 			
     };
 
     function change_camera() {
 
-	// A function that is executed when the camera is changed, re-inits
-	// 'view' and 'mode' dropdowns, reloads the frame dbase and
-	// calls 'populate_tline'
-	//
-	// expects:
-	//
-	// returns:
-	//
+        // A function that is executed when the camera is changed, re-inits
+        // 'view' and 'mode' dropdowns, reloads the frame dbase and
+        // calls 'populate_tline'
+        //
+        // expects:
+        //
+        // returns:
+        //
 
-	KM.session_id.current++;
-	var session_id = KM.session_id.current;
-	wipe_tline();
-	show_downloading_msg();
-	mode_setto_event();
-	populate_frame_dbase(init_to_event_mode, document.getElementById('date_select').value,
-                                   document.getElementById('camera_select').value, session_id);
+        KM.session_id.current++;
+        var session_id = KM.session_id.current;
+        wipe_tline();
+        display_secs = 0;
+        show_downloading_msg();
+        mode_setto_event();
+        populate_frame_dbase(populate_view_dropdown, document.getElementById('date_select').value,
+                                       document.getElementById('camera_select').value, session_id);
     };
 
     function change_view() {
 
-	// A function that is executed when the view is changed, calls
-	// 'init_to_event_mode'
-	//
-	// expects:
-	//
-	// returns:
-	//
+        // A function that is executed when the view is changed, calls
+        // 'init_to_event_mode'
+        //
+        // expects:
+        //
+        // returns:
+        //
 
-	wipe_tline();
-	show_downloading_msg();
+        wipe_tline();
+        show_downloading_msg();
 
-	var movie_enabled = cameras[document.getElementById('camera_select').value]['movie_flag'];
-	var snap_enabled = cameras[document.getElementById('camera_select').value]['snap_flag'];
+        var movie_enabled = cameras[document.getElementById('camera_select').value]['movie_flag'];
+        var snap_enabled = cameras[document.getElementById('camera_select').value]['snap_flag'];
 
-	var view = document.getElementById('view_select').selectedIndex;
+        var view = document.getElementById('view_select').value;
 
-	// no filtering
-	movie_show =  movie_enabled;
-	snap_show =   snap_enabled;
+        // no filtering
+        movie_show =  movie_enabled;
+        snap_show =   snap_enabled;
 
-	if (view === 1) {	    
-	    snap_show = false;
+        if (view == 1) {	    
+            snap_show = false;
 
-	} else if (view === 2) {
-	    movie_show =  false;
-	}
+        } else if (view == 2) {
+            movie_show =  false;
+        }
 
-	// 'init_to_event_mode2' so as not to re-init the dropdown to default
-	init_to_event_mode2();
+        // 'init_to_event_mode' so as not to re-init the dropdown to default
+        init_to_event_mode();
     };
 
     function change_mode() {
@@ -2087,13 +2074,9 @@ KM.display_archive_ = function () {
         if (document.getElementById('mode_select').selectedIndex === 0) {
             // event mode
             KM.session_id.current++;
-            event_mode = true;
-            update_title_noclock(); // strip the clock
+            event_mode = true;            
             remove_tline_marker();  // don't wipe tline
-            blank_button_bar();
-            var date = document.getElementById('date_select').value;
-            var camera = document.getElementById('camera_select').value;
-            init_events_html(date, camera);
+            init_to_event_mode();
             document.onkeydown=null; //stop memory leak
 
         } else {
@@ -2610,8 +2593,8 @@ KM.display_archive_ = function () {
         
         function play() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
-            snap_id+=direct;
-            if (movies['snaps'][snap_id]) {
+            if (movies['snaps'][snap_id+direct]) {
+                snap_id+=direct;
                 snap.src = movies['snaps'][snap_id]['file'];
                 time = new Date().getTime();
                 display_secs = movies['snaps'][snap_id]['start'];
@@ -2678,9 +2661,9 @@ KM.display_archive_ = function () {
                 if (KM.session_id.current === session_id) {   
                     try {
                         cameras = JSON.parse(xmlHttp.responseText);                       
-                        _got = true; 
-                        callback(session_id);
+                        _got = true;                         
                     } catch(e) {console.log('Error while getting cameras!')}
+                    callback(session_id);
                 }
             }
 	    };	    
@@ -2727,9 +2710,9 @@ KM.display_archive_ = function () {
                 if (KM.session_id.current === session_id) {    
                     try {
                         dates = JSON.parse(xmlHttp.responseText);
-                        _got = true;    
-                        callback(session_id);
+                        _got = true;                       
                     } catch(e) {console.log('Error while getting dates!')}
+                    callback(session_id);
                 }
             }
 	    };
@@ -2780,8 +2763,8 @@ KM.display_archive_ = function () {
                 try {
                     movies = JSON.parse(xmlHttp.responseText);
                     _got = true;
-                    callback(session_id);
                 } catch(e) {console.log('Error while getting movies!')}
+                callback(session_id);
 		    }
 		}
 	    };
@@ -2899,9 +2882,9 @@ KM.display_logs = function () {
                 if (KM.session_id.current === session_id) {
                     try {
                         events = JSON.parse(xmlHttp.responseText);
-                        got_logs = true;					
-                        show_logs();
+                        got_logs = true;	                        
                     } catch(e) {console.log('Error while getting logs!')}
+                    show_logs();
                 }
             }
         };
