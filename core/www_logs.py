@@ -49,7 +49,7 @@ class WWWLog:
         error_flag = False
         
         with open(self.log_file, 'r') as f_obj:
-            events = f_obj.read().split('\n')
+            events = f_obj.read().splitlines()
             
         for i in range(len(events) - 1, -1, -1):
             
@@ -123,7 +123,7 @@ class WWWLog:
             mutex = Mutex(self.kmotion_dir, 'logs')
             mutex.acquire()
             with open(self.log_file, 'r+') as f_obj:
-                events = f_obj.read().split('\n')
+                events = f_obj.read().splitlines()
                 events.append(new_event)
                 if len(events) > 500:  # truncate logs
                     events = events[-500:]

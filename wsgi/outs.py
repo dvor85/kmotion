@@ -8,7 +8,7 @@ class Outs():
         
     def main(self):        
         with open(os.path.join(self.kmotion_dir, 'www/motion_out'), 'r') as f_obj:
-            lines = f_obj.read().split('\n')
+            lines = f_obj.read().splitlines()
         
         if len(lines) > 500:
             lines = lines[-500:]
