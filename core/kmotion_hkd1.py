@@ -192,7 +192,7 @@ class Kmotion_Hkd1(Process):
         line = subprocess.Popen('nice -n 19 du -s %s' % dir_, shell=True, stdout=subprocess.PIPE).communicate()[0]
         
         bytes_ = int(line.split()[0]) * 1000
-        self.log('size of %s = %s' % (dir, bytes_), logger.DEBUG)
+        self.log('size of %s = %s' % (dir_, bytes_), logger.DEBUG)
         return bytes_
 
     

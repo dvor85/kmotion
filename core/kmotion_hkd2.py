@@ -99,10 +99,11 @@ class Hkd2_Feed():
                                 if not os.path.isdir(os.path.dirname(p['dst'])):
                                     os.makedirs(os.path.dirname(p['dst']))
                                 shutil.copy(**p)
-                                self.inc_snap_time(self.feed_snap_interval)
                             except:
                                 exc_type, exc_value, exc_traceback = sys.exc_info()
                                 log('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+                            finally:
+                                self.inc_snap_time(self.feed_snap_interval)    
                             
                         log('service_snap() - delete {src}'.format(**p), logger.DEBUG)    
                         os.remove(os.path.join(jpg_dir, jpg))
@@ -130,7 +131,7 @@ class Hkd2_Feed():
         
     
     def inc_snap_time(self, inc_sec):
-        self.snap_time = time.time() + inc_sec
+        self.snap_time += inc_sec
         
     
 class Kmotion_Hkd2(Process):
