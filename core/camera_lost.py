@@ -64,11 +64,12 @@ class CameraLost:
             need_reboot = True
             self.restart_thread(self.feed_thread)
             time.sleep(60)
-            for t in range(600):
+            for t in range(60):
                 try:
                     res = urllib.urlopen(self.feed_url)
-                    try:                
-                        if res.getcode() == 200:
+                    try:     
+                        text1 = res.read(1)
+                        if res.getcode() == 200 and len(text1) > 0:
                             need_reboot = False 
                             break
                     finally:
@@ -89,12 +90,12 @@ class CameraLost:
     def reboot_camera(self):
         try:
             res = urllib.urlopen(self.reboot_url)
-            try:                  
-                if res.getcode() == 200:
+            try:    
+                if res.getcode() == 200:              
                     self.log('reboot {0} success'.format(self.feed), logger.DEBUG)   
                     time.sleep(60) 
                 else:
-                    self.log('reboot {0} with status code {1}'.format(self.feed, res.getcode()), logger.DEBUG)
+                    self.log('reboot {0} failed with status code {1}'.format(self.feed, res.getcode()), logger.DEBUG)
             finally:
                 res.close()
         except:
@@ -108,7 +109,7 @@ class CameraLost:
                 if res.getcode() == 200:
                     self.log('restart feed_thread {feed_thread} success'.format(**{'feed_thread':thread}), logger.DEBUG) 
                 else:
-                    self.log('restart feed_thread {feed_thread} with status code {code}'.format({'feed_thread':thread, 'code':res.getcode()}), logger.DEBUG)
+                    self.log('restart feed_thread {feed_thread} failed with status code {code}'.format({'feed_thread':thread, 'code':res.getcode()}), logger.DEBUG)
             finally:
                 res.close() 
         except:
