@@ -1,6 +1,7 @@
 *.pyc
 core/motion_conf/*
 core/masks/*
+event/
 www/vhosts/*
 www/passwords/users_digest
 www/apache_logs/*

@@ -167,13 +167,14 @@ function hidehint() {
 	</div>
 	<!--<script type="text/javascript" src="js/index.js"></script>-->
 <?php
+$debug = false;
 $user=!empty($_SERVER["PHP_AUTH_USER"])?$_SERVER["PHP_AUTH_USER"]:"";
-if ($user=='admin') {
+if ($debug and $user=='admin') {
     echo '<script type="text/javascript" src="js/index.js"></script>';
 } else {
     echo '<script type="text/javascript" src="js/index-min.js"></script>';
 }
-?>	
+?>
 
 	
 </div>

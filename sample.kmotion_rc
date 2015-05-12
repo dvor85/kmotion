@@ -1,0 +1,15 @@
+[dirs]
+images_dbase_dir = /mnt/kmotion/images_dbase
+ramdisk_dir = /dev/shm/kmotion_ramdisk
+
+[misc]
+port = 8100
+
+[storage]
+images_dbase_limit_gb = 480
+
+[version]
+string = 6.0
+title=Видеонаблюдение
+
+
