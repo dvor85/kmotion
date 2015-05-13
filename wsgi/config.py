@@ -1,4 +1,4 @@
-import os, sys, json, datetime,traceback
+import os, sys, json, datetime, traceback
 
 
 class ConfigRW():
@@ -35,7 +35,8 @@ class ConfigRW():
             print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
         return username
     
-    def parseStr(self, s):
+    @staticmethod
+    def parseStr(s):
         try:
             return int(s)
         except:
@@ -48,6 +49,13 @@ class ConfigRW():
                     return False
         return s
     
+    @staticmethod
+    def uniq(seq):
+        # order preserving
+        noDupes = []
+        [noDupes.append(i) for i in seq if noDupes.count(i) == 0]
+        return noDupes
+    
     def read(self):
         max_feed = 1
         config = {"ramdisk_dir": self.ramdisk_dir,
@@ -57,6 +65,21 @@ class ConfigRW():
                   "display_feeds": {}
                   }
         exclude_options = ('feed_reboot_url',)
+        
+        displays = {1: 1,
+                    2: 4,
+                    3: 9,
+                    4: max_feed,
+                    5: 6,
+                    6: 13,
+                    7: 8,
+                    8: 10,
+                    9: 2, 
+                    10: 2, 
+                    11: 2, 
+                    12: 2}
+        for display in displays.keys():
+            config['display_feeds'][display] = []
                 
         for section in self.www_parser.sections():
             try:
@@ -66,10 +89,10 @@ class ConfigRW():
                         if k in exclude_options:
                             continue
                         if 'display_feeds_' in k:                        
-                            display = self.parseStr(k.replace('display_feeds_', ''))
-                            config['display_feeds'][display] = [self.parseStr(i) for i in v.split(',')]   
+                            display = ConfigRW.parseStr(k.replace('display_feeds_', ''))
+                            config['display_feeds'][display] = ConfigRW.uniq([ConfigRW.parseStr(i) for i in v.split(',') if self.www_parser.has_section('motion_feed%02i' % int(i))])                            
                         else:
-                            conf[k] = self.parseStr(v) 
+                            conf[k] = ConfigRW.parseStr(v) 
                     except:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
                         print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})                       
@@ -84,6 +107,21 @@ class ConfigRW():
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
                 
+        displays[4] = max_feed
+        for display in displays.keys():
+            try:
+                while len(config['display_feeds'][display]) < min(max_feed, displays[display]):
+                    for i in range(1, max_feed + 1):
+                        try:
+                            if i not in config['display_feeds'][display]:
+                                config['display_feeds'][display].append(i)
+                                break
+                        except:
+                            pass
+            except:
+                pass
+  
+            
         return json.dumps(config)
     
     def write(self):

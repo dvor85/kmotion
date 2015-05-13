@@ -996,7 +996,7 @@ KM.display_live_ = function () {
         
         try {
             var feed = KM.config.display_feeds[display_num][html_count++];
-            if (feed>KM.max_feed()) {
+            if (!feed || feed>KM.max_feed()) {
                 return;
             }
             if (KM.config.feeds[feed].feed_enabled) {
@@ -1005,7 +1005,7 @@ KM.display_live_ = function () {
                 if (KM.config.feeds[feed].feed_name) {
                     text = KM.config.feeds[feed].feed_name;                
                 } else {                
-                    text = 'Cam ' + (html_count+1);
+                    text = 'Cam ' + feed;
                     KM.config.feeds[feed].feed_name = text;
                 }
             }

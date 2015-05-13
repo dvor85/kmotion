@@ -56,7 +56,7 @@ class Archive():
                     if self.www_rc_parser.getboolean(section, 'feed_enabled'):                        
                         feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
                         if os.path.isdir(feed_dir):
-                            title = self.www_rc_parser.get(section, 'feed_name') 
+                            title = 'Cam %02i' % feed 
                             with open(os.path.join(feed_dir, 'title'), 'r') as f_obj: 
                                 title = f_obj.read()
                 

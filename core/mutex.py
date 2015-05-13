@@ -34,7 +34,7 @@ class Mutex:
         self.log('init_mutex() - init mutex : %s' % self.mutex, logger.DEBUG)
         self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
         if not os.path.isdir(self.mutex_dir):
-            os.makedirs(self.mutex_dir, 0755)
+            os.makedirs(self.mutex_dir, 0775)
         
         
     def acquire(self):

@@ -1,7 +1,7 @@
 """
 This process update configs from version 5.6- to 6.0+
 """
-import os
+import os,sys
 from core.mutex_parsers import *
 
 class Update(object):
@@ -10,7 +10,7 @@ class Update(object):
         self.kmotion_dir = kmotion_dir
         
     def update_www_rcs(self):
-        exclude_options = ['misc1_full_screen',
+        exclude_options = ('misc1_full_screen',
                            'misc1_interleave',
                            'misc1_low_bandwidth',
                            'misc1_low_cpu',
@@ -23,12 +23,13 @@ class Update(object):
                            'misc3_config_hash',
                            'misc3_secure',
                            'feed_movie_enabled',
-                           'feed_smovie_enabled']
+                           'feed_smovie_enabled',)
         
         www_rcs = [x for x in os.listdir(os.path.join(self.kmotion_dir, 'www')) if x.startswith('www_rc')]
         for www_rc in www_rcs:
             print 'update %s' % www_rc 
             parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
+                    
             for section in parser.sections():
                 
                 for k, value in parser.items(section):
@@ -50,8 +51,8 @@ class Update(object):
                         parser.set(section, 'feed_enabled', str(feed_enabled))
                         continue
                     
-                    feed = section.replace('motion_feed', '')                    
-                    sh_ = os.path.join(self.kmotion_dir, 'event', '%s.sh' % feed)
+                    feed = int(section.replace('motion_feed', ''))                    
+                    sh_ = os.path.join(self.kmotion_dir, 'event', '%02i.sh' % feed)
                     if os.path.isfile(sh_):
                         with open(sh_, 'r') as sh_file:
                             sh_lines = sh_file.read().splitlines()
@@ -61,7 +62,7 @@ class Update(object):
                             if kv[1].endswith("'") or kv[1].endswith('"'):
                                 kv[1] = kv[1][1:-1]
                             sh_dict[kv[0]] = kv[1]
-                        parser.set(section, 'feed_actions', 'rtsp2mp4')     
+                        parser.set(section, 'feed_actions', 'rtsp2mp4 first_snap')     
                         parser.set(section, 'feed_reboot_url', sh_dict['reboot_url'].replace('$ip', sh_dict['ip']))
                         parser.set(section, 'rtsp2mp4_grab_url', sh_dict['url'].replace('$ip', sh_dict['ip']))
                         parser.set(section, 'rtsp2mp4_recode', str(sh_dict['recode'] == 1))
@@ -81,8 +82,12 @@ class Update(object):
         mutex_kmotion_parser_wr(self.kmotion_dir, parser)
         
 if __name__ == '__main__':
-    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
-    upd = Update(kmotion_dir)    
-    upd.update_kmotion_rc()    
-    upd.update_www_rcs()
+    if os.getuid() == 0:
+        print "Can't run as root!"
+    else:    
+        kmotion_dir = os.path.abspath(os.path.dirname(__file__))
+        upd = Update(kmotion_dir)    
+        upd.update_kmotion_rc()    
+        upd.update_www_rcs()
+    
                     
