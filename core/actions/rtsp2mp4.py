@@ -3,7 +3,6 @@
 '''
 
 import os, sys, subprocess, shlex, time, datetime, signal
-from urlparse import urlsplit
 import sample
 
 
@@ -36,34 +35,13 @@ class rtsp2mp4(sample.sample):
             self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
             self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
             
-            self.feed_grab_url = rtsp2mp4.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, '%s_grab_url' % self.key), self.feed_username, self.feed_password)
+            from core.utils import add_userinfo
+            self.feed_grab_url = add_userinfo(www_parser.get('motion_feed%02i' % self.feed, '%s_grab_url' % self.key), self.feed_username, self.feed_password)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)            
         
             
-    @staticmethod    
-    def add_userinfo(src_url, username, password):
-        url = urlsplit(src_url)  
-        params = {'scheme':url.scheme, 'hostname':url.hostname, 'path':url.path}
-        if url.query == '': 
-            params['query'] = '' 
-        else: 
-            params['query'] = '?%s' % url.query
-        if url.username is None:
-            params['username'] = username
-        else:
-            params['username'] = url.username
-        if url.password is None:
-            params['password'] = password
-        else:
-            params['password'] = url.password
-        if url.port is None:
-            params['port'] = ''
-        else:
-            params['port'] = ':%i' % url.port 
-        return "{scheme}://{username}:{password}@{hostname}{port}{path}{query}".format(**params)    
-    
     def get_grabber_pids(self):
         try:
             p_obj = subprocess.Popen('pgrep -f "^avconv.+{src}.*"'.format(**{'src': self.feed_grab_url}), stdout=subprocess.PIPE, shell=True)

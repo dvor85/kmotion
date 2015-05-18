@@ -5,60 +5,42 @@
 
 import logger, subprocess, os, sys, time, urllib
 from mutex_parsers import *
-from urlparse import urlsplit
-
+from utils import add_userinfo
 
 class CameraLost:
     '''
     classdocs
     '''
-    def __init__(self, kmotion_dir, feed):        
-        self.log = logger.Logger('camera_lost', logger.DEBUG)
-        self.kmotion_dir = kmotion_dir
-        self.feed = int(feed)
+    def __init__(self, kmotion_dir, feed): 
+        try:       
+            self.log = logger.Logger('camera_lost', logger.DEBUG)
+            self.kmotion_dir = kmotion_dir
+            self.feed = int(feed)
+            
+            www_parser = mutex_www_parser_rd(self.kmotion_dir)
+            self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
+            self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
+            self.feed_list = []
+            for section in www_parser.sections():
+                try:
+                    if 'motion_feed' in section:
+                        feed = int(section.replace('motion_feed', ''))
+                        if www_parser.getboolean(section, 'feed_enabled'):
+                            self.feed_list.append(feed)
+                except:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
+            self.feed_list.sort()
+            self.feed_thread = self.feed_list.index(self.feed) + 1
+            
+            urllib.FancyURLopener.prompt_user_passwd = lambda *a, **k: (None, None)
+            self.feed_url = add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_url'), self.feed_username, self.feed_password)
+            self.reboot_url = add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'), self.feed_username, self.feed_password)
+        except:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
         
-        www_parser = mutex_www_parser_rd(self.kmotion_dir)
-        self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
-        self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
-        self.feed_list = []
-        for section in www_parser.sections():
-            try:
-                if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed', ''))
-                    if www_parser.getboolean(section, 'feed_enabled'):
-                        self.feed_list.append(feed)
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
-        self.feed_list.sort()
-        self.feed_thread = self.feed_list.index(self.feed) + 1
         
-        self.reboot_url = CameraLost.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'), self.feed_username, self.feed_password)
-        self.feed_url = CameraLost.add_userinfo(www_parser.get('motion_feed%02i' % self.feed, 'feed_url'), self.feed_username, self.feed_password)
-        urllib.FancyURLopener.prompt_user_passwd = lambda *a, **k: (None, None)
-        
-    @staticmethod    
-    def add_userinfo(src_url, username, password):
-        url = urlsplit(src_url) 
-        params = {'scheme':url.scheme, 'hostname':url.hostname, 'path':url.path}
-        if url.query == '': 
-            params['query'] = '' 
-        else: 
-            params['query'] = '?%s' % url.query
-        if url.username is None:
-            params['username'] = username
-        else:
-            params['username'] = url.username
-        if url.password is None:
-            params['password'] = password
-        else:
-            params['password'] = url.password
-        if url.port is None:
-            params['port'] = ''
-        else:
-            params['port'] = ':%i' % url.port 
-        return "{scheme}://{username}:{password}@{hostname}{port}{path}{query}".format(**params)
-                
     def main(self):
         if len(self.get_prev_instances()) == 0:            
             need_reboot = True

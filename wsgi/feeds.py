@@ -5,7 +5,7 @@ class Feeds():
     
     def __init__(self, kmotion_dir, environ):       
         sys.path.append(kmotion_dir) 
-        from core.request import Request
+        from core.utils import Request
         self.kmotion_dir = kmotion_dir 
         self.environ = environ
         self.params = Request(environ)

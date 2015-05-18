@@ -5,7 +5,7 @@ class ConfigRW():
     
     def __init__(self, kmotion_dir, environ): 
         sys.path.append(kmotion_dir)  
-        from core.request import Request             
+        from core.utils import Request             
         self.kmotion_dir = kmotion_dir
         self.environ = environ
         self.params = Request(self.environ)
@@ -78,7 +78,7 @@ class ConfigRW():
                     10: 2, 
                     11: 2, 
                     12: 2}
-        for display in displays.keys():
+        for display in displays:
             config['display_feeds'][display] = []
                 
         for section in self.www_parser.sections():
@@ -107,14 +107,14 @@ class ConfigRW():
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print 'error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value})
                 
-        displays[4] = max_feed
-        for display in displays.keys():
+        displays[4] = len(config['feeds'])
+        for display in displays:
             try:
-                while len(config['display_feeds'][display]) < min(max_feed, displays[display]):
-                    for i in range(1, max_feed + 1):
+                while len(config['display_feeds'][display]) < min(len(config['feeds']), displays[display]):
+                    for feed in config['feeds']:
                         try:
-                            if i not in config['display_feeds'][display]:
-                                config['display_feeds'][display].append(i)
+                            if feed not in config['display_feeds'][display]:
+                                config['display_feeds'][display].append(feed)
                                 break
                         except:
                             pass

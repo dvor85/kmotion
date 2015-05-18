@@ -3,6 +3,7 @@ This process update configs from version 5.6- to 6.0+
 """
 import os,sys
 from core.mutex_parsers import *
+from core.utils import add_userinfo
 
 class Update(object):
 
@@ -62,8 +63,13 @@ class Update(object):
                             if kv[1].endswith("'") or kv[1].endswith('"'):
                                 kv[1] = kv[1][1:-1]
                             sh_dict[kv[0]] = kv[1]
+                           
+                                      
+                        with open(os.path.join(self.kmotion_dir, '.admin'), 'r') as admin:
+                            userpass = admin.read().strip().split(':')
+                            parser.set(section, 'feed_reboot_url', add_userinfo(sh_dict['reboot_url'].replace('$ip', sh_dict['ip']), userpass[0], userpass[1]))
+                                
                         parser.set(section, 'feed_actions', 'rtsp2mp4 first_snap')     
-                        parser.set(section, 'feed_reboot_url', sh_dict['reboot_url'].replace('$ip', sh_dict['ip']))
                         parser.set(section, 'rtsp2mp4_grab_url', sh_dict['url'].replace('$ip', sh_dict['ip']))
                         parser.set(section, 'rtsp2mp4_recode', str(sh_dict['recode'] == 1))
                         parser.set(section, 'rtsp2mp4_sound', str(sh_dict['sound'] == 1))

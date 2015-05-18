@@ -19,4 +19,5 @@ kmotion_rc
 tar.cmd
 .project
 .pydevproject
-/gitpush
+gitpush
+.admin

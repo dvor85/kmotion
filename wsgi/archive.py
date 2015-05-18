@@ -13,7 +13,7 @@ import traceback
 class Archive():
     def __init__(self, kmotion_dir, environ):
         sys.path.append(kmotion_dir)
-        from core.request import Request
+        from core.utils import Request
         from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd        
         self.kmotion_dir = kmotion_dir
         self.environ = environ
