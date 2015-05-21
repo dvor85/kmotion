@@ -19,6 +19,7 @@ log = logger.Logger('hkd2', logger.WARNING)
 class Hkd2_Feed():
     
     def __init__(self, kmotion_dir, feed, semaphore):
+        self.log = log
         self.kmotion_dir = kmotion_dir  # the 'root' directory of kmotion
         self.feed = int(feed)  # the feed number
         self.ramdisk_dir = ''  # the 'root' dir of the ramdisk
@@ -47,10 +48,10 @@ class Hkd2_Feed():
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError): 
-            log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
+            self.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
                        sys.exc_info()[1], logger.CRIT)
-            log('** CRITICAL ERROR ** killing all daemons and terminating', logger.CRIT)
-            sys.exit()
+            self.log('** CRITICAL ERROR ** killing all daemons and terminating', logger.CRIT)
+            # sys.exit()
             
         parser = mutex_www_parser_rd(self.kmotion_dir) 
         self.feed_snap_enabled = parser.getboolean('motion_feed%02i' % self.feed, 'feed_snap_enabled')
@@ -87,25 +88,25 @@ class Hkd2_Feed():
                     
                     if jpg != 'last.jpg':
                         p = {'src':os.path.join(jpg_dir, jpg),
-                             'dst':os.path.join(self.images_dbase_dir, 
-                                                datetime.fromtimestamp(jpg_time).strftime('%Y%m%d'), 
+                             'dst':os.path.join(self.images_dbase_dir,
+                                                datetime.fromtimestamp(jpg_time).strftime('%Y%m%d'),
                                                 '%02i' % self.feed,
-                                                'snap', 
+                                                'snap',
                                                 '%s.jpg' % datetime.fromtimestamp(jpg_time).strftime('%H%M%S'))}
                         
                         if self.feed_snap_enabled and self.snap_time <= jpg_time:
                             try:
-                                log('service_snap() - copy {src} to {dst}'.format(**p), logger.DEBUG)
+                                self.log('service_snap() - copy {src} to {dst}'.format(**p), logger.DEBUG)
                                 if not os.path.isdir(os.path.dirname(p['dst'])):
                                     os.makedirs(os.path.dirname(p['dst']))
                                 shutil.copy(**p)
                             except:
                                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                                log('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+                                self.log('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
                             finally:
                                 self.inc_snap_time(self.feed_snap_interval)    
                             
-                        log('service_snap() - delete {src}'.format(**p), logger.DEBUG)    
+                        self.log('service_snap() - delete {src}'.format(**p), logger.DEBUG)    
                         os.remove(os.path.join(jpg_dir, jpg))
                         
                         feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
@@ -139,6 +140,7 @@ class Kmotion_Hkd2(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
+        self.log = log
         self.kmotion_dir = kmotion_dir
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
@@ -147,9 +149,9 @@ class Kmotion_Hkd2(Process):
         self.feed_list = []
         for section in www_parser.sections():
             try:
-                if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed', ''))
+                if 'motion_feed' in section:                    
                     if www_parser.getboolean(section, 'feed_enabled'):
+                        feed = int(section.replace('motion_feed', ''))
                         self.feed_list.append(feed)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -168,7 +170,7 @@ class Kmotion_Hkd2(Process):
         """
         while True:
             try:
-                log('starting daemon ...', logger.CRIT)
+                self.log('starting daemon ...', logger.CRIT)
                 self.instance_list = []  # list of Hkd2_Feed instances
                 for feed in self.feed_list:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed, self.semaphore))
@@ -177,19 +179,16 @@ class Kmotion_Hkd2(Process):
                     for inst in self.instance_list:
                         Thread(target=inst.main).start()
             except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                exc_trace = traceback.extract_tb(exc_traceback)[-1]
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                exc_trace = traceback.extract_tb(exc_tb)[-1]
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-                 
-                log('** CRITICAL ERROR ** crash - type: %s' 
-                           % exc_type, logger.CRIT)
-                log('** CRITICAL ERROR ** crash - value: %s' 
-                           % exc_value, logger.CRIT)
-                log('** CRITICAL ERROR ** crash - traceback: %s' 
-                           % exc_loc1, logger.CRIT)
-                log('** CRITICAL ERROR ** crash - traceback: %s' 
-                           % exc_loc2, logger.CRIT)
+                
+                self.log('** CRITICAL ERROR ** crash - type: %s' % exc_type, logger.CRIT)
+                self.log('** CRITICAL ERROR ** crash - value: %s' % exc_value, logger.CRIT)
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1, logger.CRIT)
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2, logger.CRIT) 
+                del(exc_tb)
                 time.sleep(60)
 
 

@@ -119,9 +119,9 @@ class WWWLog:
         excepts : 
         return  : none
         """
+        mutex = Mutex(self.kmotion_dir, 'logs')
+        mutex.acquire()
         try:
-            mutex = Mutex(self.kmotion_dir, 'logs')
-            mutex.acquire()
             with open(self.log_file, 'r+') as f_obj:
                 events = f_obj.read().splitlines()
                 events.append(new_event)

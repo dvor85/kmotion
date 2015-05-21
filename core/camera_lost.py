@@ -23,9 +23,9 @@ class CameraLost:
             self.feed_list = []
             for section in www_parser.sections():
                 try:
-                    if 'motion_feed' in section:
-                        feed = int(section.replace('motion_feed', ''))
+                    if 'motion_feed' in section:                        
                         if www_parser.getboolean(section, 'feed_enabled'):
+                            feed = int(section.replace('motion_feed', ''))
                             self.feed_list.append(feed)
                 except:
                     exc_type, exc_value, exc_traceback = sys.exc_info()

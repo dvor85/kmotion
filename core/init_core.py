@@ -4,7 +4,7 @@
 Exports various methods used to initialize core configuration
 """
 
-import os, sys,logger,subprocess
+import os, sys, logger, subprocess
 from mutex_parsers import *
 
 class InitCore:
@@ -46,9 +46,9 @@ class InitCore:
         self.feed_list = []
         for section in self.www_parser.sections():
             try:
-                if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed',''))
+                if 'motion_feed' in section:                    
                     if self.www_parser.getboolean(section, 'feed_enabled'):
+                        feed = int(section.replace('motion_feed', ''))
                         self.feed_list.append(feed)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -66,9 +66,9 @@ class InitCore:
         return  : none
         """
         
-        self.log('init_ramdisk_dir() - creating \'states\' folder', logger.DEBUG)
         states_dir = os.path.join(self.ramdisk_dir, 'states')
         if not os.path.isdir(states_dir):
+            self.log('init_ramdisk_dir() - creating \'states\' folder', logger.DEBUG)
             os.makedirs(states_dir)
 
         for sfile in os.listdir(states_dir):
@@ -82,12 +82,6 @@ class InitCore:
             self.log('init_ramdisk_dir() - creating \'events\' folder', logger.DEBUG) 
             os.makedirs(events_dir)
             
-        for efile in os.listdir(events_dir):
-            event_file = os.path.join(events_dir, efile)
-            if os.path.isfile(event_file) and os.path.getsize(event_file) == 0:
-                self.log('delete - {0}'.format(event_file), logger.DEBUG)
-                os.unlink(event_file)
-        
         for feed in self.feed_list:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)): 
                 try:
@@ -96,41 +90,6 @@ class InitCore:
                 except OSError:
                     pass
                     
-        if not os.path.isdir('%s/tmp' % self.ramdisk_dir): 
-            try:
-                os.makedirs('%s/tmp' % self.ramdisk_dir)
-                self.log('init_ramdisk_dir() - creating \'tmp\' folder', logger.DEBUG)
-            except OSError:
-                pass   
-            
-    def set_uid_gid_mutex(self, uid, gid):
-        """
-        Set the 'mutex', 'logs', 'www_rc', 'kmotion_rc' and 'servo_state' directories 
-        with the appropreate 'uid' and 'gid'to allow the apache2 user to have write 
-        access.
-        
-        args    : kmotion_dir ... the 'root' directory of kmotion 
-                  uid ...         the user id
-                  gid ...         the group id of apache2
-        excepts : 
-        return  : none
-        """
-        
-        mutex_ = '%s/www/mutex' % self.kmotion_dir
-        logs = '%s/logs' % mutex_
-        www_rc = '%s/www_rc' % mutex_
-        kmotion_rc = '%s/kmotion_rc' % mutex_
-        
-        os.chown(mutex_, uid, gid)
-        os.chmod(mutex_, 0770)
-        os.chown(logs, uid, gid)
-        os.chmod(logs, 0770)
-        os.chown(www_rc, uid, gid)
-        os.chmod(www_rc, 0770)
-        os.chown(kmotion_rc, uid, gid)
-        os.chmod(kmotion_rc, 0770)
-    
-
     def set_uid_gid_named_pipes(self, uid, gid):
         """
         Generate named pipes for function, settings and ptz communications with the 
@@ -172,11 +131,11 @@ class InitCore:
         AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
 
         self.www_dir = os.path.join(self.kmotion_dir, 'www/www') 
-        self.logs_dir = os.path.join(self.kmotion_dir,'www/apache_logs')
-        self.wsgi_scripts = os.path.join(self.kmotion_dir,'wsgi')
+        self.logs_dir = os.path.join(self.kmotion_dir, 'www/apache_logs')
+        self.wsgi_scripts = os.path.join(self.kmotion_dir, 'wsgi')
         
         try:
-            vhost_dir = os.path.join(self.kmotion_dir,'www/vhosts')
+            vhost_dir = os.path.join(self.kmotion_dir, 'www/vhosts')
             if not os.path.isdir(vhost_dir):
                 os.makedirs(vhost_dir)
             with open('%s/www/vhosts/kmotion' % self.kmotion_dir, 'w') as f_obj1:

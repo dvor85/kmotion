@@ -51,9 +51,9 @@ class Archive():
         feeds_list = {}
         for section in self.www_rc_parser.sections():
             try:
-                if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed', ''))
-                    if self.www_rc_parser.getboolean(section, 'feed_enabled'):                        
+                if 'motion_feed' in section:                    
+                    if self.www_rc_parser.getboolean(section, 'feed_enabled'):
+                        feed = int(section.replace('motion_feed', ''))                        
                         feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
                         if os.path.isdir(feed_dir):
                             title = 'Cam %02i' % feed 

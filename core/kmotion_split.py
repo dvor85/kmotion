@@ -55,21 +55,18 @@ class Kmotion_split(Process):
                 time.sleep(15)
                 events = os.listdir(self.events_dir)
                 for event in events:
-                    threading.Thread(target=self.main,args=(event,)).start()
+                    threading.Thread(target=self.main, args=(event,)).start()
                 
             except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                exc_trace = traceback.extract_tb(exc_traceback)[-1]
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                exc_trace = traceback.extract_tb(exc_tb)[-1]
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-                 
-                self.log('** CRITICAL ERROR ** crash - type: %s' 
-                           % exc_type, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - value: %s' 
-                           % exc_value, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - traceback: %s' 
-                           % exc_loc1, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - traceback: %s' 
-                           % exc_loc2, logger.CRIT)
+                
+                self.log('** CRITICAL ERROR ** crash - type: %s' % exc_type, logger.CRIT)
+                self.log('** CRITICAL ERROR ** crash - value: %s' % exc_value, logger.CRIT)
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1, logger.CRIT)
+                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2, logger.CRIT) 
+                del(exc_tb)
                 time.sleep(60)
                 

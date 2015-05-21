@@ -3,7 +3,7 @@ This process update configs from version 5.6- to 6.0+
 """
 import os,sys
 from core.mutex_parsers import *
-from core.utils import add_userinfo
+from core.utils import add_userinfo, parseStr
 
 class Update(object):
 
@@ -62,7 +62,7 @@ class Update(object):
                             kv = [x.strip() for x  in l[7:].split('=')]
                             if kv[1].endswith("'") or kv[1].endswith('"'):
                                 kv[1] = kv[1][1:-1]
-                            sh_dict[kv[0]] = kv[1]
+                            sh_dict[kv[0]] = parseStr(kv[1])
                            
                                       
                         with open(os.path.join(self.kmotion_dir, '.admin'), 'r') as admin:

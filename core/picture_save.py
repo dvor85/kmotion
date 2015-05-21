@@ -22,7 +22,7 @@ def main(src):
             os.unlink(last_jpg)        
         os.symlink(dst, last_jpg)
         
-        #with open(, 'w') as f_obj:
+        # with open(, 'w') as f_obj:
         #    f_obj.write(dst)
     
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ have been moved to this seperate module to reduce issues when the motion API
 changes. All changes should be in just this module.
 """
 
-import os,sys
+import os, sys
 import logger
 from mutex_parsers import *
 
@@ -26,9 +26,9 @@ class InitMotion:
         self.feed_list = []
         for section in self.www_parser.sections():
             try:
-                if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed',''))
+                if 'motion_feed' in section:                    
                     if self.www_parser.getboolean(section, 'feed_enabled'):
+                        feed = int(section.replace('motion_feed', ''))
                         self.feed_list.append(feed)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()

@@ -74,9 +74,9 @@ class ConfigRW():
                     6: 13,
                     7: 8,
                     8: 10,
-                    9: 2, 
-                    10: 2, 
-                    11: 2, 
+                    9: 2,
+                    10: 2,
+                    11: 2,
                     12: 2}
         for display in displays:
             config['display_feeds'][display] = []
