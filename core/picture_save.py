@@ -18,7 +18,7 @@ def main(src):
             
         dst = os.path.join(dst_dir, src_name)
         image_resize(src, dst, 640, 480)
-        if os.path.exists(last_jpg):
+        if os.path.lexists(last_jpg):
             os.unlink(last_jpg)        
         os.symlink(dst, last_jpg)
         
