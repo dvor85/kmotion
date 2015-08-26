@@ -70,7 +70,7 @@ class rtsp2mp4(sample.sample):
         else:
             vcodec = '-c:v copy'
             
-        grab = 'avconv -rtsp_transport tcp -n -i {src} {vcodec} {audio} {dst}'.format(**{'src':src, 'dst':dst, 'vcodec':vcodec, 'audio':audio})
+        grab = 'avconv -threads auto -rtsp_transport tcp -n -i {src} {vcodec} {audio} {dst}'.format(**{'src':src, 'dst':dst, 'vcodec':vcodec, 'audio':audio})
         
         try:
             from subprocess import DEVNULL  # py3k

@@ -63,17 +63,37 @@ class Update(object):
                             if kv[1].endswith("'") or kv[1].endswith('"'):
                                 kv[1] = kv[1][1:-1]
                             sh_dict[kv[0]] = parseStr(kv[1])
-                           
-                                      
-                        with open(os.path.join(self.kmotion_dir, '.admin'), 'r') as admin:
-                            userpass = admin.read().strip().split(':')
-                            parser.set(section, 'feed_reboot_url', add_userinfo(sh_dict['reboot_url'].replace('$ip', sh_dict['ip']), userpass[0], userpass[1]))
+                    
+                        _admin = os.path.join(self.kmotion_dir, '.admin')  
+                        if os.path.isfile(_admin):            
+                            with open(_admin, 'r') as admin:
+                                userpass = admin.read().strip().split(':')
+                                parser.set(section, 'feed_reboot_url', add_userinfo(sh_dict['reboot_url'].replace('$ip', sh_dict['ip']), userpass[0], userpass[1]))
                                 
                         parser.set(section, 'feed_actions', 'rtsp2mp4 first_snap')     
                         parser.set(section, 'rtsp2mp4_grab_url', sh_dict['url'].replace('$ip', sh_dict['ip']))
                         parser.set(section, 'rtsp2mp4_recode', str(sh_dict['recode'] == 1))
                         parser.set(section, 'rtsp2mp4_sound', str(sh_dict['sound'] == 1))
                         parser.set(section, 'feed_kbs', str(sh_dict['bitrate']))
+                    
+                    vc_ = os.path.join(self.kmotion_dir, 'virtual_motion_conf', 'thread%02i.conf' % feed)
+                    if os.path.isfile(vc_):
+                        with open(vc_, 'r') as vc_file:
+                            vc_lines = vc_file.read().splitlines()
+                        vc_dict = {}
+                        for l in vc_lines:
+                            try:
+                                kv = [x.strip() for x in l.split(' ')]
+                                vc_dict[kv[0]] = parseStr(kv[1])
+                            except:
+                                pass
+                        try:
+                            parser.set(section, 'feed_threshold', str(vc_dict['threshold']))
+                            parser.set(section, 'feed_quality', str(vc_dict['quality']))
+                        except Exception as ex:
+                            print 'Error {0} while set settings from {1}'.format(ex, vc_)
+                            
+                            
                         
                 elif 'schedule' in section or 'system' in section:
                     parser.remove_section(section)     

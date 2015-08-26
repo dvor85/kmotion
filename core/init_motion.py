@@ -265,6 +265,9 @@ webcam_localhost off
                 print >> f_obj1, 'width %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_width') 
                 print >> f_obj1, 'height %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_height') 
                 
+                print >> f_obj1, 'threshold %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_threshold')
+                print >> f_obj1, 'quality %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_quality') 
+                
                 # show motion box
                 if self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_show_box'): 
                     print >> f_obj1, 'locate on'

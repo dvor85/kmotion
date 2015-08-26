@@ -3237,6 +3237,7 @@ KM.display_config_ = function () {
                   <div class="config_text">URL:</div>\
                   <div class="config_text">Name:</div>\
                   <div class="config_text">Width:</div>\
+                  <div class="config_text">Threshold:</div>\
                 </div>\
                 <div class="config_tick_margin">\
                 <div class="config_text">\
@@ -3253,6 +3254,8 @@ KM.display_config_ = function () {
                   <input type="text" id="feed_lgn_name" style="width: 190px;  margin-left: 1px;" onchange="KM.conf_feed_highlight();" /></div>\
                   <div class="config_text">\
                   <input type="text" id="feed_width" size="4" onchange="KM.conf_feed_highlight();" /><span>px</span></div>\
+                  <div class="config_text">\
+                  <input type="text" id="feed_threshold" size="3" onchange="KM.conf_feed_highlight();" /><span>px</span></div>\
                 </div></div>\
                 <div class="config_tick_margin">\
                 <div class="config_tick_margin">\
@@ -3295,6 +3298,7 @@ KM.display_config_ = function () {
                 <div class="config_text_margin" style="width:412px;">\
                   of : <input type="text" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight();" />Seconds, (300 Seconds recommended)\
                 </div>\
+                <div class="config_text">Quality of snapshots: <input type="text" id="feed_quality" size="3" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;">%</span></div>\
                 <br /><hr style="margin:10px" class="clear_float"/>\
                 </div><br />';
         
