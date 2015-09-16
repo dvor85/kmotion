@@ -3890,16 +3890,17 @@ KM.display_config_ = function () {
         }
 
         function update_bars() {
+            var coef = dbase.cpu * 1.5;
             // load average 1 min
             document.getElementById('bar_value1').innerHTML = dbase.l1;
-            var tmp = Math.min(dbase.l1, 1.5);
-            document.getElementById('bar_fground1').style.width = (tmp * (MAX_PX / 1.5)) + 'px';
+            var tmp = Math.min(dbase.l1, coef);
+            document.getElementById('bar_fground1').style.width = (tmp * (MAX_PX / coef)) + 'px';
 
             // load average 5 min
             document.getElementById('bar_value2').innerHTML = dbase.l2;
-            tmp = Math.min(dbase.l2, 1.5);
-            document.getElementById('bar_fground2').style.width = (tmp * (MAX_PX / 1.5)) + 'px';
-            if (tmp >= 1) {
+            tmp = Math.min(dbase.l2, coef);
+            document.getElementById('bar_fground2').style.width = (tmp * (MAX_PX / coef)) + 'px';
+            if (tmp >= dbase.cpu) {
                 document.getElementById('bar_fground2').style.backgroundColor = BAR_ALERT;
             } else {
                 document.getElementById('bar_fground2').style.backgroundColor = BAR_OK;
@@ -3907,9 +3908,9 @@ KM.display_config_ = function () {
 
             // load average 15 min
             document.getElementById('bar_value3').innerHTML = dbase.l3;
-            tmp = Math.min(dbase.l3, 1.5);
-            document.getElementById('bar_fground3').style.width = (tmp * (MAX_PX / 1.5)) + 'px';
-            if (tmp >= 1) {
+            tmp = Math.min(dbase.l3, coef);
+            document.getElementById('bar_fground3').style.width = (tmp * (MAX_PX / coef)) + 'px';
+            if (tmp >= dbase.cpu) {
                 document.getElementById('bar_fground3').style.backgroundColor = BAR_ALERT;
             } else {
                 document.getElementById('bar_fground3').style.backgroundColor = BAR_OK;
