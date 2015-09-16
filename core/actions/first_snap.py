@@ -4,13 +4,15 @@ import shutil
 from datetime import datetime
 import sample
 
+log = None
 
 class first_snap(sample.sample):
     
     def __init__(self, kmotion_dir, feed):
         sys.path.append(kmotion_dir)
         import core.logger as logger
-        self.log = logger.Logger('action_first_snap', logger.DEBUG)
+        global log
+        log = logger.Logger('action_first_snap', logger.Logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         self.key = 'first_snap'
@@ -21,7 +23,7 @@ class first_snap(sample.sample):
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('init - error {type}: {value} while parsing kmotion_rc file'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+            log.e('init - error {type}: {value} while parsing kmotion_rc file'.format(**{'type':exc_type, 'value':exc_value}))
         
     def start(self):
         sample.sample.start(self)
@@ -38,13 +40,13 @@ class first_snap(sample.sample):
         
         if os.path.isfile(p['src']):
             try:
-                self.log('copy {src} to {dst}'.format(**p), self.log.DEBUG)
+                log('copy {src} to {dst}'.format(**p), log.DEBUG)
                 if not os.path.isdir(os.path.dirname(p['dst'])):
                     os.makedirs(os.path.dirname(p['dst']))
                 shutil.copy(**p)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('copy error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}), self.log.CRIT)
+                log.e('copy error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}))
         
         
     def end(self):

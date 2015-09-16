@@ -4,6 +4,10 @@
 import logger, os, time, subprocess
 from init_motion import InitMotion
 
+
+log = logger.Logger('motion_daemon', logger.Logger.DEBUG)
+
+
 class MotionDaemon:
     '''
     classdocs
@@ -13,7 +17,6 @@ class MotionDaemon:
         Constructor
         '''
         self.kmotion_dir = kmotion_dir
-        self.log = logger.Logger('motion_daemon', logger.DEBUG)
         self.init_motion = InitMotion(self.kmotion_dir)
         
     def is_motion_running(self):
@@ -32,18 +35,18 @@ class MotionDaemon:
             if not self.is_motion_running(): 
                 self.init_motion.init_motion_out()  # clear 'motion_out'
                 subprocess.Popen('while true; do test -z "$(pgrep -f \'^motion.+-c.*\')" -o -z "$(netstat -ntl | grep 8080)" && ( pkill -9 -f \'^motion.+-c.*\'; motion -c {kmotion_dir}/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' >> {kmotion_dir}/www/motion_out & ); sleep 2; done &'.format(**{'kmotion_dir':self.kmotion_dir}), shell=True)
-                self.log('starting motion', logger.CRIT)
+                log('starting motion')
         else:
-            self.log('no motion.conf, motion not started', logger.CRIT) 
+            log.e('no motion.conf, motion not started') 
 
             
     def stop_motion(self):        
         subprocess.call('pkill -f ".*motion.+-c.*"', shell=True)  # if motion hangs get nasty !
         if self.is_motion_running():
-            self.log('resorting to kill -9 ... ouch !', logger.DEBUG)
+            log.d('resorting to kill -9 ... ouch !')
             subprocess.call('pkill -9 -f ".*motion.+-c.*"', shell=True)  # if motion hangs get nasty !
         
-        self.log('motion killed', logger.DEBUG) 
+        log('motion killed') 
         
     
         

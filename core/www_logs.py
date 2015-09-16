@@ -12,12 +12,13 @@ import os, time
 import logger
 from mutex import Mutex
 
+log = logger.Logger('www_logs', logger.Logger.DEBUG)
+
 class WWWLog:
     
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
         self.log_file = '%s/www/logs' % self.kmotion_dir
-        self.log = logger.Logger('www_logs', logger.DEBUG)
                 
         if not os.path.isfile(self.log_file):
             with open(self.log_file, 'w') as f_obj:
@@ -39,7 +40,7 @@ class WWWLog:
         return  : none
         """
         
-        self.log('add_startup_event() - adding startup event', logger.DEBUG)       
+        log.d('add_startup_event() - adding startup event')       
         
         # if last event did not include 'shutting down' text, either the first 
         # run or a power fail crashed the system
@@ -63,7 +64,7 @@ class WWWLog:
           
         if error_flag: 
                 
-            self.log('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown', logger.DEBUG)
+            log.d('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown')
             
         # in all cases add a starting up message
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion starting up'))
@@ -78,7 +79,7 @@ class WWWLog:
         return  : none
         """
         
-        self.log('add_shutdown_event() - adding shutdown event', logger.DEBUG)
+        log.d('add_shutdown_event() - adding shutdown event')
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion shutting down'))
               
     
@@ -91,7 +92,7 @@ class WWWLog:
         return  : none
         """
         
-        self.log('add_deletion_event() - adding deletion event', logger.DEBUG)
+        log.d('add_deletion_event() - adding deletion event')
         year = date[:4]
         month = date[4:6]
         day = date[6:8]
@@ -107,7 +108,7 @@ class WWWLog:
         return  : none
         """
         
-        self.log('add_no_space_event() - adding deletion event', logger.DEBUG)
+        log.d('add_no_space_event() - adding deletion event')
         self.add_event('%s#Deleting todays data, \'images_dbase\' is too small' % time.strftime('%d/%m/%Y#%H:%M:%S'))
     
     

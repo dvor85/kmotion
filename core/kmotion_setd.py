@@ -10,12 +10,13 @@ import subprocess
 from mutex_parsers import *
 from multiprocessing import Process
 
+log = logger.Logger('setd', logger.Logger.DEBUG)
+
 class Kmotion_setd(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
         self.kmotion_dir = kmotion_dir
-        self.log = logger.Logger('setd', logger.DEBUG)
 
     def main(self):  
         """
@@ -24,14 +25,14 @@ class Kmotion_setd(Process):
         
         """
         
-        self.log('starting daemon ...', logger.WARNING)
+        log('starting daemon ...')
         
         while True:
-            self.log('waiting on FIFO pipe data', logger.DEBUG)
+            log.d('waiting on FIFO pipe data')
             self.config = {}
             with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein: 
                 data = pipein.read()
-            self.log('kmotion FIFO pipe data: %s' % data, logger.DEBUG)  
+            log.d('kmotion FIFO pipe data: %s' % data)  
                       
             self.config = json.loads(data)
             self.user = self.config["user"]
@@ -68,7 +69,7 @@ class Kmotion_setd(Process):
             mutex_www_parser_wr(self.kmotion_dir, self.www_parser, www_rc)
             
             if must_reload and www_rc == 'www_rc':
-                self.log('Reload kmotion...', logger.CRIT)
+                log.e('Reload kmotion...')
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
                                         
     def run(self):
@@ -81,10 +82,10 @@ class Kmotion_setd(Process):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                 
-                self.log('** CRITICAL ERROR ** crash - type: %s' % exc_type, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - value: %s' % exc_value, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2, logger.CRIT) 
+                log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
+                log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
+                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
+                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
                 del(exc_tb)
                 time.sleep(60)
 

@@ -13,13 +13,12 @@ from threading import Thread, Semaphore, Lock
 from multiprocessing import Process
 
 
-log = logger.Logger('hkd2', logger.WARNING)
+log = logger.Logger('hkd2', logger.Logger.WARNING)
 
 
 class Hkd2_Feed():
     
     def __init__(self, kmotion_dir, feed, semaphore):
-        self.log = log
         self.kmotion_dir = kmotion_dir  # the 'root' directory of kmotion
         self.feed = int(feed)  # the feed number
         self.ramdisk_dir = ''  # the 'root' dir of the ramdisk
@@ -48,9 +47,9 @@ class Hkd2_Feed():
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError): 
-            self.log('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
-                       sys.exc_info()[1], logger.CRIT)
-            self.log('** CRITICAL ERROR ** killing all daemons and terminating', logger.CRIT)
+            log.e('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' % 
+                       sys.exc_info()[1])
+            log.e('** CRITICAL ERROR ** killing all daemons and terminating')
             # sys.exit()
             
         parser = mutex_www_parser_rd(self.kmotion_dir) 
@@ -96,17 +95,17 @@ class Hkd2_Feed():
                         
                         if self.feed_snap_enabled and self.snap_time <= jpg_time:
                             try:
-                                self.log('service_snap() - copy {src} to {dst}'.format(**p), logger.DEBUG)
+                                log.d('service_snap() - copy {src} to {dst}'.format(**p))
                                 if not os.path.isdir(os.path.dirname(p['dst'])):
                                     os.makedirs(os.path.dirname(p['dst']))
                                 shutil.copy(**p)
                             except:
                                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                                self.log('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+                                log.e('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}))
                             finally:
                                 self.inc_snap_time(self.feed_snap_interval)    
                             
-                        self.log('service_snap() - delete {src}'.format(**p), logger.DEBUG)    
+                        log.d('service_snap() - delete {src}'.format(**p))    
                         os.remove(os.path.join(jpg_dir, jpg))
                         
                         feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
@@ -140,7 +139,6 @@ class Kmotion_Hkd2(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
-        self.log = log
         self.kmotion_dir = kmotion_dir
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
@@ -155,7 +153,7 @@ class Kmotion_Hkd2(Process):
                         self.feed_list.append(feed)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
+                log.d('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
         self.feed_list.sort()
         
         self.semaphore = Semaphore(8) 
@@ -170,7 +168,7 @@ class Kmotion_Hkd2(Process):
         """
         while True:
             try:
-                self.log('starting daemon ...', logger.CRIT)
+                log('starting daemon ...')
                 self.instance_list = []  # list of Hkd2_Feed instances
                 for feed in self.feed_list:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed, self.semaphore))
@@ -184,10 +182,10 @@ class Kmotion_Hkd2(Process):
                 exc_loc1 = '%s' % exc_trace[0]
                 exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
                 
-                self.log('** CRITICAL ERROR ** crash - type: %s' % exc_type, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - value: %s' % exc_value, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1, logger.CRIT)
-                self.log('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2, logger.CRIT) 
+                log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
+                log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
+                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
+                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
                 del(exc_tb)
                 time.sleep(60)
 

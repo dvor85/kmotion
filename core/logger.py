@@ -25,27 +25,20 @@ A workaround for the buggy syslog module - should not be necessary but nothing's
 
 import syslog
 
-EMERG = 'EMERG'
-ALERT = 'ALERT'
-CRIT = 'CRIT'
-ERR = 'ERR'
-WARNING = 'WARNING'
-NOTICE = 'NOTICE'
-INFO = 'INFO'
-DEBUG = 'DEBUG'
+
 
 class Logger:
     
-    EMERG = EMERG
-    ALERT = ALERT
-    CRIT = CRIT
-    ERR = ERR
-    WARNING = WARNING
-    NOTICE = NOTICE
-    INFO = INFO
-    DEBUG = DEBUG
+    EMERG = 'EMERG'
+    ALERT = 'ALERT'
+    CRIT = 'CRIT'
+    ERR = 'ERR'
+    WARNING = 'WARNING'
+    NOTICE = 'NOTICE'
+    INFO = 'INFO'
+    DEBUG = 'DEBUG'
     
-    def __init__(self, ident, min_priority):
+    def __init__(self, ident, min_priority=None):
         """ 
         Given a identity string and a min priority string create a logger 
         instance. The priority string must be one of ...
@@ -61,15 +54,17 @@ class Logger:
         # 'min_priority' is the min priority level at which events will be sent
         # to syslog, it  must be one of ... EMERG, ALERT, CRIT, ERR, WARNING, 
         # NOTICE, INFO, DEBUG
-        self.case = {EMERG: syslog.LOG_EMERG,
-                     ALERT: syslog.LOG_ALERT,
-                     CRIT: syslog.LOG_CRIT,
-                     ERR: syslog.LOG_ERR,
-                     WARNING: syslog.LOG_WARNING,
-                     NOTICE: syslog.LOG_NOTICE,
-                     INFO: syslog.LOG_INFO,
-                     DEBUG: syslog.LOG_DEBUG}
-        self.ident = 'kmotion_%s' % ident
+        self.case = {Logger.EMERG: syslog.LOG_EMERG,
+                     Logger.ALERT: syslog.LOG_ALERT,
+                     Logger.CRIT: syslog.LOG_CRIT,
+                     Logger.ERR: syslog.LOG_ERR,
+                     Logger.WARNING: syslog.LOG_WARNING,
+                     Logger.NOTICE: syslog.LOG_NOTICE,
+                     Logger.INFO: syslog.LOG_INFO,
+                     Logger.DEBUG: syslog.LOG_DEBUG}
+        self.ident = ident
+        if min_priority is None:
+            min_priority = Logger.NOTICE
         self.min_priority = min_priority       
     
         
@@ -87,11 +82,10 @@ class Logger:
         
         self.min_priority = min_priority  
         
-    def __call__(self, msg, priority=DEBUG):
+    def __call__(self, msg, priority=None):
         self.log(msg, priority)
-    
         
-    def log(self, msg, priority=DEBUG):
+    def log(self, msg, priority=None):
         """
         Log an message string with a certain priority string. If that priority
         is greater than the pre-defined min priority log the message to 
@@ -110,6 +104,9 @@ class Logger:
         
         # TODO: The Python syslog module is very broken - logging priorities are
         # ignored, this is a workaround ...
+        if priority is None:
+            priority = Logger.NOTICE
+        msg = "{0}: [kmotion::{1}] {2}".format(priority, self.ident, msg)
         if self.case[priority] <= self.case[self.min_priority]: 
             syslog.openlog(self.ident , syslog.LOG_PID) 
             syslog.syslog(msg)
@@ -120,6 +117,20 @@ class Logger:
         # syslog.setlogmask(syslog.LOG_UPTO(self.case[self.min_priority]))
         # syslog.syslog(msg)
         # syslog.closelog()
+        
+    def d(self, msg):
+        self.log(msg, Logger.DEBUG)
+        
+    def w(self, msg):
+        self.log(msg, Logger.WARNING)
+        
+    def e(self, msg):
+        self.log(msg, Logger.CRIT)
+        
+        
+if __name__ == "__main__":
+    log = Logger('TEST', Logger.DEBUG)
+    log.d('test')    
         
         
 

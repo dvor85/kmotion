@@ -7,6 +7,8 @@ Exports various methods used to initialize core configuration
 import os, sys, logger, subprocess
 from mutex_parsers import *
 
+log = logger.Logger('init_core', logger.Logger.DEBUG)
+
 class InitCore:
     
     HEADER_TEXT = """
@@ -32,7 +34,6 @@ class InitCore:
 
 
     def __init__(self, kmotion_dir):
-        self.log = logger.Logger('init_core', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
@@ -52,7 +53,7 @@ class InitCore:
                         self.feed_list.append(feed)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
+                log.d('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
         self.feed_list.sort()
     
         
@@ -68,25 +69,25 @@ class InitCore:
         
         states_dir = os.path.join(self.ramdisk_dir, 'states')
         if not os.path.isdir(states_dir):
-            self.log('init_ramdisk_dir() - creating \'states\' folder', logger.DEBUG)
+            log.d('init_ramdisk_dir() - creating \'states\' folder')
             os.makedirs(states_dir)
 
         for sfile in os.listdir(states_dir):
             state_file = os.path.join(states_dir, sfile)
             if os.path.isfile(state_file):
-                self.log('init_ramdisk_dir() - deleting \'%s\' file' % (state_file), logger.DEBUG)
+                log.d('init_ramdisk_dir() - deleting \'%s\' file' % (state_file))
                 os.unlink(state_file)
                     
         events_dir = os.path.join(self.ramdisk_dir, 'events')
         if not os.path.isdir(events_dir):
-            self.log('init_ramdisk_dir() - creating \'events\' folder', logger.DEBUG) 
+            log.d('init_ramdisk_dir() - creating \'events\' folder') 
             os.makedirs(events_dir)
             
         for feed in self.feed_list:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)): 
                 try:
                     os.makedirs('%s/%02i' % (self.ramdisk_dir, feed))
-                    self.log('init_ramdisk_dir() - creating \'%02i\' folder' % feed, logger.DEBUG)
+                    log.d('init_ramdisk_dir() - creating \'%02i\' folder' % feed)
                 except OSError:
                     pass
                     
@@ -122,9 +123,9 @@ class InitCore:
         return  : none
         """    
 
-        self.log('gen_vhost() - Generating vhost/kmotion file', logger.DEBUG)
+        log.d('gen_vhost() - Generating vhost/kmotion file')
         
-        self.log('gen_vhost() - users_digest mode enabled', logger.DEBUG)
+        log.d('gen_vhost() - users_digest mode enabled')
         self.LDAP_block = """
         # ** INFORMATION ** Users digest file enabled ...
         AuthName "kmotion"
@@ -144,8 +145,8 @@ class InitCore:
                     f_obj1.write(template.format(**self.__dict__))
                 
         except IOError:
-            self.log('ERROR by generating vhosts/kmotion file', logger.CRIT)
-            self.log(str(sys.exc_info()[1]), logger.CRIT)
+            log.e('ERROR by generating vhosts/kmotion file')
+            log.e(str(sys.exc_info()[1]))
         
       
         

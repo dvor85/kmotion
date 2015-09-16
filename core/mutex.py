@@ -6,13 +6,14 @@ Export mutex lock functions for the '../www/mutex/' files
 import os, random, time
 import logger
 
+log = logger.Logger('mutex', logger.Logger.WARNING)
+
 class Mutex:
     
     def __init__(self, kmotion_dir, mutex):        
-        self.log = logger.Logger('mutex', logger.WARNING)
         self.kmotion_dir = kmotion_dir 
         self.mutex = mutex       
-        self.log('init_mutex() - init mutex : %s' % self.mutex, logger.DEBUG)
+        log.d('init_mutex() - init mutex : %s' % self.mutex)
         self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
         if not os.path.isdir(self.mutex_dir):
             os.makedirs(self.mutex_dir, 0775)

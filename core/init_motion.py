@@ -11,11 +11,11 @@ import os, sys
 import logger
 from mutex_parsers import *
 
+log = logger.Logger('init_motion', logger.Logger.DEBUG)
 
 class InitMotion:
     
     def __init__(self, kmotion_dir):
-        self.log = logger.Logger('init_motion', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
@@ -32,7 +32,7 @@ class InitMotion:
                         self.feed_list.append(feed)
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.DEBUG)
+                log.d('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
         self.feed_list.sort()
         
     def create_mask(self, feed):   
@@ -48,12 +48,12 @@ class InitMotion:
         """
     
         mask_hex_str = self.www_parser.get('motion_feed%02i' % feed, 'feed_mask')
-        self.log('create_mask() - mask hex string: %s' % mask_hex_str, logger.DEBUG)
+        log.d('create_mask() - mask hex string: %s' % mask_hex_str)
         
         image_width = self.www_parser.getint('motion_feed%02i' % feed, 'feed_width') 
         image_height = self.www_parser.getint('motion_feed%02i' % feed, 'feed_height')
                     
-        self.log('create_mask() - width: %i height: %i' % (image_width, image_height), logger.DEBUG)
+        log.d('create_mask() - width: %i height: %i' % (image_width, image_height))
         
         black_px = '\x00' 
         white_px = '\xFF' 
@@ -95,7 +95,7 @@ class InitMotion:
             f_obj.write('%i %i\n' % (image_width, image_height))
             f_obj.write('255\n')
             f_obj.write(mask)
-        self.log('create_mask() - mask written', logger.DEBUG)
+        log.d('create_mask() - mask written')
                 
     def init_motion_out(self):
         """
@@ -166,7 +166,7 @@ quiet on
                     user_conf = f_obj2.read()
             except IOError:   
                 print >> f_obj1, '# virtual_motion_conf/motion.conf not readable - ignored'
-                self.log('no motion.conf readable in virtual_motion_conf dir - none included in final motion.conf', logger.CRIT)
+                log.e('no motion.conf readable in virtual_motion_conf dir - none included in final motion.conf')
             else:
                 print >> f_obj1, user_conf
             
@@ -238,7 +238,7 @@ webcam_localhost off
                         user_conf = f_obj2.read()
                 except IOError:   
                     print >> f_obj1, '# virtual_motion_conf/thread%02i.conf not readable - ignored' % feed
-                    self.log('no feed%02i.conf readable in virtual_motion_conf dir - none included in final motion.conf' % feed, logger.CRIT)
+                    log.e('no feed%02i.conf readable in virtual_motion_conf dir - none included in final motion.conf' % feed)
                 else:
                     print >> f_obj1, user_conf
                 

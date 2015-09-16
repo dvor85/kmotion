@@ -8,10 +8,11 @@ import actions.actions as actions
 STATE_START = 'start'
 STATE_END = 'end'
 
+log = logger.Logger('events', logger.Logger.DEBUG)
+
 class Events:
     
     def __init__(self, kmotion_dir, feed, state):        
-        self.log = logger.Logger('events', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
                 
@@ -42,15 +43,15 @@ class Events:
             elif self.state == STATE_END:
                 self.end()  
             else:
-                self.log('command "{0}" not recognized'.format(self.state), logger.CRIT)         
+                log.e('command "{0}" not recognized'.format(self.state))         
         else:
-            self.log('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}), logger.DEBUG)
+            log.d('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}))
             
     def start(self):
 
         self.state = STATE_START
         if not os.path.isfile(self.event_file):
-            self.log('start: creating: {0}'.format(self.event_file), logger.DEBUG)
+            log.d('start: creating: {0}'.format(self.event_file))
             with open(self.event_file, 'w'):
                 pass
         
@@ -65,7 +66,7 @@ class Events:
         actions.Actions(self.kmotion_dir, self.feed).end()
      
         if os.path.isfile(self.event_file):
-            self.log('end: delete {0}'.format(self.event_file), logger.DEBUG)
+            log.d('end: delete {0}'.format(self.event_file))
             os.unlink(self.event_file)
         
         if self.getLastState() != self.state:

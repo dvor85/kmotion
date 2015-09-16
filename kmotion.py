@@ -22,6 +22,8 @@ from core.kmotion_setd import Kmotion_setd
 from core.kmotion_split import Kmotion_split
 
 
+log = logger.Logger('main', logger.Logger.DEBUG)
+
 class exit_(Exception): pass
 
 class Kmotion:
@@ -29,7 +31,6 @@ class Kmotion:
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
       
-        self.log = logger.Logger('main', logger.DEBUG)
         # signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         
@@ -63,7 +64,7 @@ class Kmotion:
         return  : none
         """ 
         
-        self.log('starting kmotion ...', logger.CRIT)
+        log('starting kmotion ...')
         
     
         # init the ramdisk dir
@@ -76,13 +77,13 @@ class Kmotion:
     
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
-        self.log('starting daemons ...', logger.DEBUG)
+        log.d('starting daemons ...')
         self.motion_daemon.start_motion()
         for d in self.daemons:
             d.start()
-        self.log('daemons started...', logger.DEBUG)
+        log.d('daemons started...')
                 
-        self.log('waiting daemons ...', logger.DEBUG)    
+        log.d('waiting daemons ...')    
         self.wait_termination()
 
 
@@ -94,15 +95,15 @@ class Kmotion:
         excepts : 
         return  : none
         """
-        self.log('stopping kmotion ...', logger.CRIT)
-        self.log('killing daemons ...', logger.DEBUG)
+        log.d('stopping kmotion ...')
+        log.d('killing daemons ...')
 
         for pid in self.get_kmotion_pids():
             os.kill(int(pid), signal.SIGTERM) 
             
         self.motion_daemon.stop_motion()
         
-        self.log('daemons killed ...', logger.DEBUG)
+        log.d('daemons killed ...')
         self.www_log.add_shutdown_event()
 
 

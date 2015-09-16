@@ -5,17 +5,19 @@
 import sys
 from threading import Thread
 
+log = None
 
 class Actions():
     
     def __init__(self, kmotion_dir, feed):
         sys.path.append(kmotion_dir)
         
-        import core.logger as logger        
-        self.log = logger.Logger('actions_list', logger.DEBUG)
+        import core.logger as logger
+        global log        
+        log = logger.Logger('actions_list', logger.Logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
-        self.log('init', logger.DEBUG)
+        log.d('init')
         self.actions_list = []
         try:
             from core.mutex_parsers import mutex_www_parser_rd            
@@ -29,11 +31,11 @@ class Actions():
                     self.actions_list.append(action)
                 except:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    self.log('init action error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+                    log.e('init action error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
                             
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            self.log('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), logger.CRIT)
+            log.e('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
             
         
     def start(self):
@@ -45,7 +47,7 @@ class Actions():
                 t.start()
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('start action error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), self.log.CRIT)
+                log.e('start action error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
             
         for t in t_list:
             t.join()
@@ -60,7 +62,7 @@ class Actions():
                 t.start()
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                self.log('end action error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}), self.log.CRIT)
+                log.e('end action error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
             
         for t in t_list:
             t.join()
