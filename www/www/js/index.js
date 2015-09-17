@@ -3890,7 +3890,7 @@ KM.display_config_ = function () {
         }
 
         function update_bars() {
-            var coef = dbase.cpu * 1.5;
+            var coef = dbase.cpu + 0.5;
             // load average 1 min
             document.getElementById('bar_value1').innerHTML = dbase.l1;
             var tmp = Math.min(dbase.l1, coef);
