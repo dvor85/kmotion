@@ -64,8 +64,9 @@ class CameraLost:
                     time.sleep(10)
                     
             if need_reboot:
-                self.reboot_camera() 
-                self.restart_thread(self.feed_thread)
+                if self.reboot_camera():
+                    time.sleep(60) 
+                    self.restart_thread(self.feed_thread)
             
         else:
             log.e('{file} {feed} already running'.format(**{'file':os.path.basename(__file__), 'feed':self.feed}))
@@ -76,7 +77,7 @@ class CameraLost:
             try:    
                 if res.getcode() == 200:              
                     log.d('reboot {0} success'.format(self.feed))   
-                    time.sleep(60) 
+                    return True 
                 else:
                     log.d('reboot {0} failed with status code {1}'.format(self.feed, res.getcode()))
             finally:
@@ -91,6 +92,7 @@ class CameraLost:
             try:
                 if res.getcode() == 200:
                     log.d('restart feed_thread {feed_thread} success'.format(**{'feed_thread':thread})) 
+                    return True
                 else:
                     log.d('restart feed_thread {feed_thread} failed with status code {code}'.format({'feed_thread':thread, 'code':res.getcode()}))
             finally:

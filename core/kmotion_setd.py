@@ -7,8 +7,11 @@ and modifiy 'www_rc'
 
 import sys, os.path, logger, time, traceback, json
 import subprocess
+import threading
+import utils
 from mutex_parsers import *
 from multiprocessing import Process
+from camera_lost import CameraLost
 
 log = logger.Logger('setd', logger.Logger.DEBUG)
 
@@ -16,7 +19,8 @@ class Kmotion_setd(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
-        self.kmotion_dir = kmotion_dir
+        self.kmotion_dir = kmotion_dir       
+
 
     def main(self):  
         """
@@ -52,8 +56,12 @@ class Kmotion_setd(Process):
                         if not self.www_parser.has_section(feed_section):
                             self.www_parser.add_section(feed_section)
                         for k, v in self.config[section][feed].items():
-                            must_reload = True
-                            self.www_parser.set(feed_section, k, str(v))                            
+                            if k == 'reboot_camera' and utils.parseStr(v) == True and www_rc == 'www_rc':
+                                cam_lost = CameraLost(self.kmotion_dir, feed)
+                                threading.Thread(target=cam_lost.reboot_camera).start()                                
+                            else:
+                                must_reload = True
+                                self.www_parser.set(feed_section, k, str(v))                            
                 elif section == 'display_feeds':
                     misc_section = 'misc'
                     if not self.www_parser.has_section(misc_section):

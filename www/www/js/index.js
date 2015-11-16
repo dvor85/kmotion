@@ -2945,6 +2945,9 @@ KM.display_config_ = function () {
         
         function reset() {
             save_display = false;
+            for (var f in KM.config.feeds) {
+                delete(KM.config.feeds[f]['reboot_camera']);
+            }
             init();
         }
         
@@ -3146,6 +3149,13 @@ KM.display_config_ = function () {
             try {
                 if (typeof(KM.config.misc[s]) === "boolean") {
                     KM.config.misc[s] = document.getElementById(s).checked;
+                } else if (typeof(KM.config.misc[s]) === "number") {
+                    var val = parseInt(document.getElementById(s).value, 10);
+                    if (isNaN(val)) {
+                        val = 0;
+                        document.getElementById(s).value = val;
+                    }
+                    KM.config.misc[s] = val;
                 } else {
                     KM.config.misc[s] = document.getElementById(s).value;
                 }
@@ -3227,8 +3237,9 @@ KM.display_config_ = function () {
                 html_str+='<option value="'+f+'">'+KM.config.feeds[f].feed_name+'</option>';
             };
             html_str+='</select>\
-                        <input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />Enable camera \
-                        <br><br> \
+                        <input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />Enable camera&nbsp; \
+                        <input type="checkbox" id="reboot_camera" onclick="KM.conf_reboot_camera('+cur_camera+');" />Reboot camera \
+                        <br> \<br>\
                   </div></div><div class="config_tick_margin"> \
                 <br /><hr style="margin:10px" class="clear_float"/> \
                 <div class="config_tick_margin">\
@@ -3328,6 +3339,9 @@ KM.display_config_ = function () {
             }
         }
         document.getElementById('feed_camera').value = cur_camera;
+        try {
+            document.getElementById('reboot_camera').checked = KM.config.feeds[cur_camera]['reboot_camera'] == true;
+        } catch(e) {}
         for (var s in KM.config.feeds[cur_camera]) {
             try {
                 if (typeof (KM.config.feeds[cur_camera][s]) === "boolean") {
@@ -3467,6 +3481,11 @@ KM.display_config_ = function () {
         }
         // have to generate new mask on feed enabled
     };
+    
+    function conf_reboot_camera(camera) {
+        conf_feed_highlight();
+        KM.config.feeds[camera]['reboot_camera'] = document.getElementById('reboot_camera').checked;
+    };
 
     function conf_feed_net_highlight() {
 
@@ -3577,6 +3596,13 @@ KM.display_config_ = function () {
             try {
                 if (typeof (KM.config.feeds[cur_camera][s]) === "boolean") {
                     KM.config.feeds[cur_camera][s] = document.getElementById(s).checked;
+                } else if (typeof (KM.config.feeds[cur_camera][s]) === "number") {
+                    var val = parseInt(document.getElementById(s).value, 10);
+                    if (isNaN(val)) {
+                        val = 0;
+                        document.getElementById(s).value = val;
+                    }
+                    KM.config.feeds[cur_camera][s] = val;
                 } else {
                     KM.config.feeds[cur_camera][s] = document.getElementById(s).value;
                 }
@@ -3610,15 +3636,7 @@ KM.display_config_ = function () {
             KM.config.feeds[cur_camera].feed_height = height;
         }
         // feed value back to gui in case parseInt changes it
-        document.getElementById('feed_height').value = height;
-
-        var snap = parseInt(document.getElementById('feed_snap_interval').value, 10);
-        if (isNaN(snap)) snap = 0;
-        KM.config.feeds[cur_camera].feed_snap_interval = snap;
-        // feed value back to gui in case parseInt changes it
-        document.getElementById('feed_snap_interval').value = snap;
-
-
+        document.getElementById('feed_height').value = height;      
     };
 
     function conf_live_feed_daemon(session_id, feed) {
@@ -4021,7 +4039,8 @@ KM.display_config_ = function () {
         conf_feed_html: conf_feed_html,
         conf_apply: conf_apply,
         conf_feed_change: conf_feed_change,
-        conf_feed_enabled: conf_feed_enabled,        
+        conf_feed_enabled: conf_feed_enabled,   
+        conf_reboot_camera: conf_reboot_camera, 
         conf_feed_highlight: conf_feed_highlight,
         conf_feed_net_highlight: conf_feed_net_highlight,        
         conf_toggle_feed_mask: conf_toggle_feed_mask,
@@ -4041,6 +4060,7 @@ KM.conf_apply = KM.display_config_.conf_apply;
 KM.conf_feed_html = KM.display_config_.conf_feed_html;
 KM.conf_feed_change = KM.display_config_.conf_feed_change;
 KM.conf_feed_enabled = KM.display_config_.conf_feed_enabled;
+KM.conf_reboot_camera = KM.display_config_.conf_reboot_camera;
 KM.conf_feed_highlight = KM.display_config_.conf_feed_highlight;
 KM.conf_feed_net_highlight = KM.display_config_.conf_feed_net_highlight;
 KM.conf_toggle_feed_mask = KM.display_config_.conf_toggle_feed_mask;
