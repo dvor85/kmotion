@@ -21,3 +21,4 @@ tar.cmd
 .pydevproject
 gitpush
 .admin
+gitpull

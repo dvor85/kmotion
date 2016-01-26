@@ -1,4 +1,10 @@
 #!/bin/bash
-for d in /mnt/kmotion/images_dbase/*; do 
-    echo `du -sb "/mnt/kmotion/images_dbase/$d" | awk '{print $1}'` > "/mnt/kmotion/images_dbase/$d/dir_size"; 
+
+SELF_DIR=`readlink -f "$(dirname $0)"`;
+INI_FILE="$SELF_DIR/kmotion_rc"
+. $SELF_DIR/core/ini
+
+rootdir=$(get_ini_section_param $INI_FILE dirs images_dbase_dir)
+for d in $rootdir/*; do 
+    echo `du -sb "$rootdir/$d" | awk '{print $1}'` > "$rootdir/$d/dir_size"; 
 done;
