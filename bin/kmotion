@@ -27,8 +27,9 @@ fi
 
 
 KMOTION_DIR=/usr/local/kmotion3
+cd $KMOTION_DIR
 if [[ -z $1 || "$1" = 'start' || "$1" = 'restart' ]]; then
-	$KMOTION_DIR/kmotion.py $1 &
+	nohup $KMOTION_DIR/kmotion.py $1 &
 else 
 	if [[ "$1" = 'stop' || "$1" = 'status' ]]; then
 		$KMOTION_DIR/kmotion.py $1
