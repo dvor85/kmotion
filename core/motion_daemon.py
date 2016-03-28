@@ -1,14 +1,16 @@
 '''
 @author: demon
 '''
-import logger, os, time, subprocess
+import logger, os, time, subprocess, sys, traceback
 from init_motion import InitMotion
+from multiprocessing import Process
+
 
 
 log = logger.Logger('motion_daemon', logger.Logger.DEBUG)
 
 
-class MotionDaemon:
+class MotionDaemon(Process):
     '''
     classdocs
     '''
@@ -16,8 +18,11 @@ class MotionDaemon:
         '''
         Constructor
         '''
+        Process.__init__(self)
         self.kmotion_dir = kmotion_dir
         self.init_motion = InitMotion(self.kmotion_dir)
+        self.motion_daemon = None
+        self.stop_motion()
         
     def is_motion_running(self):
         p_obj = subprocess.Popen('pgrep -f "^motion.+-c.*"', shell=True, stdout=subprocess.PIPE)
@@ -32,21 +37,54 @@ class MotionDaemon:
         
         self.init_motion.gen_motion_configs()
         if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):
-            if not self.is_motion_running(): 
-                self.init_motion.init_motion_out()  # clear 'motion_out'
-                subprocess.Popen('while true; do test -z "$(pgrep -f \'^motion.+-c.*\')" -o -z "$(netstat -ntl | grep 8080)" && ( pkill -9 -f \'^motion.+-c.*\'; motion -c {kmotion_dir}/core/motion_conf/motion.conf 2>&1 | grep --line-buffered -v \'saved to\' | while read line; do echo "$(date \'+%Y.%m.%d %H:%M:%S\') $line" >> {kmotion_dir}/www/motion_out; done & ); sleep 2; done &'.format(**{'kmotion_dir':self.kmotion_dir}), shell=True)
-                log('starting motion')
+#             self.init_motion.init_motion_out()  # clear 'motion_out'
+            log('starting motion')
+            self.motion_daemon = subprocess.Popen(['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(**{'kmotion_dir':self.kmotion_dir})], shell=False)
         else:
             log.e('no motion.conf, motion not started') 
 
             
-    def stop_motion(self):        
+    def stop_motion(self):  
+        if not self.motion_daemon is None:
+            self.motion_daemon.kill()
+            self.motion_daemon = None      
         subprocess.call('pkill -f ".*motion.+-c.*"', shell=True)  # if motion hangs get nasty !
         if self.is_motion_running():
             log.d('resorting to kill -9 ... ouch !')
             subprocess.call('pkill -9 -f ".*motion.+-c.*"', shell=True)  # if motion hangs get nasty !
         
         log('motion killed') 
+        
+    def run(self):
+        """
+        args    : 
+        excepts : 
+        return  : none
+        """
+                
+        while True:
+            try:
+                if not self.is_port_alive(8080):
+                    self.stop_motion()
+                if not self.is_motion_running():
+                    self.start_motion()
+                    
+#                 raise Exception('motion killed')             
+
+            except:  # global exception catch        
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                exc_trace = traceback.extract_tb(exc_tb)[-1]
+                exc_loc1 = '%s' % exc_trace[0]
+                exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
+                
+                log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
+                log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
+                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
+                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
+                del(exc_tb)
+                
+            time.sleep(60)
+        
         
     
         

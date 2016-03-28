@@ -38,9 +38,10 @@ class Kmotion:
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
          
         self.init_core = InitCore(self.kmotion_dir)
-        self.motion_daemon = MotionDaemon(self.kmotion_dir)
+#         self.motion_daemon = MotionDaemon(self.kmotion_dir)
         
         self.daemons = []
+        self.daemons.append(MotionDaemon(self.kmotion_dir))
         self.daemons.append(Kmotion_Hkd1(self.kmotion_dir))
         self.daemons.append(Kmotion_Hkd2(self.kmotion_dir))
         self.daemons.append(Kmotion_setd(self.kmotion_dir))
@@ -78,7 +79,7 @@ class Kmotion:
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
         
         log.d('starting daemons ...')
-        self.motion_daemon.start_motion()
+#         self.motion_daemon.start_motion()
         for d in self.daemons:
             d.start()
         log.d('daemons started...')
@@ -101,7 +102,7 @@ class Kmotion:
         for pid in self.get_kmotion_pids():
             os.kill(int(pid), signal.SIGTERM) 
             
-        self.motion_daemon.stop_motion()
+        self.daemons[0].stop_motion()
         
         log.d('daemons killed ...')
         self.www_log.add_shutdown_event()

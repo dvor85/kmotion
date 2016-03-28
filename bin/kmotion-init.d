@@ -13,7 +13,7 @@
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 kmotion=/usr/local/bin/kmotion
 case "$1" in
-start)
+*start)
     sudo -u videouser $kmotion
     ;;
 stop)
