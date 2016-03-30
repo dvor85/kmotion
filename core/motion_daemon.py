@@ -19,6 +19,7 @@ class MotionDaemon(Process):
         Constructor
         '''
         Process.__init__(self)
+        self.started = True
         self.kmotion_dir = kmotion_dir
         self.init_motion = InitMotion(self.kmotion_dir)
         self.motion_daemon = None
@@ -61,8 +62,8 @@ class MotionDaemon(Process):
         excepts : 
         return  : none
         """
-                
-        while True:
+        self.started = True        
+        while self.started:
             try:
                 if not self.is_port_alive(8080):
                     self.stop_motion()
@@ -83,7 +84,12 @@ class MotionDaemon(Process):
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
                 del(exc_tb)
                 
-            time.sleep(60)
+            if self.started:    
+                time.sleep(60)
+                
+    def stop(self):
+        self.started = False
+        self.stop_motion()
         
         
     

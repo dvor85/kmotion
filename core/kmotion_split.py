@@ -19,6 +19,7 @@ class Kmotion_split(Process):
         Constructor
         '''
         Process.__init__(self)
+        self.started = True
         self.kmotion_dir = kmotion_dir
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
@@ -49,9 +50,11 @@ class Kmotion_split(Process):
         
     def run(self):
         log('starting daemon ...')
-        while True:
+        self.started = True
+        while self.started:
             try:
-                time.sleep(15)
+                if self.started:
+                    time.sleep(15)
                 events = os.listdir(self.events_dir)
                 for event in events:
                     threading.Thread(target=self.main, args=(event,)).start()
@@ -67,5 +70,9 @@ class Kmotion_split(Process):
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
                 del(exc_tb)
-                time.sleep(60)
+                if self.started:
+                    time.sleep(60)
+                
+    def stop(self):
+        self.started = False
                 

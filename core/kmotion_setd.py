@@ -19,6 +19,7 @@ class Kmotion_setd(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
+        self.started = True
         self.kmotion_dir = kmotion_dir       
 
 
@@ -31,7 +32,7 @@ class Kmotion_setd(Process):
         
         log('starting daemon ...')
         
-        while True:
+        while self.started:
             log.d('waiting on FIFO pipe data')
             self.config = {}
             with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein: 
@@ -81,7 +82,8 @@ class Kmotion_setd(Process):
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
                                         
     def run(self):
-        while True:
+        self.started = True
+        while self.started:
             try:    
                 self.main()
             except:  # global exception catch
@@ -95,7 +97,11 @@ class Kmotion_setd(Process):
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
                 del(exc_tb)
-                time.sleep(60)
+                if self.started:
+                    time.sleep(60)
+                
+    def stop(self):
+        self.started = False
 
 
 

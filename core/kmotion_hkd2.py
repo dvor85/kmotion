@@ -9,7 +9,6 @@ import os, sys, time, signal, shutil, traceback
 from datetime import datetime
 import logger
 from mutex_parsers import *
-from threading import Thread, Semaphore, Lock
 from multiprocessing import Process
 
 
@@ -18,7 +17,7 @@ log = logger.Logger('hkd2', logger.Logger.WARNING)
 
 class Hkd2_Feed():
     
-    def __init__(self, kmotion_dir, feed, semaphore):
+    def __init__(self, kmotion_dir, feed):
         self.kmotion_dir = kmotion_dir  # the 'root' directory of kmotion
         self.feed = int(feed)  # the feed number
         self.ramdisk_dir = ''  # the 'root' dir of the ramdisk
@@ -28,8 +27,6 @@ class Hkd2_Feed():
         self.feed_fps = ''  # frame fps
         self.feed_name = ''  # feed name
         self.snap_time = time.time() 
-        self.lock = Lock()
-        self.semaphore = semaphore
         self.read_config()
                 
         
@@ -69,55 +66,47 @@ class Hkd2_Feed():
         excepts : 
         return  : none
         """
-        self.semaphore.acquire()
-        try:
-            self.lock.acquire()
-            try:
-                jpg_dir = '%s/%02i' % (self.ramdisk_dir, self.feed) 
-                jpg_list = os.listdir(jpg_dir)
-                jpg_list.sort()
-                
-                self.update_title()
-                
-                # need this > 10 buffer to ensure kmotion can view jpegs before we 
-                # move or delete them
-                while (len(jpg_list) >= 10):  
-                    jpg = jpg_list.pop(0)
-                    jpg_time = os.path.getmtime(os.path.join(jpg_dir, jpg))
-                    
-                    if jpg != 'last.jpg':
-                        p = {'src':os.path.join(jpg_dir, jpg),
-                             'dst':os.path.join(self.images_dbase_dir,
-                                                datetime.fromtimestamp(jpg_time).strftime('%Y%m%d'),
-                                                '%02i' % self.feed,
-                                                'snap',
-                                                '%s.jpg' % datetime.fromtimestamp(jpg_time).strftime('%H%M%S'))}
-                        
-                        if self.feed_snap_enabled and self.snap_time <= jpg_time:
-                            try:
-                                log.d('service_snap() - copy {src} to {dst}'.format(**p))
-                                if not os.path.isdir(os.path.dirname(p['dst'])):
-                                    os.makedirs(os.path.dirname(p['dst']))
-                                shutil.copy(**p)
-                            except:
-                                exc_type, exc_value, exc_traceback = sys.exc_info()
-                                log.e('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}))
-                            finally:
-                                self.inc_snap_time(self.feed_snap_interval)    
-                            
-                        log.d('service_snap() - delete {src}'.format(**p))    
-                        os.remove(os.path.join(jpg_dir, jpg))
-                        
-                        feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
-                        if os.path.isfile(feed_www_jpg):
-                            os.remove(feed_www_jpg)
-                            
-            finally:
-                self.lock.release() 
-        finally:
-            self.semaphore.release()
-            
         
+        jpg_dir = '%s/%02i' % (self.ramdisk_dir, self.feed) 
+        jpg_list = os.listdir(jpg_dir)
+        jpg_list.sort()
+        
+        self.update_title()
+        
+        # need this > 10 buffer to ensure kmotion can view jpegs before we 
+        # move or delete them
+        while (len(jpg_list) >= 10):  
+            jpg = jpg_list.pop(0)
+            jpg_time = os.path.getmtime(os.path.join(jpg_dir, jpg))
+            
+            if jpg != 'last.jpg':
+                p = {'src':os.path.join(jpg_dir, jpg),
+                     'dst':os.path.join(self.images_dbase_dir,
+                                        datetime.fromtimestamp(jpg_time).strftime('%Y%m%d'),
+                                        '%02i' % self.feed,
+                                        'snap',
+                                        '%s.jpg' % datetime.fromtimestamp(jpg_time).strftime('%H%M%S'))}
+                
+                if self.feed_snap_enabled and self.snap_time <= jpg_time:
+                    try:
+                        log.d('service_snap() - copy {src} to {dst}'.format(**p))
+                        if not os.path.isdir(os.path.dirname(p['dst'])):
+                            os.makedirs(os.path.dirname(p['dst']))
+                        shutil.copy(**p)
+                    except:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        log.e('service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(**{'type':exc_type, 'value':exc_value}))
+                    finally:
+                        self.inc_snap_time(self.feed_snap_interval)    
+                    
+                log.d('service_snap() - delete {src}'.format(**p))    
+                os.remove(os.path.join(jpg_dir, jpg))
+                
+                feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
+                if os.path.isfile(feed_www_jpg):
+                    os.remove(feed_www_jpg)
+                            
+
     def update_title(self):
         
         # updates 'name' with name string
@@ -135,10 +124,9 @@ class Hkd2_Feed():
         
     
 class Kmotion_Hkd2(Process):
-    
-    
     def __init__(self, kmotion_dir):
         Process.__init__(self)
+        self.started = True 
         self.kmotion_dir = kmotion_dir
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
@@ -156,8 +144,6 @@ class Kmotion_Hkd2(Process):
                 log.d('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
         self.feed_list.sort()
         
-        self.semaphore = Semaphore(8) 
-        
     def run(self):
         """
         Start the hkd2 daemon. This daemon wakes up every 2 seconds
@@ -166,16 +152,18 @@ class Kmotion_Hkd2(Process):
         excepts : 
         return  : none
         """
-        while True:
+        self.started = True
+        while self.started:
             try:
                 log('starting daemon ...')
                 self.instance_list = []  # list of Hkd2_Feed instances
                 for feed in self.feed_list:
-                    self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed, self.semaphore))
-                while True:
-                    time.sleep(2)
+                    self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed))
+                while self.started:
+                    if self.started:
+                        time.sleep(2)
                     for inst in self.instance_list:
-                        Thread(target=inst.main).start()
+                        inst.main()
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 exc_trace = traceback.extract_tb(exc_tb)[-1]
@@ -187,7 +175,11 @@ class Kmotion_Hkd2(Process):
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
                 del(exc_tb)
-                time.sleep(60)
+                if self.started:
+                    time.sleep(60)
+                
+    def stop(self):
+        self.started = False
 
 
 

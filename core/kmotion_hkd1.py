@@ -19,6 +19,7 @@ class Kmotion_Hkd1(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
+        self.started = True
         self.images_dbase_dir = ''  # the 'root' directory of the images dbase
         self.kmotion_dir = kmotion_dir
         self.max_size_gb = 0  # max size permitted for the images dbase
@@ -62,14 +63,15 @@ class Kmotion_Hkd1(Process):
         excepts : 
         return  : none
         """
-        while True:
+        self.started = True
+        while self.started:
             try:
                 self.read_config()
                 log('starting daemon ...') 
                 self.www_logs.add_startup_event()
                 
-                while True:   
-                    # sleep here to allow system to settle 
+                while self.started:   
+                    # sleep here to allow system to settle
                     time.sleep(15 * 60)
         
                     # if > 90% of max_size_gb, delete oldest
@@ -102,7 +104,11 @@ class Kmotion_Hkd1(Process):
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
                 log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2) 
                 del(exc_tb)
-                time.sleep(60)
+                if self.started:
+                    time.sleep(60)
+                
+    def stop(self):
+        self.started = False
                 
     def images_dbase_size(self):
         """

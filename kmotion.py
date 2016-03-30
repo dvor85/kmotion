@@ -31,7 +31,7 @@ class Kmotion:
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
       
-        # signal.signal(signal.SIGTERM, self.signal_term)
+#         signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
@@ -99,11 +99,12 @@ class Kmotion:
         log.d('stopping kmotion ...')
         log.d('killing daemons ...')
 
-        for pid in self.get_kmotion_pids():
+        for d in self.daemons:
+            d.stop()
+        time.sleep(2)    
+        for pid in self.get_kmotion_pids():            
             os.kill(int(pid), signal.SIGTERM) 
             
-        self.daemons[0].stop_motion()
-        
         log.d('daemons killed ...')
         self.www_log.add_shutdown_event()
 
@@ -113,7 +114,7 @@ class Kmotion:
         stdout = p_objs.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     
-#                 
+                 
 #     def signal_term(self, signum, frame):
 #         print 'exit'        
 #         #sys.exit()
