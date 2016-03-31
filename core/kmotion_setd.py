@@ -19,6 +19,7 @@ class Kmotion_setd(Process):
     
     def __init__(self, kmotion_dir):
         Process.__init__(self)
+        self.name = 'setd'
         self.started = True
         self.kmotion_dir = kmotion_dir       
 

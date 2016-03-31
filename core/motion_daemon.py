@@ -19,6 +19,7 @@ class MotionDaemon(Process):
         Constructor
         '''
         Process.__init__(self)
+        self.name = 'motion_daemon'
         self.started = True
         self.kmotion_dir = kmotion_dir
         self.init_motion = InitMotion(self.kmotion_dir)

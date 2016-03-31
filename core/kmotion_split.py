@@ -19,6 +19,7 @@ class Kmotion_split(Process):
         Constructor
         '''
         Process.__init__(self)
+        self.name = 'split'
         self.started = True
         self.kmotion_dir = kmotion_dir
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)

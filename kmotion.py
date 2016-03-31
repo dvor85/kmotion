@@ -31,7 +31,7 @@ class Kmotion:
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
       
-#         signal.signal(signal.SIGTERM, self.signal_term)
+        signal.signal(signal.SIGTERM, self.signal_term)
         self.www_log = WWWLog(self.kmotion_dir)
         
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
@@ -49,12 +49,13 @@ class Kmotion:
         
     def main(self, option):
         if option == 'stop':            
-            self.stop()
+            self.kill_other()
         elif option == 'status':
             pass
         else:
-            self.stop()
+            self.kill_other()
             self.start()
+        self.www_log.add_shutdown_event()
         
     def start(self):
         """ 
@@ -66,7 +67,7 @@ class Kmotion:
         """ 
         
         log('starting kmotion ...')
-        
+        self.www_log.add_startup_event()
     
         # init the ramdisk dir
         self.init_core.init_ramdisk_dir()
@@ -90,38 +91,40 @@ class Kmotion:
 
     def stop(self):
         """ 
-        Kill all the kmotion daemons 
+        stop all the kmotion daemons 
     
         args    : 
         excepts : 
         return  : none
         """
-        log.d('stopping kmotion ...')
-        log.d('killing daemons ...')
-
+        log.d('stopping kmotion ...')  
         for d in self.daemons:
             d.stop()
-        time.sleep(2)    
-        for pid in self.get_kmotion_pids():            
-            os.kill(int(pid), signal.SIGTERM) 
             
-        log.d('daemons killed ...')
-        self.www_log.add_shutdown_event()
-
-
+    def kill_other(self):
+        log.d('killing daemons ...')
+        for pid in self.get_kmotion_pids():            
+            os.kill(int(pid), signal.SIGTERM)
+        time.sleep(2) 
+        
+        
     def get_kmotion_pids(self):
         p_objs = Popen('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True, stdout=PIPE)  
         stdout = p_objs.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
     
                  
-#     def signal_term(self, signum, frame):
-#         print 'exit'        
-#         #sys.exit()
+    def signal_term(self, signum, frame):
+        self.stop()
+    
     
     def wait_termination(self):
         for d in self.daemons:
-            d.join()
+            try:
+                d.join()
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                log.e('wait_termination of {daemon} - error {type}: {value}'.format(**{'daemon':d.name,'type':exc_type, 'value':exc_value}))
 
 
 if __name__ == '__main__':

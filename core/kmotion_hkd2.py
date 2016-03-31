@@ -126,6 +126,7 @@ class Hkd2_Feed():
 class Kmotion_Hkd2(Process):
     def __init__(self, kmotion_dir):
         Process.__init__(self)
+        self.name = 'hkd2'
         self.started = True 
         self.kmotion_dir = kmotion_dir
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)

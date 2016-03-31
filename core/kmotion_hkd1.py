@@ -20,6 +20,7 @@ class Kmotion_Hkd1(Process):
     def __init__(self, kmotion_dir):
         Process.__init__(self)
         self.started = True
+        self.name = 'hkd1'
         self.images_dbase_dir = ''  # the 'root' directory of the images dbase
         self.kmotion_dir = kmotion_dir
         self.max_size_gb = 0  # max size permitted for the images dbase
@@ -67,8 +68,7 @@ class Kmotion_Hkd1(Process):
         while self.started:
             try:
                 self.read_config()
-                log('starting daemon ...') 
-                self.www_logs.add_startup_event()
+                log('starting daemon ...')                 
                 
                 while self.started:   
                     # sleep here to allow system to settle
