@@ -54,11 +54,11 @@ class WWWLog:
             
         for i in range(len(events) - 1, -1, -1):
             
-            if events[i].find('shutting down') == -1:
+            if events[i].find('shutting down') > -1 or events[i].find('Initial') > -1:
                 error_flag = False
                 break
             
-            if events[i].find('Initial') == -1 or events[i].find('starting up') == -1:
+            if events[i].find('starting up') > -1:
                 error_flag = True
                 break
           
