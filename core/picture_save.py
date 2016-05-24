@@ -3,10 +3,14 @@
  
 import Image, os, sys
  
-def image_resize(src, dst, width, height):         
+def image_resize(src, dst, width, height):
+    try:
+        os.unlink(dst)
         im = Image.open(src)
         im2 = im.resize((width, height), Image.NEAREST)
         im2.save(dst)
+    except:
+        os.symlink(src, dst)
         
 def main(src):
     if os.path.isfile(src):

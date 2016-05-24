@@ -26,9 +26,9 @@ class MotionDaemon(Process):
         self.motion_daemon = None
         self.stop_motion()
         
-    def is_motion_running(self):
+    def count_motion_running(self):
         p_obj = subprocess.Popen('pgrep -f "^motion.+-c.*"', shell=True, stdout=subprocess.PIPE)
-        return p_obj.communicate()[0] != ''
+        return len(p_obj.communicate()[0].splitlines())
     
     def is_port_alive(self, port):
         p_obj = subprocess.Popen('netstat -ntl | grep %i' % port, shell=True, stdout=subprocess.PIPE)
@@ -50,10 +50,11 @@ class MotionDaemon(Process):
         if not self.motion_daemon is None:
             self.motion_daemon.kill()
             self.motion_daemon = None      
-        subprocess.call('pkill -f ".*motion.+-c.*"', shell=True)  # if motion hangs get nasty !
-        if self.is_motion_running():
+        subprocess.call('pkill -f "^motion.+-c.*"', shell=True)  # if motion hangs get nasty !
+        while self.count_motion_running() > 0:
             log.d('resorting to kill -9 ... ouch !')
-            subprocess.call('pkill -9 -f ".*motion.+-c.*"', shell=True)  # if motion hangs get nasty !
+            subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)  # if motion hangs get nasty !
+            time.sleep(2)
         
         log('motion killed') 
         
@@ -68,7 +69,8 @@ class MotionDaemon(Process):
             try:
                 if not self.is_port_alive(8080):
                     self.stop_motion()
-                if not self.is_motion_running():
+                if self.count_motion_running() != 1:
+                    self.stop_motion()
                     self.start_motion()
                     
 #                 raise Exception('motion killed')             
@@ -91,8 +93,5 @@ class MotionDaemon(Process):
     def stop(self):
         self.started = False
         self.stop_motion()
-        
-        
-    
         
         

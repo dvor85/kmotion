@@ -103,7 +103,7 @@ class Hkd2_Feed():
                 os.remove(os.path.join(jpg_dir, jpg))
                 
                 feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
-                if os.path.isfile(feed_www_jpg):
+                if os.path.lexists(feed_www_jpg):
                     os.remove(feed_www_jpg)
                             
 

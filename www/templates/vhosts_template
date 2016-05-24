@@ -67,6 +67,7 @@ NameVirtualHost *:{port}
     LogLevel info
 
     ErrorLog {logs_dir}/error_kmotion.log
+    #TransferLog {logs_dir}/access_kmotion.log
     #CustomLog {logs_dir}/access_kmotion.log combined
     
 </VirtualHost>

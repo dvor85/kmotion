@@ -25,6 +25,7 @@ class Kmotion_Hkd1(Process):
         self.kmotion_dir = kmotion_dir
         self.max_size_gb = 0  # max size permitted for the images dbase
         self.version = ''  # the current kmotion software version
+        self.motion_log = os.path.join(self.kmotion_dir, 'www', 'motion_out')
         self.www_logs = WWWLog(self.kmotion_dir) 
         
     def read_config(self):
@@ -55,6 +56,19 @@ class Kmotion_Hkd1(Process):
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 log.d('init - error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
+    
+    def truncate_motion_logs(self):
+        try:
+            with open(self.motion_log, 'r+') as f_obj:
+                events = f_obj.read().splitlines()
+                if len(events) > 500:  # truncate logs
+                    events = events[-500:]
+                    f_obj.seek(0)
+                    f_obj.write('\n'.join(events))
+                    f_obj.truncate()
+        except:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            log.d('truncate motion logs error {type}: {value}'.format(**{'type':exc_type, 'value':exc_value}))
         
     def run(self):
         """
@@ -73,6 +87,7 @@ class Kmotion_Hkd1(Process):
                 while self.started:   
                     # sleep here to allow system to settle
                     time.sleep(15 * 60)
+                    self.truncate_motion_logs()
         
                     # if > 90% of max_size_gb, delete oldest
                     if  self.images_dbase_size() > self.max_size_gb * 0.9:
