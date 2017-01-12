@@ -1,62 +1,59 @@
-Listen {port}
-NameVirtualHost *:{port}
+Listen ${port}
+NameVirtualHost *:${port}
 # http://httpd.apache.org/docs/2.0/misc/security_tips.html
 
-<VirtualHost *:{port}>
+<VirtualHost *:${port}>
 
     ServerName kmotion
     ServerAdmin webmaster@localhost
-    DocumentRoot {www_dir}
+    DocumentRoot ${www_dir}
     Options -Indexes
+    
+    SSLEngine on
+	SSLProtocol all -SSLv2
+	SSLCertificateFile  /etc/ssl/certs/kmotion.crt
+	SSLCertificateKeyFile /etc/ssl/private/kmotion.key
+	
     #UserDir disabled root 
-    
     <Directory />
-    Order Deny,Allow
-    Deny from All
+	    Order Deny,Allow
+	    Deny from All
     </Directory>
 
-    <Directory {www_dir}>
+    <Directory ${www_dir}>
         # secure login ...
-        AuthType Basic
-        {LDAP_block}
-        Require valid-user
+        ${AUTH_block}
 	
         AllowOverride None
         Order allow,deny
         allow from all
     </Directory>
     
-    Alias /images_dbase/ {images_dbase_dir}/
-    <Directory {images_dbase_dir}/>
+    Alias /images_dbase/ ${images_dbase_dir}/
+    <Directory ${images_dbase_dir}/>
         # secure login ...
-        AuthType Basic
-        {LDAP_block}
-        Require valid-user
+        ${AUTH_block}
 	
         AllowOverride None
         Order allow,deny
         allow from all
     </Directory>
 
-    Alias /kmotion_ramdisk/ {ramdisk_dir}/
-    <Directory {ramdisk_dir}/>
+    Alias /kmotion_ramdisk/ ${ramdisk_dir}/
+    <Directory ${ramdisk_dir}/>
         # secure login ...
-        AuthType Basic
-        {LDAP_block}
-        Require valid-user
+        ${AUTH_block}
 	
         AllowOverride None
         Order allow,deny
         allow from all
     </Directory>
     
-    WSGIScriptAlias /ajax {wsgi_scripts}/ajax.py
+    WSGIScriptAlias /ajax ${wsgi_scripts}/ajax.py
     WSGIPassAuthorization On
-	<Directory {wsgi_scripts}>
+	<Directory ${wsgi_scripts}>
 		# secure login ...
-        AuthType Basic
-        {LDAP_block}
-        Require valid-user
+        ${AUTH_block}
         
         AllowOverride None
   		Order allow,deny
@@ -64,10 +61,10 @@ NameVirtualHost *:{port}
 	</Directory>
 
     # Possible values include: debug, info, notice, warn, error, crit,
-    LogLevel info
+    LogLevel notice
 
-    ErrorLog {logs_dir}/error_kmotion.log
-    #TransferLog {logs_dir}/access_kmotion.log
-    #CustomLog {logs_dir}/access_kmotion.log combined
+    ErrorLog ${logs_dir}/error_kmotion.log
+    #TransferLog ${logs_dir}/access_kmotion.log
+    #CustomLog ${logs_dir}/access_kmotion.log combined
     
 </VirtualHost>
