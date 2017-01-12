@@ -10,6 +10,7 @@ different working directory
 """
 
 import sys
+import os
 import signal
 import time
 import core.logger as logger
@@ -53,16 +54,6 @@ class Kmotion:
         self.daemons.append(Kmotion_setd(self.kmotion_dir))
         self.daemons.append(Kmotion_split(self.kmotion_dir))
 
-    def main(self, option):
-        if option == 'stop':
-            self.kill_other()
-        elif option == 'status':
-            pass
-        else:
-            self.kill_other()
-            self.start()
-        self.www_log.add_shutdown_event()
-
     def start(self):
         """
         Check and start all the kmotion daemons
@@ -91,9 +82,6 @@ class Kmotion:
         for d in self.daemons:
             d.start()
         log.d('daemons started...')
-
-        log.d('waiting daemons ...')
-        self.wait_termination()
 
     def stop(self):
         """
@@ -131,20 +119,26 @@ class Kmotion:
             time.sleep(precision)
 
     def wait_termination(self):
+        log.d('waiting daemons ...')
         while self.active:
             self.sleep(1)
-        for d in self.daemons:
-            try:
-                d.join()
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                log.e('wait_termination of {daemon} - error {type}: {value}'.format(
-                    daemon=d.name, type=exc_type, value=exc_value))
+#         for d in self.daemons:
+#             try:
+#                 d.join()
+#             except:
+#                 exc_type, exc_value, exc_traceback = sys.exc_info()
+#                 log.e('wait_termination of {daemon} - error {type}: {value}'.format(
+#                     daemon=d.name, type=exc_type, value=exc_value))
 
 
 if __name__ == '__main__':
+    log.d("PID={pid}".format(pid=os.getpid()))
     kmotion_dir = os.path.abspath(os.path.dirname(__file__))
-    option = ''
-    if len(sys.argv) > 1:
-        option = sys.argv[1]
-    kmotion = Kmotion(kmotion_dir).main(option)
+#     option = ''
+#     if len(sys.argv) > 1:
+#         option = sys.argv[1]
+    kmotion = Kmotion(kmotion_dir)
+    kmotion.kill_other()
+    kmotion.start()
+    kmotion.wait_termination()
+    kmotion.www_log.add_shutdown_event()

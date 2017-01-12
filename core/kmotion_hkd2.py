@@ -189,4 +189,5 @@ class Kmotion_Hkd2(Process):
                 self.sleep(60)
 
     def stop(self):
+        log.d('stop {name}'.format(name=__name__))
         self.active = False

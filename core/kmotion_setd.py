@@ -115,4 +115,5 @@ class Kmotion_setd(Process):
             time.sleep(precision)
 
     def stop(self):
+        log.d('stop {name}'.format(name=__name__))
         self.active = False

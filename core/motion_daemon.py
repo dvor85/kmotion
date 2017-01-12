@@ -48,12 +48,30 @@ class MotionDaemon(Process):
             #             self.init_motion.init_motion_out()  # clear 'motion_out'
             log('starting motion')
             self.motion_daemon = subprocess.Popen(
-                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir)], shell=False)
+                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir)],
+                close_fds=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=False)
+            motion_out = os.path.join(self.kmotion_dir, 'www/motion_out')
+            subprocess.Popen('grep --line-buffered -v "saved to"',
+                             shell=True,
+                             close_fds=True,
+                             stdout=open(motion_out, 'w'),
+                             stderr=subprocess.STDOUT,
+                             stdin=self.motion_daemon.stdout)
         else:
             log.e('no motion.conf, motion not active')
 
+    def stop(self):
+        log.d('stop {name}'.format(name=__name__))
+        self.active = False
+        self.stop_motion()
+
     def stop_motion(self):
         if self.motion_daemon is not None:
+            log.d('kill motion daemon')
+            self.motion_daemon.stdout.close()
             self.motion_daemon.kill()
             self.motion_daemon = None
         subprocess.call('pkill -f "^motion.+-c.*"', shell=True)  # if motion hangs get nasty !
@@ -102,7 +120,3 @@ class MotionDaemon(Process):
         while self.active and t < timeout:
             t += precision
             time.sleep(precision)
-
-    def stop(self):
-        self.active = False
-        self.stop_motion()

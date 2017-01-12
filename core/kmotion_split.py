@@ -60,9 +60,10 @@ class Kmotion_split(Process):
         while self.active:
             try:
                 self.sleep(15)
-                events = os.listdir(self.events_dir)
-                for event in events:
-                    threading.Thread(target=self.main, args=(event,)).start()
+                if self.active:
+                    events = os.listdir(self.events_dir)
+                    for event in events:
+                        threading.Thread(target=self.main, args=(event,)).start()
 
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
@@ -86,4 +87,5 @@ class Kmotion_split(Process):
             time.sleep(precision)
 
     def stop(self):
+        log.d('stop {name}'.format(name=__name__))
         self.active = False
