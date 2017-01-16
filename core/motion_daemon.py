@@ -120,3 +120,4 @@ class MotionDaemon(Process):
         while self.active and t < timeout:
             t += precision
             time.sleep(precision)
+        return self.active

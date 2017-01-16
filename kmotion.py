@@ -117,18 +117,19 @@ class Kmotion:
         while self.active and t < timeout:
             t += precision
             time.sleep(precision)
+        return self.active
 
     def wait_termination(self):
         log.d('waiting daemons ...')
-        while self.active:
-            self.sleep(1)
-#         for d in self.daemons:
-#             try:
-#                 d.join()
-#             except:
-#                 exc_type, exc_value, exc_traceback = sys.exc_info()
-#                 log.e('wait_termination of {daemon} - error {type}: {value}'.format(
-#                     daemon=d.name, type=exc_type, value=exc_value))
+        while self.sleep(1):
+            pass
+        for d in self.daemons:
+            try:
+                d.join(2)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                log.e('wait_termination of {daemon} - error {type}: {value}'.format(
+                    daemon=d.name, type=exc_type, value=exc_value))
 
 
 if __name__ == '__main__':

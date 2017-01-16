@@ -113,6 +113,7 @@ class Kmotion_setd(Process):
         while self.active and t < timeout:
             t += precision
             time.sleep(precision)
+        return self.active
 
     def stop(self):
         log.d('stop {name}'.format(name=__name__))

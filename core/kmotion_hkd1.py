@@ -40,6 +40,7 @@ class Kmotion_Hkd1(Process):
         while self.active and t < timeout:
             t += precision
             time.sleep(precision)
+        return self.active
 
     def read_config(self):
 
@@ -97,29 +98,26 @@ class Kmotion_Hkd1(Process):
                 self.read_config()
                 log('starting daemon ...')
 
-                while self.active:
-                    # sleep here to allow system to settle
-                    self.sleep(15 * 60)
-                    if self.active:
-                        self.truncate_motion_logs()
+                while self.sleep(15 * 60):
+                    self.truncate_motion_logs()
 
-                        # if > 90% of max_size_gb, delete oldest
-                        if self.images_dbase_size() > self.max_size_gb * 0.9:
+                    # if > 90% of max_size_gb, delete oldest
+                    if self.images_dbase_size() > self.max_size_gb * 0.9:
 
-                            dir_ = os.listdir(self.images_dbase_dir)
-                            dir_.sort()
+                        dir_ = os.listdir(self.images_dbase_dir)
+                        dir_.sort()
 
-                            # if need to delete current recording, shut down kmotion
-                            if time.strftime('%Y%m%d') == dir_[0]:
-                                log.e('** CRITICAL ERROR ** crash - image storage limit reached ... need to')
-                                log.e('** CRITICAL ERROR ** crash - delete todays data, \'images_dbase\' is too small')
-                                log.e('** CRITICAL ERROR ** crash - SHUTTING DOWN KMOTION !!')
-                                self.www_logs.add_no_space_event()
+                        # if need to delete current recording, shut down kmotion
+                        if time.strftime('%Y%m%d') == dir_[0]:
+                            log.e('** CRITICAL ERROR ** crash - image storage limit reached ... need to')
+                            log.e('** CRITICAL ERROR ** crash - delete todays data, \'images_dbase\' is too small')
+                            log.e('** CRITICAL ERROR ** crash - SHUTTING DOWN KMOTION !!')
+                            self.www_logs.add_no_space_event()
 
-                            self.www_logs.add_deletion_event(dir_[0])
-                            log.e('image storeage limit reached - deleteing %s/%s' %
-                                  (self.images_dbase_dir, dir_[0]))
-                            shutil.rmtree(os.path.join(self.images_dbase_dir, dir_[0]))
+                        self.www_logs.add_deletion_event(dir_[0])
+                        log.e('image storeage limit reached - deleteing %s/%s' %
+                              (self.images_dbase_dir, dir_[0]))
+                        shutil.rmtree(os.path.join(self.images_dbase_dir, dir_[0]))
 
             except:  # global exception catch
                 exc_type, exc_value, exc_tb = sys.exc_info()

@@ -155,6 +155,7 @@ class Kmotion_Hkd2(Process):
         while self.active and t < timeout:
             t += precision
             time.sleep(precision)
+        return self.active
 
     def run(self):
         """
@@ -171,8 +172,7 @@ class Kmotion_Hkd2(Process):
                 self.instance_list = []  # list of Hkd2_Feed instances
                 for feed in self.feed_list:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed))
-                while self.active:
-                    self.sleep(2)
+                while self.sleep(2):
                     for inst in self.instance_list:
                         inst.main()
             except:
