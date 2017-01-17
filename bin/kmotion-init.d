@@ -11,7 +11,7 @@
 
 DAEMON=/usr/local/kmotion3/kmotion.py
 NAME=kmotion
-PIDFILE=/var/run/$NAME/$NAME.pid
+PIDFILE=/run/$NAME/$NAME.pid
 DESC="${NAME}"
 USER=videouser
 
@@ -25,8 +25,12 @@ OPTIONS="--quiet --pidfile $PIDFILE"
 
 do_start()
 {
-    mkdir -p `dirname "$PIDFILE"`
-    start-stop-daemon --start --background $OPTIONS --make-pidfile --chuid $USER --startas $DAEMON
+    mkdir -p $(dirname "$PIDFILE")
+    
+    #IF DAEMON DON'T WRITE PIDFILE THEN COMMENT BELLOW LINE AND ADD "--make-pidfile" TO start-stop-daemon OPTION
+    chown -R $USER $(dirname "$PIDFILE")
+    
+    start-stop-daemon --start --background $OPTIONS --chuid $USER --startas $DAEMON
     return $?
 }
 

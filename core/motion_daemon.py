@@ -71,13 +71,12 @@ class MotionDaemon(Process):
     def stop_motion(self):
         if self.motion_daemon is not None:
             log.d('kill motion daemon')
-            self.motion_daemon.stdout.close()
             self.motion_daemon.kill()
             self.motion_daemon = None
-        subprocess.call('pkill -f "^motion.+-c.*"', shell=True)  # if motion hangs get nasty !
+
+        subprocess.call('pkill -f "^motion.+-c.*"', shell=True)
         while self.count_motion_running() > 0:
-            log.d('resorting to kill -9 ... ouch !')
-            subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)  # if motion hangs get nasty !
+            subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)
             self.sleep(2)
 
         log('motion killed')

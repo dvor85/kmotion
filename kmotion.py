@@ -39,12 +39,14 @@ class Kmotion:
         self.active = False
 
         signal.signal(signal.SIGTERM, self.signal_term)
+        self.pidfile = '/run/kmotion/kmotion.pid'
         self.www_log = WWWLog(self.kmotion_dir)
 
         parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
 
         self.init_core = InitCore(self.kmotion_dir)
+
 #         self.motion_daemon = MotionDaemon(self.kmotion_dir)
 
         self.daemons = []
@@ -64,6 +66,12 @@ class Kmotion:
         """
 
         log('starting kmotion ...')
+        try:
+            with open(self.pidfile, 'w') as pf:
+                pf.write(str(os.getpid()))
+        except IOError:
+            log.e("Can't write pid to pidfile")
+
         self.www_log.add_startup_event()
 
         # init the ramdisk dir
@@ -98,9 +106,14 @@ class Kmotion:
 
     def kill_other(self):
         log.d('killing daemons ...')
-        for pid in self.get_kmotion_pids():
+        try:
+            with open(self.pidfile, 'r') as pf:
+                pid = pf.read()
             os.kill(int(pid), signal.SIGTERM)
-        time.sleep(2)
+        except Exception:
+            log.e("Can't read pid from pidfile")
+            for pid in self.get_kmotion_pids():
+                os.kill(int(pid), signal.SIGTERM)
 
     def get_kmotion_pids(self):
         p_objs = subprocess.Popen('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True, stdout=subprocess.PIPE)
@@ -125,7 +138,7 @@ class Kmotion:
             pass
         for d in self.daemons:
             try:
-                d.join(2)
+                d.join(1.1 / len(self.daemons))
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 log.e('wait_termination of {daemon} - error {type}: {value}'.format(
@@ -133,7 +146,6 @@ class Kmotion:
 
 
 if __name__ == '__main__':
-    log.d("PID={pid}".format(pid=os.getpid()))
     kmotion_dir = os.path.abspath(os.path.dirname(__file__))
 #     option = ''
 #     if len(sys.argv) > 1:
