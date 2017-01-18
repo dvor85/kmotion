@@ -2485,8 +2485,10 @@ KM.display_archive_ = function () {
 
         if (movies['movies'][movie_id] !== undefined) {
             display_secs = movies['movies'][movie_id]['start'];
-            update_tline_marker(display_secs);	   
-            reset_display_html(); 
+            update_tline_marker(display_secs);	  
+            if (!document.getElementById('html5player')) {
+                reset_display_html(); 
+            }
             build_video_player(movie_id);        	    
         }
     }
@@ -2521,8 +2523,11 @@ KM.display_archive_ = function () {
         var start = movies['movies'][movie_id]['start'];
         var end = movies['movies'][movie_id]['end'];
         var next_id = parseInt(movie_id)+1;
+        var html5player = document.getElementById('html5player');
 
-	    document.getElementById('display_html').innerHTML = '<div id="movie" style="overflow:hidden;background-color:#000000;width:100%;height:100%"> </div>';
+        if (!html5player) {
+            document.getElementById('display_html').innerHTML = '<div id="movie" style="overflow:hidden;background-color:#000000;width:100%;height:100%"> </div>';
+        }
 		
 		KM.videoPlayer.set_movie_duration(end-start);
 		KM.videoPlayer.set_cur_event_secs(start);
@@ -2544,16 +2549,21 @@ KM.display_archive_ = function () {
 			movie_id = document.getElementById('movie_id');
 			break;
 			
-		default:
-			KM.videoPlayer.set_video_player({id:'movie', name: name, width: backdrop_width-5, height: backdrop_height-5});
-			if (document.getElementById('html5player')) {
-				var html5player = document.getElementById('html5player');
-				html5player.onloadeddata=html5VideoLoaded;				
-				html5player.onseeked=html5VideoScrolled;
-				html5player.ontimeupdate=html5VideoProgress;
-				html5player.onended=html5VideoFinished;
-				html5player = null;
-			} 			
+		default:              
+            if (!html5player) {
+                KM.videoPlayer.set_video_player({id:'movie', name: name, width: backdrop_width-5, height: backdrop_height-5});
+                html5player = document.getElementById('html5player');
+                if (html5player) {                    
+                    html5player.onloadeddata=html5VideoLoaded;				
+                    html5player.onseeked=html5VideoScrolled;
+                    html5player.ontimeupdate=html5VideoProgress;
+                    html5player.onended=html5VideoFinished;
+                    html5player = null;
+                } 			
+            } else {
+                html5player.src = name;
+            }
+            
 			break;		
 		}
     }
@@ -4251,6 +4261,7 @@ KM.videoPlayer = function() {
                 KM.update_title_clock(cur_event_secs);
                 flashplayer=null;
             }
+            return false;
         }
     }
     
@@ -4318,6 +4329,7 @@ KM.videoPlayer = function() {
                 KM.update_title_clock(cur_event_secs);
                 html5player=null;
             }
+            return false;
         }
     }
     
