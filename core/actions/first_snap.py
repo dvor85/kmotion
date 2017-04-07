@@ -13,9 +13,9 @@ class first_snap(sample.sample):
 
     def __init__(self, kmotion_dir, feed):
         sys.path.append(kmotion_dir)
-        import core.logger as logger
+        from core import logger
         global log
-        log = logger.Logger('action_first_snap', logger.Logger.DEBUG)
+        log = logger.Logger('kmotion', logger.DEBUG)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         self.key = 'first_snap'
@@ -24,9 +24,8 @@ class first_snap(sample.sample):
             parser = mutex_kmotion_parser_rd(kmotion_dir)
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            log.e('init - error {type}: {value} while parsing kmotion_rc file'.format(**{'type': exc_type, 'value': exc_value}))
+        except Exception:
+            log.exception('init error')
 
     def start(self):
         sample.sample.start(self)
@@ -43,13 +42,12 @@ class first_snap(sample.sample):
 
         if os.path.isfile(p['src']):
             try:
-                log('copy {src} to {dst}'.format(**p), log.DEBUG)
+                log.info('copy {src} to {dst}'.format(**p))
                 if not os.path.isdir(os.path.dirname(p['dst'])):
                     os.makedirs(os.path.dirname(p['dst']))
                 shutil.copy(**p)
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                log.e('copy error {type}: {value} while copy jpg to snap dir.'.format(**{'type': exc_type, 'value': exc_value}))
+            except Exception:
+                log.exception('error while copy jpg to snap dir.')
 
     def end(self):
         # sample.sample.end(self)

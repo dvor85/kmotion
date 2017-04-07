@@ -13,7 +13,7 @@ import time
 import logger
 from mutex import Mutex
 
-log = logger.Logger('www_logs', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class WWWLog:
@@ -39,7 +39,7 @@ class WWWLog:
         return  : none
         """
 
-        log.d('add_startup_event() - adding startup event')
+        log.debug('add_startup_event() - adding startup event')
 
         # if last event did not include 'shutting down' text, either the first
         # run or a power fail crashed the system
@@ -61,7 +61,7 @@ class WWWLog:
 
         if error_flag:
 
-            log.d('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown')
+            log.debug('add_startup_event() - missing \'shutting down\' event - Incorrect shutdown')
 
         # in all cases add a starting up message
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion starting up'))
@@ -75,7 +75,7 @@ class WWWLog:
         return  : none
         """
 
-        log.d('add_shutdown_event() - adding shutdown event')
+        log.debug('add_shutdown_event() - adding shutdown event')
         self.add_event(time.strftime('%d/%m/%Y#%H:%M:%S#kmotion shutting down'))
 
     def add_deletion_event(self, date):
@@ -87,7 +87,7 @@ class WWWLog:
         return  : none
         """
 
-        log.d('add_deletion_event() - adding deletion event')
+        log.debug('add_deletion_event() - adding deletion event')
         year = date[:4]
         month = date[4:6]
         day = date[6:8]
@@ -102,7 +102,7 @@ class WWWLog:
         return  : none
         """
 
-        log.d('add_no_space_event() - adding deletion event')
+        log.debug('add_no_space_event() - adding deletion event')
         self.add_event('%s#Deleting todays data, \'images_dbase\' is too small' % time.strftime('%d/%m/%Y#%H:%M:%S'))
 
     def add_event(self, new_event):

@@ -7,7 +7,7 @@ import os
 import time
 import logger
 
-log = logger.Logger('mutex', logger.Logger.WARNING)
+log = logger.Logger('kmotion', logger.WARN)
 
 
 class Mutex:
@@ -15,7 +15,7 @@ class Mutex:
     def __init__(self, kmotion_dir, mutex):
         self.kmotion_dir = kmotion_dir
         self.mutex = mutex
-        log.d('init_mutex() - init mutex : %s' % self.mutex)
+        log.debug('init_mutex() - init mutex : %s' % self.mutex)
         self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
         if not os.path.isdir(self.mutex_dir):
             os.makedirs(self.mutex_dir, 0775)
@@ -52,7 +52,7 @@ class Mutex:
 
         try:
             os.unlink(os.path.join(self.mutex_dir, str(os.getpid())))
-        except:
+        except Exception:
             pass
 
     def is_lock(self):
@@ -63,7 +63,7 @@ class Mutex:
             if not os.path.isdir(os.path.join('/proc', m)):
                 try:
                     os.unlink(os.path.join(self.mutex_dir, m))
-                except:
+                except Exception:
                     pass
             else:
                 return True

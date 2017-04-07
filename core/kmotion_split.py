@@ -4,14 +4,12 @@
 '''
 import threading
 from multiprocessing import Process
-import sys
 import time
-import traceback
+from mutex_parsers import *
 import logger
 import events
-from mutex_parsers import *
 
-log = logger.Logger('split', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class Kmotion_split(Process):
@@ -47,7 +45,7 @@ class Kmotion_split(Process):
                 event_file = os.path.join(self.events_dir, feed)
 
                 if os.path.isfile(event_file) and (time.time() - os.path.getmtime(event_file)) >= self.max_duration:
-                    log.d('split feed %s' % (feed))
+                    log.debug('split feed %s' % (feed))
                     events.Events(self.kmotion_dir, feed, events.STATE_START).end()
             finally:
                 lock.release()
@@ -55,7 +53,7 @@ class Kmotion_split(Process):
             self.semaphore.release()
 
     def run(self):
-        log('starting daemon ...')
+        log.info('starting daemon ...')
         self.active = True
         while self.active:
             try:
@@ -64,17 +62,8 @@ class Kmotion_split(Process):
                     for event in events:
                         threading.Thread(target=self.main, args=(event,)).start()
 
-            except:
-                exc_type, exc_value, exc_tb = sys.exc_info()
-                exc_trace = traceback.extract_tb(exc_tb)[-1]
-                exc_loc1 = '%s' % exc_trace[0]
-                exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-
-                log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
-                log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2)
-                del(exc_tb)
+            except Exception:
+                log.exception('** CRITICAL ERROR **')
                 self.sleep(60)
 
     def sleep(self, timeout):
@@ -87,5 +76,5 @@ class Kmotion_split(Process):
         return self.active
 
     def stop(self):
-        log.d('stop {name}'.format(name=__name__))
+        log.debug('stop {name}'.format(name=__name__))
         self.active = False

@@ -11,7 +11,7 @@ import actions.actions as actions
 STATE_START = 'start'
 STATE_END = 'end'
 
-log = logger.Logger('events', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class Events:
@@ -47,15 +47,15 @@ class Events:
             elif self.state == STATE_END:
                 self.end()
             else:
-                log.e('command "{0}" not recognized'.format(self.state))
+                log.error('command "{0}" not recognized'.format(self.state))
         else:
-            log.d('{file} {feed} already running'.format(**{'file': os.path.basename(__file__), 'feed': self.feed}))
+            log.debug('{file} {feed} already running'.format(**{'file': os.path.basename(__file__), 'feed': self.feed}))
 
     def start(self):
 
         self.state = STATE_START
         if not os.path.isfile(self.event_file):
-            log.d('start: creating: {0}'.format(self.event_file))
+            log.debug('start: creating: {0}'.format(self.event_file))
             with open(self.event_file, 'w'):
                 pass
 
@@ -69,7 +69,7 @@ class Events:
         actions.Actions(self.kmotion_dir, self.feed).end()
 
         if os.path.isfile(self.event_file):
-            log.d('end: delete {0}'.format(self.event_file))
+            log.debug('end: delete {0}'.format(self.event_file))
             os.unlink(self.event_file)
 
         if self.getLastState() != self.state:

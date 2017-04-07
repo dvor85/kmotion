@@ -5,11 +5,9 @@ Waits on the 'fifo_settings_wr' fifo until data received then parse the data
 and modifiy 'www_rc'
 """
 
-import sys
 import os.path
 import logger
 import time
-import traceback
 import json
 import subprocess
 import threading
@@ -18,7 +16,7 @@ from mutex_parsers import *
 from multiprocessing import Process
 from camera_lost import CameraLost
 
-log = logger.Logger('setd', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class Kmotion_setd(Process):
@@ -37,14 +35,14 @@ class Kmotion_setd(Process):
 
         """
 
-        log('starting daemon ...')
+        log.info('starting daemon ...')
 
         while self.active:
-            log.d('waiting on FIFO pipe data')
+            log.debug('waiting on FIFO pipe data')
             self.config = {}
             with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein:
                 data = pipein.read()
-            log.d('kmotion FIFO pipe data: %s' % data)
+            log.debug('kmotion FIFO pipe data: %s' % data)
 
             self.config = json.loads(data)
             self.user = self.config["user"]
@@ -85,7 +83,7 @@ class Kmotion_setd(Process):
             mutex_www_parser_wr(self.kmotion_dir, self.www_parser, www_rc)
 
             if must_reload and www_rc == 'www_rc':
-                log.e('Reload kmotion...')
+                log.error('Reload kmotion...')
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
 
     def run(self):
@@ -93,17 +91,8 @@ class Kmotion_setd(Process):
         while self.active:
             try:
                 self.main()
-            except:  # global exception catch
-                exc_type, exc_value, exc_tb = sys.exc_info()
-                exc_trace = traceback.extract_tb(exc_tb)[-1]
-                exc_loc1 = '%s' % exc_trace[0]
-                exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-
-                log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
-                log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2)
-                del(exc_tb)
+            except Exception:  # global exception catch
+                log.exception('** CRITICAL ERROR **')
                 self.sleep(60)
 
     def sleep(self, timeout):
@@ -116,5 +105,5 @@ class Kmotion_setd(Process):
         return self.active
 
     def stop(self):
-        log.d('stop {name}'.format(name=__name__))
+        log.debug('stop {name}'.format(name=__name__))
         self.active = False

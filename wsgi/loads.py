@@ -2,7 +2,7 @@ import subprocess
 from datetime import timedelta
 try:
     import simplejson as json
-except:
+except ImportError:
     import json
 
 

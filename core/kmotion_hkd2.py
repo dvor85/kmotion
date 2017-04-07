@@ -5,17 +5,15 @@
 Copys, moves or deletes files
 """
 
-import sys
 import time
 import shutil
-import traceback
 from datetime import datetime
 import logger
 from mutex_parsers import *
 from multiprocessing import Process
 
 
-log = logger.Logger('hkd2', logger.Logger.WARNING)
+log = logger.Logger('kmotion', logger.WARN)
 
 
 class Hkd2_Feed():
@@ -46,9 +44,8 @@ class Hkd2_Feed():
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            log.e('** CRITICAL ERROR ** corrupt \'kmotion_rc\': %s' %
-                  sys.exc_info()[1])
-            log.e('** CRITICAL ERROR ** killing all daemons and terminating')
+            log.exception('** CRITICAL ERROR ** corrupt \'kmotion_rc\'')
+            log.exception('** CRITICAL ERROR ** killing all daemons and terminating')
             # sys.exit()
 
         parser = mutex_www_parser_rd(self.kmotion_dir)
@@ -90,19 +87,16 @@ class Hkd2_Feed():
 
                 if self.feed_snap_enabled and self.snap_time <= jpg_time:
                     try:
-                        log.d('service_snap() - copy {src} to {dst}'.format(**p))
+                        log.debug('service_snap() - copy {src} to {dst}'.format(**p))
                         if not os.path.isdir(os.path.dirname(p['dst'])):
                             os.makedirs(os.path.dirname(p['dst']))
                         shutil.copy(**p)
-                    except:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        log.e(
-                            'service_snap() - error {type}: {value} while copy jpg to snap dir.'.format(
-                                **{'type': exc_type, 'value': exc_value}))
+                    except Exception:
+                        log.exception('service_snap() - error while copy jpg to snap dir.')
                     finally:
                         self.inc_snap_time(self.feed_snap_interval)
 
-                log.d('service_snap() - delete {src}'.format(**p))
+                log.debug('service_snap() - delete {src}'.format(**p))
                 os.remove(os.path.join(jpg_dir, jpg))
 
                 feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
@@ -143,9 +137,8 @@ class Kmotion_Hkd2(Process):
                     if www_parser.getboolean(section, 'feed_enabled'):
                         feed = int(section.replace('motion_feed', ''))
                         self.feed_list.append(feed)
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                log.d('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+            except Exception:
+                log.exception('init error')
         self.feed_list.sort()
 
     def sleep(self, timeout):
@@ -168,26 +161,17 @@ class Kmotion_Hkd2(Process):
         self.active = True
         while self.active:
             try:
-                log('starting daemon ...')
+                log.info('starting daemon ...')
                 self.instance_list = []  # list of Hkd2_Feed instances
                 for feed in self.feed_list:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed))
                 while self.sleep(2):
                     for inst in self.instance_list:
                         inst.main()
-            except:
-                exc_type, exc_value, exc_tb = sys.exc_info()
-                exc_trace = traceback.extract_tb(exc_tb)[-1]
-                exc_loc1 = '%s' % exc_trace[0]
-                exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-
-                log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
-                log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2)
-                del(exc_tb)
+            except Exception:
+                log.exception('** CRITICAL ERROR **')
                 self.sleep(60)
 
     def stop(self):
-        log.d('stop {name}'.format(name=__name__))
+        log.debug('stop {name}'.format(name=__name__))
         self.active = False

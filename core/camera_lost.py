@@ -11,7 +11,7 @@ import urllib
 from mutex_parsers import *
 from utils import add_userinfo
 
-log = logger.Logger('camera_lost', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class CameraLost:
@@ -34,9 +34,8 @@ class CameraLost:
                         if www_parser.getboolean(section, 'feed_enabled'):
                             feed = int(section.replace('motion_feed', ''))
                             self.feed_list.append(feed)
-                except:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    log.d('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+                except Exception:
+                    log.exception('init error')
             self.feed_list.sort()
             self.feed_thread = self.feed_list.index(self.feed) + 1
 
@@ -45,9 +44,8 @@ class CameraLost:
                 www_parser.get('motion_feed%02i' % self.feed, 'feed_url'), self.feed_username, self.feed_password)
             self.reboot_url = add_userinfo(
                 www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'), self.feed_username, self.feed_password)
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            log.e('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+        except Exception:
+            log.exception('init error')
 
     def main(self):
         if len(self.get_prev_instances()) == 0:
@@ -64,10 +62,8 @@ class CameraLost:
                             break
                     finally:
                         res.close()
-                except:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    log.e('error {type}: {value} while getting image from feed {feed}'.format(
-                        **{'type': exc_type, 'value': exc_value, 'feed': self.feed}))
+                except Exception:
+                    log.error('error while getting image from feed {feed}'.format(feed=self.feed))
                 finally:
                     time.sleep(10)
 
@@ -77,45 +73,43 @@ class CameraLost:
                     self.restart_thread(self.feed_thread)
 
         else:
-            log.e('{file} {feed} already running'.format(**{'file': os.path.basename(__file__), 'feed': self.feed}))
+            log.error('{file} {feed} already running'.format(**{'file': os.path.basename(__file__), 'feed': self.feed}))
 
     def reboot_camera(self):
         try:
             res = urllib.urlopen(self.reboot_url)
             try:
                 if res.getcode() == 200:
-                    log.d('reboot {0} success'.format(self.feed))
+                    log.debug('reboot {0} success'.format(self.feed))
                     return True
                 else:
-                    log.d('reboot {0} failed with status code {1}'.format(self.feed, res.getcode()))
+                    log.debug('reboot {0} failed with status code {1}'.format(self.feed, res.getcode()))
             finally:
                 res.close()
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            log.e('error {type}: {value} while reboot {feed}'.format(**{'type': exc_type, 'value': exc_value, 'feed': self.feed}))
+        except Exception:
+            log.error('error while reboot {feed}'.format(feed=self.feed))
 
     def restart_thread(self, thread):
         try:
             res = urllib.urlopen("http://localhost:8080/{feed_thread}/action/restart".format(**{'feed_thread': thread}))
             try:
                 if res.getcode() == 200:
-                    log.d('restart feed_thread {feed_thread} success'.format(**{'feed_thread': thread}))
+                    log.debug('restart feed_thread {feed_thread} success'.format(**{'feed_thread': thread}))
                     return True
                 else:
-                    log.d('restart feed_thread {feed_thread} failed with status code {code}'.format(
+                    log.debug('restart feed_thread {feed_thread} failed with status code {code}'.format(
                         {'feed_thread': thread, 'code': res.getcode()}))
             finally:
                 res.close()
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            log.e('error {type}: {value} while restart feed_thread {feed_thread}'.format(
-                **{'type': exc_type, 'value': exc_value, 'feed_thread': thread}))
+        except Exception:
+            log.error('error while restart feed_thread {feed_thread}'.format(feed_thread=thread))
 
     def get_prev_instances(self):
         p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' %
                                  (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
         stdout = p_obj.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

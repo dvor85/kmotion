@@ -10,7 +10,7 @@ import subprocess
 from string import Template
 from mutex_parsers import *
 
-log = logger.Logger('init_core', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class InitCore:
@@ -54,9 +54,8 @@ class InitCore:
                     if self.www_parser.getboolean(section, 'feed_enabled'):
                         feed = int(section.replace('motion_feed', ''))
                         self.feed_list.append(feed)
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                log.d('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+            except Exception:
+                log.exception('init error')
         self.feed_list.sort()
 
     def init_ramdisk_dir(self):
@@ -71,25 +70,25 @@ class InitCore:
 
         states_dir = os.path.join(self.ramdisk_dir, 'states')
         if not os.path.isdir(states_dir):
-            log.d('init_ramdisk_dir() - creating \'states\' folder')
+            log.debug('init_ramdisk_dir() - creating \'states\' folder')
             os.makedirs(states_dir)
 
         for sfile in os.listdir(states_dir):
             state_file = os.path.join(states_dir, sfile)
             if os.path.isfile(state_file):
-                log.d('init_ramdisk_dir() - deleting \'%s\' file' % (state_file))
+                log.debug('init_ramdisk_dir() - deleting \'%s\' file' % (state_file))
                 os.unlink(state_file)
 
         events_dir = os.path.join(self.ramdisk_dir, 'events')
         if not os.path.isdir(events_dir):
-            log.d('init_ramdisk_dir() - creating \'events\' folder')
+            log.debug('init_ramdisk_dir() - creating \'events\' folder')
             os.makedirs(events_dir)
 
         for feed in self.feed_list:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)):
                 try:
                     os.makedirs('%s/%02i' % (self.ramdisk_dir, feed))
-                    log.d('init_ramdisk_dir() - creating \'%02i\' folder' % feed)
+                    log.debug('init_ramdisk_dir() - creating \'%02i\' folder' % feed)
                 except OSError:
                     pass
 
@@ -124,9 +123,9 @@ class InitCore:
         return  : none
         """
 
-        log.d('gen_vhost() - Generating vhost/kmotion file')
+        log.debug('gen_vhost() - Generating vhost/kmotion file')
 
-        log.d('gen_vhost() - users_digest mode enabled')
+        log.debug('gen_vhost() - users_digest mode enabled')
         self.AUTH_block = """
         # ** INFORMATION ** Users digest file enabled ...
         AuthType Basic
@@ -147,8 +146,7 @@ class InitCore:
                 f_obj1.write(tmpl.safe_substitute(**self.__dict__))
 
         except IOError:
-            log.e('ERROR by generating vhosts/kmotion file')
-            log.e(str(sys.exc_info()[1]))
+            log.exception('ERROR by generating vhosts/kmotion file')
 
 
 if __name__ == '__main__':

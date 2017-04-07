@@ -3,7 +3,6 @@
 '''
 
 import os
-import sys
 import subprocess
 import shlex
 import time
@@ -19,9 +18,9 @@ class rtsp2mp4(sample.sample):
     def __init__(self, kmotion_dir, feed):
         sample.sample.__init__(self, kmotion_dir, feed)
 
-        import core.logger as logger
+        from core import logger
         global log
-        log = logger.Logger('action_rtsp2mp4', logger.Logger.DEBUG)
+        log = logger.Logger('kmotion', logger.DEBUG)
         self.key = 'rtsp2mp4'
 
         try:
@@ -29,9 +28,8 @@ class rtsp2mp4(sample.sample):
             parser = mutex_kmotion_parser_rd(kmotion_dir)
             self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
             self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            log.e('init - error {type}: {value} while parsing kmotion_rc file'.format(**{'type': exc_type, 'value': exc_value}))
+        except Exception:
+            log.exception('init error while parsing kmotion_rc file')
 
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
 
@@ -46,9 +44,8 @@ class rtsp2mp4(sample.sample):
             from core.utils import add_userinfo
             self.feed_grab_url = add_userinfo(
                 www_parser.get('motion_feed%02i' % self.feed, '%s_grab_url' % self.key), self.feed_username, self.feed_password)
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            log.e('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+        except Exception:
+            log.exception('init error')
 
     def get_grabber_pids(self):
         try:
@@ -56,7 +53,7 @@ class rtsp2mp4(sample.sample):
                 'pgrep -f "^avconv.+{src}.*"'.format(**{'src': self.feed_grab_url}), stdout=subprocess.PIPE, shell=True)
             stdout = p_obj.communicate()[0]
             return stdout.splitlines()
-        except:
+        except Exception:
             return []
 
     def get_cmdline(self, pid):
@@ -88,7 +85,7 @@ class rtsp2mp4(sample.sample):
             DEVNULL = open(os.devnull, 'wb')
 
         ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
-        log.d('start grabbing {src} to {dst} with pid={pid}'.format(**{'src': src, 'dst': dst, 'pid': ps.pid}))
+        log.debug('start grabbing {src} to {dst} with pid={pid}'.format(**{'src': src, 'dst': dst, 'pid': ps.pid}))
         return ps.pid
 
     def start(self):
@@ -110,9 +107,8 @@ class rtsp2mp4(sample.sample):
 
                 if len(self.get_grabber_pids()) == 0 and os.path.isfile(dst):
                     os.unlink(dst)
-        except:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            log.e('start - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+        except Exception:
+            log.exception('start error')
 
     def end(self):
         sample.sample.end(self)
@@ -125,6 +121,5 @@ class rtsp2mp4(sample.sample):
                     os.unlink(dst)
 
                 time.sleep(1)
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                log.e('end - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+            except Exception:
+                log.exception('end error')

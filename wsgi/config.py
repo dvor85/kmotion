@@ -4,7 +4,7 @@ import traceback
 
 try:
     import simplejson as json
-except:
+except ImportError:
     import json
 
 log = None
@@ -38,7 +38,7 @@ class ConfigRW():
                 scheme, data = auth.split(None, 1)
                 if scheme.lower() == 'basic':
                     username, password = data.decode('base64').split(':', 1)
-        except:
+        except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             print 'error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value})
         return username

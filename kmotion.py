@@ -10,10 +10,9 @@ different working directory
 """
 
 import sys
-import os
 import signal
 import time
-import core.logger as logger
+
 import subprocess
 from core.mutex_parsers import *
 from core.www_logs import WWWLog
@@ -23,9 +22,9 @@ from core.kmotion_hkd1 import Kmotion_Hkd1
 from core.kmotion_hkd2 import Kmotion_Hkd2
 from core.kmotion_setd import Kmotion_setd
 from core.kmotion_split import Kmotion_split
+from core import logger
 
-
-log = logger.Logger('main', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class exit_(Exception):
@@ -65,12 +64,12 @@ class Kmotion:
         return  : none
         """
 
-        log('starting kmotion ...')
+        log.info('starting kmotion ...')
         try:
             with open(self.pidfile, 'w') as pf:
                 pf.write(str(os.getpid()))
         except IOError:
-            log.e("Can't write pid to pidfile")
+            log.exception("Can't write pid to pidfile")
 
         self.www_log.add_startup_event()
 
@@ -84,12 +83,12 @@ class Kmotion:
 
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
 
-        log.d('starting daemons ...')
+        log.debug('starting daemons ...')
 #         self.motion_daemon.start_motion()
         self.active = True
         for d in self.daemons:
             d.start()
-        log.d('daemons started...')
+        log.debug('daemons started...')
 
     def stop(self):
         """
@@ -100,18 +99,18 @@ class Kmotion:
         return  : none
         """
         self.active = False
-        log.d('stopping kmotion ...')
+        log.debug('stopping kmotion ...')
         for d in self.daemons:
             d.stop()
 
     def kill_other(self):
-        log.d('killing daemons ...')
+        log.debug('killing daemons ...')
         try:
             with open(self.pidfile, 'r') as pf:
                 pid = pf.read()
             os.kill(int(pid), signal.SIGTERM)
         except Exception:
-            log.e("Can't read pid from pidfile")
+            log.exception("Can't read pid from pidfile")
             for pid in self.get_kmotion_pids():
                 os.kill(int(pid), signal.SIGTERM)
 
@@ -133,16 +132,14 @@ class Kmotion:
         return self.active
 
     def wait_termination(self):
-        log.d('waiting daemons ...')
+        log.debug('waiting daemons ...')
         while self.sleep(1):
             pass
         for d in self.daemons:
             try:
                 d.join(1.1 / len(self.daemons))
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                log.e('wait_termination of {daemon} - error {type}: {value}'.format(
-                    daemon=d.name, type=exc_type, value=exc_value))
+            except Exception:
+                log.exception('wait_termination of {daemon}'.format(daemon=d.name))
 
 
 if __name__ == '__main__':

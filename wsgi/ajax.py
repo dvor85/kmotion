@@ -31,7 +31,7 @@ def application(environ, start_response):
             from wsgi.config import ConfigRW
             body = ConfigRW(kmotion_dir, environ).main()
 
-    except:
+    except Exception:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         status = '500 Error'
         body = 'error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value})
@@ -39,6 +39,7 @@ def application(environ, start_response):
         start_response(status, [('Content-type', 'text/plain'),
                                 ('Content-Length', str(len(body)))])
     return [body]
+
 
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server

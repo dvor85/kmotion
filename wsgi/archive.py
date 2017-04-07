@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 try:
     import simplejson as json
-except:
+except ImportError:
     import json
 
 
@@ -38,7 +38,7 @@ class Archive():
                 scheme, data = auth.split(None, 1)
                 if scheme.lower() == 'basic':
                     username, password = data.decode('base64').split(':', 1)
-        except:
+        except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             print 'error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value})
         return username
@@ -67,7 +67,7 @@ class Archive():
                             feeds_list[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir, 'movie')),
                                                 'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
                                                 'title': title}
-            except:
+            except Exception:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
 

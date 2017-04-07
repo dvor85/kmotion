@@ -21,5 +21,6 @@ tar.cmd
 .pydevproject
 gitpush
 .admin
+.settings
 gitpull
 nohup.out

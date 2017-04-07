@@ -1,17 +1,15 @@
 '''
 @author: demon
 '''
-import logger
 import os
 import time
 import subprocess
-import sys
-import traceback
 from init_motion import InitMotion
 from multiprocessing import Process
+import logger
 
 
-log = logger.Logger('motion_daemon', logger.Logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class MotionDaemon(Process):
@@ -46,7 +44,7 @@ class MotionDaemon(Process):
         self.init_motion.gen_motion_configs()
         if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):
             #             self.init_motion.init_motion_out()  # clear 'motion_out'
-            log('starting motion')
+            log.info('starting motion')
             self.motion_daemon = subprocess.Popen(
                 ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir)],
                 close_fds=True,
@@ -61,16 +59,16 @@ class MotionDaemon(Process):
                              stderr=subprocess.STDOUT,
                              stdin=self.motion_daemon.stdout)
         else:
-            log.e('no motion.conf, motion not active')
+            log.error('no motion.conf, motion not active')
 
     def stop(self):
-        log.d('stop {name}'.format(name=__name__))
+        log.debug('stop {name}'.format(name=__name__))
         self.active = False
         self.stop_motion()
 
     def stop_motion(self):
         if self.motion_daemon is not None:
-            log.d('kill motion daemon')
+            log.debug('kill motion daemon')
             self.motion_daemon.kill()
             self.motion_daemon = None
 
@@ -79,7 +77,7 @@ class MotionDaemon(Process):
             subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)
             self.sleep(2)
 
-        log('motion killed')
+        log.info('motion killed')
 
     def run(self):
         """
@@ -98,17 +96,8 @@ class MotionDaemon(Process):
 
 #                 raise Exception('motion killed')
 
-            except:  # global exception catch
-                exc_type, exc_value, exc_tb = sys.exc_info()
-                exc_trace = traceback.extract_tb(exc_tb)[-1]
-                exc_loc1 = '%s' % exc_trace[0]
-                exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-
-                log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
-                log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
-                log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2)
-                del(exc_tb)
+            except Exception:  # global exception catch
+                log.exception('** CRITICAL ERROR **')
 
             self.sleep(60)
 
