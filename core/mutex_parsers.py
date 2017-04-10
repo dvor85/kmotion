@@ -18,15 +18,11 @@ def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):
         excepts :
         return  :
     """
-    www_rc_mutex = Mutex(kmotion_dir, www_rc)
     www_rc_file = '%s/www/%s' % (kmotion_dir, www_rc)
-    www_rc_mutex.acquire()
-    try:
+    with Mutex(kmotion_dir, www_rc):
         with open(www_rc_file, 'w') as f_obj:
             parser.write(f_obj)
         sort_rc.sort_rc(www_rc_file)
-    finally:
-        www_rc_mutex.release()
 
 
 def mutex_kmotion_parser_wr(kmotion_dir, parser):
@@ -38,15 +34,11 @@ def mutex_kmotion_parser_wr(kmotion_dir, parser):
         excepts :
         return  :
     """
-    kmotion_rc_mutex = Mutex(kmotion_dir, 'kmotion_rc')
     kmotion_rc_file = os.path.join(kmotion_dir, 'kmotion_rc')
-    kmotion_rc_mutex.acquire()
-    try:
+    with Mutex(kmotion_dir, 'kmotion_rc'):
         with open(kmotion_rc_file, 'w') as f_obj:
             parser.write(f_obj)
         sort_rc.sort_rc(kmotion_rc_file)
-    finally:
-        kmotion_rc_mutex.release()
 
 
 def mutex_www_parser_rd(kmotion_dir, www_rc='www_rc'):
@@ -60,12 +52,8 @@ def mutex_www_parser_rd(kmotion_dir, www_rc='www_rc'):
         """
 
     parser = ConfigParser.SafeConfigParser()
-    www_rc_mutex = Mutex(kmotion_dir, www_rc)
-    www_rc_mutex.acquire()
-    try:
+    with Mutex(kmotion_dir, www_rc):
         parser.read('%s/www/%s' % (kmotion_dir, www_rc))
-    finally:
-        www_rc_mutex.release()
     return parser
 
 
@@ -80,10 +68,6 @@ def mutex_kmotion_parser_rd(kmotion_dir):
     """
 
     parser = ConfigParser.SafeConfigParser()
-    kmotion_rc_mutex = Mutex(kmotion_dir, 'kmotion_rc')
-    kmotion_rc_mutex.acquire()
-    try:
+    with Mutex(kmotion_dir, 'kmotion_rc'):
         parser.read('%s/kmotion_rc' % kmotion_dir)
-    finally:
-        kmotion_rc_mutex.release()
     return parser

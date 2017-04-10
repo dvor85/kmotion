@@ -10,7 +10,7 @@ import logger
 log = logger.Logger('kmotion', logger.WARN)
 
 
-class Mutex:
+class Mutex():
 
     def __init__(self, kmotion_dir, mutex):
         self.kmotion_dir = kmotion_dir
@@ -54,6 +54,13 @@ class Mutex:
             os.unlink(os.path.join(self.mutex_dir, str(os.getpid())))
         except Exception:
             pass
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
 
     def is_lock(self):
 
