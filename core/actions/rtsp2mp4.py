@@ -50,7 +50,7 @@ class rtsp2mp4(sample.sample):
     def get_grabber_pids(self):
         try:
             p_obj = subprocess.Popen(
-                'pgrep -f "^avconv.+{src}.*"'.format(**{'src': self.feed_grab_url}), stdout=subprocess.PIPE, shell=True)
+                'pgrep -f "^avconv.+{src}.*"'.format(src=self.feed_grab_url), stdout=subprocess.PIPE, shell=True)
             stdout = p_obj.communicate()[0]
             return stdout.splitlines()
         except Exception:
@@ -77,15 +77,16 @@ class rtsp2mp4(sample.sample):
             vcodec = '-c:v copy'
 
         grab = 'avconv -threads auto -rtsp_transport tcp -n -i {src} {vcodec} {audio} {dst}'.format(
-            **{'src': src, 'dst': dst, 'vcodec': vcodec, 'audio': audio})
+            src=src, dst=dst, vcodec=vcodec, audio=audio)
 
         try:
             from subprocess import DEVNULL  # py3k
         except ImportError:
             DEVNULL = open(os.devnull, 'wb')
 
+        log.debug('try start grabbing {src} to {dst}'.format(src=src, dst=dst))
         ps = subprocess.Popen(shlex.split(grab), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
-        log.debug('start grabbing {src} to {dst} with pid={pid}'.format(**{'src': src, 'dst': dst, 'pid': ps.pid}))
+
         return ps.pid
 
     def start(self):
