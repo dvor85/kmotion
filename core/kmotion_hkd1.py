@@ -110,9 +110,8 @@ class Kmotion_Hkd1(Process):
                             self.www_logs.add_no_space_event()
 
                         self.www_logs.add_deletion_event(dir_[0])
-                        log.error('image storeage limit reached - deleteing %s/%s' %
-                                  (self.images_dbase_dir, dir_[0]))
-                        shutil.rmtree(os.path.join(self.images_dbase_dir, dir_[0]))
+                        log.error('image storeage limit reached - deleteing %s/%s' % (self.images_dbase_dir, dir_[0]))
+                        shutil.rmtree(os.path.join(self.images_dbase_dir, dir_[0]), ignore_errors=True)
 
             except Exception:  # global exception catch
                 log.exception('** CRITICAL ERROR **')

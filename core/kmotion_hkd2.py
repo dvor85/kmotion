@@ -167,7 +167,10 @@ class Kmotion_Hkd2(Process):
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed))
                 while self.sleep(2):
                     for inst in self.instance_list:
-                        inst.main()
+                        try:
+                            inst.main()
+                        except Exception as e:
+                            log.error(e)
             except Exception:
                 log.exception('** CRITICAL ERROR **')
                 self.sleep(60)
