@@ -7,8 +7,6 @@ try:
 except ImportError:
     import json
 
-log = None
-
 
 class ConfigRW():
 
@@ -134,25 +132,10 @@ class ConfigRW():
         return json.dumps(config)
 
     def write(self):
-        try:
-            import core.logger as logger
-            global log
-            log = logger.Logger('config_setd', logger.Logger.DEBUG)
-            config = json.loads(self.params['jdata'])
-            config['user'] = self.getUsername()
-            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
-                pipeout.write(json.dumps(config))
-        except:  # global exception catch
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            exc_trace = traceback.extract_tb(exc_tb)[-1]
-            exc_loc1 = '%s' % exc_trace[0]
-            exc_loc2 = '%s(), Line %s, "%s"' % (exc_trace[2], exc_trace[1], exc_trace[3])
-
-            log.e('** CRITICAL ERROR ** crash - type: %s' % exc_type)
-            log.e('** CRITICAL ERROR ** crash - value: %s' % exc_value)
-            log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc1)
-            log.e('** CRITICAL ERROR ** crash - traceback: %s' % exc_loc2)
-            del(exc_tb)
+        config = json.loads(self.params['jdata'])
+        config['user'] = self.getUsername()
+        with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
+            pipeout.write(json.dumps(config))
 
         return ''
 
