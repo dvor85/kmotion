@@ -88,33 +88,39 @@ class Kmotion_Hkd1(Process):
         return  : none
         """
         self.active = True
+        log.info('starting daemon ...')
         while self.active:
             try:
                 self.read_config()
-                log.info('starting daemon ...')
 
                 while self.sleep(15 * 60):
                     self.truncate_motion_logs()
 
                     # if > 90% of max_size_gb, delete oldest
                     if self.images_dbase_size() > self.max_size_gb * 0.9:
+                        log.info('image storage limit reached')
 
                         dir_ = os.listdir(self.images_dbase_dir)
                         dir_.sort()
 
                         # if need to delete current recording, shut down kmotion
-                        if time.strftime('%Y%m%d') == dir_[0]:
-                            log.error('** CRITICAL ERROR ** crash - image storage limit reached ... need to')
-                            log.error('** CRITICAL ERROR ** crash - delete todays data, \'images_dbase\' is too small')
-                            log.error('** CRITICAL ERROR ** crash - SHUTTING DOWN KMOTION !!')
-                            self.www_logs.add_no_space_event()
+                        for d in dir_:
+                            try:
+                                fulld = os.path.join(self.images_dbase_dir, d)
+                                if time.strftime('%Y%m%d') == d:
+                                    log.error('** CRITICAL ERROR ** crash - delete todays data, \'images_dbase\' is too small')
+                                    self.www_logs.add_no_space_event()
 
-                        self.www_logs.add_deletion_event(dir_[0])
-                        log.error('image storeage limit reached - deleteing %s/%s' % (self.images_dbase_dir, dir_[0]))
-                        shutil.rmtree(os.path.join(self.images_dbase_dir, dir_[0]), ignore_errors=True)
+                                log.info('try to delete {dir}'.format(dir=fulld))
+                                shutil.rmtree(fulld)
+                                self.www_logs.add_deletion_event(d)
+                                break
+                            except Exception as e:
+                                log.error('deleting of "{dir}" error: {error}'.format(dir=fulld, error=e))
 
-            except Exception:  # global exception catch
-                log.exception('** CRITICAL ERROR **')
+            except Exception as e:  # global exception catch
+                log.error('** CRITICAL ERROR **')
+                log.exception(e)
                 self.sleep(60)
 
     def stop(self):
