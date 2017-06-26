@@ -1,5 +1,6 @@
 from cgi import parse_qs, escape
 from UserDict import UserDict
+import shutil
 
 
 class Request(UserDict):
@@ -37,6 +38,11 @@ def uniq(seq):
     noDupes = []
     [noDupes.append(i) for i in seq if noDupes.count(i) == 0]
     return noDupes
+
+
+def rmdir(path):
+    shutil.rmtree(path, ignore_errors=True)
+    return not os.path.exists(path)
 
 
 def add_userinfo(src_url, username, password):

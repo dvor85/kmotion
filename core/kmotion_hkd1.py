@@ -7,12 +7,13 @@ configuration. Checks the current kmotion software version every 24 hours.
 """
 
 import time
-import shutil
 import logger
 from mutex_parsers import *
 from www_logs import WWWLog
 from multiprocessing import Process
 import subprocess
+import utils
+import os
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -112,9 +113,9 @@ class Kmotion_Hkd1(Process):
                                     self.www_logs.add_no_space_event()
 
                                 log.info('try to delete {dir}'.format(dir=fulld))
-                                shutil.rmtree(fulld)
-                                self.www_logs.add_deletion_event(d)
-                                break
+                                if utils.rmdir(fulld):
+                                    self.www_logs.add_deletion_event(d)
+                                    break
                             except Exception as e:
                                 log.error('deleting of "{dir}" error: {error}'.format(dir=fulld, error=e))
 
