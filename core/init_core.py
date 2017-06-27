@@ -9,6 +9,7 @@ import logger
 import subprocess
 from string import Template
 from mutex_parsers import *
+import os
 
 log = logger.Logger('kmotion', logger.DEBUG)
 

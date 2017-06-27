@@ -1,6 +1,7 @@
 from cgi import parse_qs, escape
 from UserDict import UserDict
 import shutil
+import os
 
 
 class Request(UserDict):

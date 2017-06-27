@@ -7,6 +7,7 @@ import logger
 import cPickle
 from mutex_parsers import *
 import actions.actions as actions
+import os
 
 STATE_START = 'start'
 STATE_END = 'end'

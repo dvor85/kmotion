@@ -9,6 +9,7 @@ changes. All changes should be in just this module.
 
 import logger
 from mutex_parsers import *
+import os
 
 log = logger.Logger('kmotion', logger.DEBUG)
 

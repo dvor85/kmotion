@@ -5,7 +5,7 @@ Waits on the 'fifo_settings_wr' fifo until data received then parse the data
 and modifiy 'www_rc'
 """
 
-import os.path
+import os
 import logger
 import time
 import json

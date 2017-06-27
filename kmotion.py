@@ -10,6 +10,7 @@ different working directory
 """
 
 import sys
+import os
 import signal
 import time
 

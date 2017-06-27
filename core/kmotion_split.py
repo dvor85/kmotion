@@ -8,6 +8,7 @@ import time
 from mutex_parsers import *
 import logger
 import events
+import os
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
