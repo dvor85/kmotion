@@ -15,13 +15,13 @@ except ImportError:
 
 class Archive():
 
-    def __init__(self, kmotion_dir, environ):
+    def __init__(self, kmotion_dir, env):
         sys.path.append(kmotion_dir)
         from core.utils import Request
         from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
         self.kmotion_dir = kmotion_dir
-        self.environ = environ
-        self.params = Request(self.environ)
+        self.env = env
+        self.params = Request(self.env)
         self.func = self.params['func']
         kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         self.images_dbase_dir = kmotion_parser.get('dirs', 'images_dbase_dir')
@@ -33,7 +33,7 @@ class Archive():
     def getUsername(self):
         try:
             username = ''
-            auth = self.environ['HTTP_AUTHORIZATION']
+            auth = self.env['HTTP_AUTHORIZATION']
             if auth:
                 scheme, data = auth.split(None, 1)
                 if scheme.lower() == 'basic':

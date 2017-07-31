@@ -45,4 +45,4 @@ feed_quality = 80
 rtsp2mp4_grab_url = rtsp://h264
 rtsp2mp4_recode = False
 rtsp2mp4_sound = True
-
+feed_gap = 2

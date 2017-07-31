@@ -6,7 +6,10 @@ import time
 import subprocess
 from init_motion import InitMotion
 from multiprocessing import Process
+from mutex_parsers import mutex_www_parser_rd
 import logger
+import urllib
+import utils
 
 
 log = logger.Logger('kmotion', logger.DEBUG)
@@ -29,6 +32,25 @@ class MotionDaemon(Process):
         self.init_motion = InitMotion(self.kmotion_dir)
         self.motion_daemon = None
         self.stop_motion()
+        self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
+        self.get_feeds()
+
+    def get_feeds(self):
+        self.feeds_list = {}
+        for section in self.www_parser.sections():
+            try:
+                if 'motion_feed' in section:
+                    feed = int(section.replace('motion_feed', ''))
+                    conf = {}
+                    for k, v in self.www_parser.items(section):
+                        conf[k] = utils.parseStr(v)
+                    if conf.get('feed_enabled', False):
+                        self.feeds_list[feed] = conf
+            except Exception as e:
+                log.error(e)
+
+    def feed2thread(self, feed):
+        return sorted([f for f in self.feeds_list.keys()]).index(feed) + 1
 
     def count_motion_running(self):
         p_obj = subprocess.Popen('pgrep -f "^motion.+-c.*"', shell=True, stdout=subprocess.PIPE)
@@ -37,6 +59,21 @@ class MotionDaemon(Process):
     def is_port_alive(self, port):
         p_obj = subprocess.Popen('netstat -ntl | grep %i' % port, shell=True, stdout=subprocess.PIPE)
         return p_obj.communicate()[0] != ''
+
+    def pause_motion_detector(self, thread):
+        try:
+            res = urllib.urlopen("http://localhost:8080/{feed_thread}/detection/pause".format(**{'feed_thread': thread}))
+            try:
+                if res.getcode() == 200:
+                    log.debug('pause detection feed_thread {feed_thread} success'.format(**{'feed_thread': thread}))
+                    return True
+                else:
+                    log.debug('pause detection feed_thread {feed_thread} failed with status code {code}'.format(
+                        {'feed_thread': thread, 'code': res.getcode()}))
+            finally:
+                res.close()
+        except Exception:
+            log.error('error while pause detection feed_thread {feed_thread}'.format(feed_thread=thread))
 
     def start_motion(self):
         # check for a 'motion.conf' file before starting 'motion'
@@ -93,6 +130,10 @@ class MotionDaemon(Process):
                 if self.count_motion_running() != 1:
                     self.stop_motion()
                     self.start_motion()
+
+                for feed, conf in self.feeds_list.iteritems():
+                    if conf.get('motion_detector', 1) == 0:
+                        self.pause_motion_detector(self.feed2thread(feed))
 
 #                 raise Exception('motion killed')
 

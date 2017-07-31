@@ -23,6 +23,7 @@ from core.kmotion_hkd1 import Kmotion_Hkd1
 from core.kmotion_hkd2 import Kmotion_Hkd2
 from core.kmotion_setd import Kmotion_setd
 from core.kmotion_split import Kmotion_split
+from core.motion_detector import Detector
 from core import logger
 
 log = logger.Logger('kmotion', logger.DEBUG)
@@ -55,6 +56,7 @@ class Kmotion:
         self.daemons.append(Kmotion_Hkd2(self.kmotion_dir))
         self.daemons.append(Kmotion_setd(self.kmotion_dir))
         self.daemons.append(Kmotion_split(self.kmotion_dir))
+        self.daemons.append(Detector(self.kmotion_dir))
 
     def start(self):
         """

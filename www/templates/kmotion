@@ -51,14 +51,14 @@ NameVirtualHost *:${port}
     
     WSGIScriptAlias /ajax ${wsgi_scripts}/ajax.py
     WSGIPassAuthorization On
-	<Directory ${wsgi_scripts}>
+    <Directory ${wsgi_scripts}>
 		# secure login ...
-        ${AUTH_block}
-        
-        AllowOverride None
-  		Order allow,deny
-  		Allow from all
-	</Directory>
+		${AUTH_block}
+	        
+		AllowOverride None
+		Order allow,deny
+		Allow from all
+    </Directory>
 
     # Possible values include: debug, info, notice, warn, error, crit,
     LogLevel notice
@@ -68,3 +68,5 @@ NameVirtualHost *:${port}
     #CustomLog ${logs_dir}/access_kmotion.log combined
     
 </VirtualHost>
+
+

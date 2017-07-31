@@ -9,12 +9,12 @@ except ImportError:
 
 class Feeds():
 
-    def __init__(self, kmotion_dir, environ):
+    def __init__(self, kmotion_dir, env):
         sys.path.append(kmotion_dir)
         from core.utils import Request
         self.kmotion_dir = kmotion_dir
-        self.environ = environ
-        self.params = Request(environ)
+        self.env = env
+        self.params = Request(env)
         self.ramdisk_dir = self.params['rdd']
 
     def main(self):

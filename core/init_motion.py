@@ -10,6 +10,7 @@ changes. All changes should be in just this module.
 import logger
 from mutex_parsers import *
 import os
+import utils
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -206,7 +207,6 @@ control_localhost on
 # ------------------------------------------------------------------------------
 # 'default' section
 # ------------------------------------------------------------------------------
-
 gap 2
 pre_capture 1
 post_capture 10
@@ -248,6 +248,10 @@ webcam_localhost off
 snapshot_interval 1
 webcam_localhost off
 '''
+                motion_detector = 1
+                if self.www_parser.has_option('motion_feed%02i' % feed, 'motion_detector'):
+                    motion_detector = self.www_parser.getint('motion_feed%02i' % feed, 'motion_detector')
+
                 print >> f_obj1, 'target_dir %s' % self.ramdisk_dir
 
                 # device and input
@@ -278,9 +282,15 @@ webcam_localhost off
 
                 print >> f_obj1, ''
 
+                # Gap is the seconds of no motion detection that triggers the end of an event
+                # An event is defined as a series of motion images taken within a short timeframe.
+                # Recommended value is 60 seconds (Default). The value 0 is allowed and disables
+                # events causing all Motion to be written to one single mpeg file and no pre_capture.
+                if motion_detector == 1:
+                    print >> f_obj1, 'on_event_start %s/core/events.py %i start' % (self.kmotion_dir, feed)
+                    print >> f_obj1, 'on_event_end %s/core/events.py %i end' % (self.kmotion_dir, feed)
+
                 print >> f_obj1, 'snapshot_filename %0.2i/%%Y%%m%%d%%H%%M%%S' % feed
-                print >> f_obj1, 'on_event_start %s/core/events.py %i start' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_event_end %s/core/events.py %i end' % (self.kmotion_dir, feed)
                 print >> f_obj1, 'on_camera_lost %s/core/camera_lost.py %i' % (self.kmotion_dir, feed)
                 print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f' % (self.kmotion_dir)
 

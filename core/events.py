@@ -5,9 +5,11 @@ import sys
 import subprocess
 import logger
 import cPickle
+import time
 from mutex_parsers import *
 import actions.actions as actions
 import os
+
 
 STATE_START = 'start'
 STATE_END = 'end'
@@ -38,7 +40,7 @@ class Events:
         try:
             with open(self.state_file, 'rb') as dump:
                 return cPickle.load(dump)
-        except:
+        except Exception:
             return self.state
 
     def main(self):
@@ -57,7 +59,7 @@ class Events:
         self.state = STATE_START
         if not os.path.isfile(self.event_file):
             log.debug('start: creating: {0}'.format(self.event_file))
-            with open(self.event_file, 'w'):
+            with open(self.event_file, 'wb'):
                 pass
 
         actions.Actions(self.kmotion_dir, self.feed).start()

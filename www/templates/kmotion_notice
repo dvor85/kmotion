@@ -1,0 +1,25 @@
+Listen ${port_notice}
+NameVirtualHost *:${port_notice}
+<VirtualHost *:${port}>
+
+	ServerName notice
+    ServerAdmin webmaster@localhost
+    Options -Indexes
+    
+    #UserDir disabled root 
+    <Directory />
+	    Order Deny,Allow
+	    Deny from All
+    </Directory>
+    
+    WSGIScriptAlias / ${wsgi_notice}/notice.py
+    <Directory ${wsgi_notice}>
+        AllowOverride None
+		Order allow,deny
+		Allow from all
+    </Directory>
+
+    ErrorLog ${logs_dir}/error_kmotion.log
+
+</VirtualHost>
+

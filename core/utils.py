@@ -6,15 +6,15 @@ import os
 
 class Request(UserDict):
 
-    def __init__(self, environ):
+    def __init__(self, env):
 
-        self.data = parse_qs(environ['QUERY_STRING'])
-        if environ['REQUEST_METHOD'].upper() == 'POST':
+        self.data = parse_qs(env['QUERY_STRING'])
+        if env['REQUEST_METHOD'].upper() == 'POST':
             try:
-                request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+                request_body_size = int(env.get('CONTENT_LENGTH', 0))
             except (ValueError):
                 request_body_size = 0
-            self.data.update(parse_qs(environ['wsgi.input'].read(request_body_size)))
+            self.data.update(parse_qs(env['wsgi.input'].read(request_body_size)))
 
     def __getitem__(self, key):
         return escape(UserDict.__getitem__(self, key)[0])
@@ -23,10 +23,10 @@ class Request(UserDict):
 def parseStr(s):
     try:
         return int(s)
-    except:
+    except Exception:
         try:
             return float(s)
-        except:
+        except Exception:
             if s.lower() == "true":
                 return True
             elif s.lower() == "false":

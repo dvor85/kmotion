@@ -10,12 +10,12 @@ except ImportError:
 
 class ConfigRW():
 
-    def __init__(self, kmotion_dir, environ):
+    def __init__(self, kmotion_dir, env):
         sys.path.append(kmotion_dir)
         from core.utils import Request
         self.kmotion_dir = kmotion_dir
-        self.environ = environ
-        self.params = Request(self.environ)
+        self.env = env
+        self.params = Request(self.env)
 
         from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
 
@@ -31,7 +31,7 @@ class ConfigRW():
     def getUsername(self):
         try:
             username = ''
-            auth = self.environ['HTTP_AUTHORIZATION']
+            auth = self.env['HTTP_AUTHORIZATION']
             if auth:
                 scheme, data = auth.split(None, 1)
                 if scheme.lower() == 'basic':

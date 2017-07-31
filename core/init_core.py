@@ -45,8 +45,20 @@ class InitCore:
         self.ramdisk_dir = self.kmotion_parser.get('dirs', 'ramdisk_dir')
         self.images_dbase_dir = self.kmotion_parser.get('dirs', 'images_dbase_dir')
         self.port = self.kmotion_parser.get('misc', 'port')
+        self.port_notice = self.kmotion_parser.get('misc', 'port_notice')
         self.version = self.kmotion_parser.get('version', 'string')
         self.title = self.kmotion_parser.get('version', 'title')
+        self.AUTH_block = """
+        # ** INFORMATION ** Users digest file enabled ...
+        AuthType Basic
+        AuthName "kmotion"
+        Require valid-user
+        AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
+
+        self.www_dir = os.path.join(self.kmotion_dir, 'www/www')
+        self.logs_dir = os.path.join(self.kmotion_dir, 'www/apache_logs')
+        self.wsgi_scripts = os.path.join(self.kmotion_dir, 'wsgi')
+        self.wsgi_notice = os.path.join(self.kmotion_dir, 'wsgi_notice')
 
         self.feed_list = []
         for section in self.www_parser.sections():
@@ -107,44 +119,33 @@ class InitCore:
         """
 
         # use BASH rather than os.mkfifo(), FIFO bug workaround :)
-        fifo_settings = '%s/www/fifo_settings_wr' % self.kmotion_dir
-        if not os.path.exists(fifo_settings):
-            # os.mkfifo(fifo_settings)
-            subprocess.call(['mkfifo', fifo_settings])
-            os.chown(fifo_settings, uid, gid)
-            os.chmod(fifo_settings, 0660)
+        fifos = [os.path.join(self.kmotion_dir, 'www/fifo_settings_wr'),
+                 os.path.join(self.kmotion_dir, 'www/fifo_motion_detector')]
+        for fifo in fifos:
+            if not os.path.exists(fifo):
+                subprocess.call(['mkfifo', fifo])
+                os.chown(fifo, uid, gid)
+                os.chmod(fifo, 0660)
 
     def gen_vhost(self):
         """
         Generate the kmotion vhost file from vhost_template expanding %directory%
         strings to their full paths as defined in kmotion_rc
 
-        args    : kmotion_dir ... the 'root' directory of kmotion
-        excepts : exit        ... if kmotion_rc cannot be read
         return  : none
         """
 
         log.debug('gen_vhost() - Generating vhost/kmotion file')
 
-        log.debug('gen_vhost() - users_digest mode enabled')
-        self.AUTH_block = """
-        # ** INFORMATION ** Users digest file enabled ...
-        AuthType Basic
-        AuthName "kmotion"
-        Require valid-user
-        AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
-
-        self.www_dir = os.path.join(self.kmotion_dir, 'www/www')
-        self.logs_dir = os.path.join(self.kmotion_dir, 'www/apache_logs')
-        self.wsgi_scripts = os.path.join(self.kmotion_dir, 'wsgi')
-
         try:
             vhost_dir = os.path.join(self.kmotion_dir, 'www/vhosts')
             if not os.path.isdir(vhost_dir):
                 os.makedirs(vhost_dir)
-            with open('%s/www/vhosts/kmotion' % self.kmotion_dir, 'w') as f_obj1:
-                tmpl = Template(open('%s/www/templates/vhosts_template' % self.kmotion_dir, 'r').read())
-                f_obj1.write(tmpl.safe_substitute(**self.__dict__))
+            tmpl_dir = os.path.join(self.kmotion_dir, 'www/templates')
+            for vhost_tmpl in os.listdir(tmpl_dir):
+                with open(os.path.join(vhost_dir, vhost_tmpl), 'w') as f_obj1:
+                    tmpl = Template(open(os.path.join(tmpl_dir, vhost_tmpl), 'r').read())
+                    f_obj1.write(tmpl.safe_substitute(**self.__dict__))
 
         except IOError:
             log.exception('ERROR by generating vhosts/kmotion file')
@@ -154,3 +155,5 @@ if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     print kmotion_dir
     InitCore(kmotion_dir).gen_vhost()
+    InitCore(kmotion_dir).init_ramdisk_dir()
+    InitCore(kmotion_dir).set_uid_gid_named_pipes(os.getuid(), os.getgid())

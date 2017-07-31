@@ -3,7 +3,7 @@ import os
 from cgi import escape
 
 
-def application(environ, start_response):
+def application(env, start_response):
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     sys.path.append(kmotion_dir)
 
@@ -11,25 +11,25 @@ def application(environ, start_response):
         status = '200 OK'
         body = ''
 
-        path_info = escape(environ['PATH_INFO'])
+        path_info = escape(env['PATH_INFO'])
         if path_info == '/archive':
             from wsgi.archive import Archive
-            body = Archive(kmotion_dir, environ).main()
+            body = Archive(kmotion_dir, env).main()
         elif path_info == '/feeds':
             from wsgi.feeds import Feeds
-            body = Feeds(kmotion_dir, environ).main()
+            body = Feeds(kmotion_dir, env).main()
         elif path_info == '/loads':
             from wsgi.loads import Loads
-            body = Loads(kmotion_dir, environ).main()
+            body = Loads(kmotion_dir, env).main()
         elif path_info == '/logs':
             from wsgi.logs import Logs
-            body = Logs(kmotion_dir, environ).main()
+            body = Logs(kmotion_dir, env).main()
         elif path_info == '/outs':
             from wsgi.outs import Outs
-            body = Outs(kmotion_dir, environ).main()
+            body = Outs(kmotion_dir, env).main()
         elif path_info == '/config':
             from wsgi.config import ConfigRW
-            body = ConfigRW(kmotion_dir, environ).main()
+            body = ConfigRW(kmotion_dir, env).main()
 
     except Exception:
         exc_type, exc_value, exc_traceback = sys.exc_info()

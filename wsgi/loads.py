@@ -41,9 +41,9 @@ class Loads:
     su:<used>
     """
 
-    def __init__(self, kmotion_dir, environ):
+    def __init__(self, kmotion_dir, env):
         self.kmotion_dir = kmotion_dir
-        self.environ = environ
+        self.env = env
 
     def main(self):
         data = {}
