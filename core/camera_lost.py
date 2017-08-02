@@ -9,8 +9,8 @@ import sys
 import os
 import time
 import urllib
-from mutex_parsers import *
 from utils import add_userinfo
+from config import ConfigRW
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -25,26 +25,15 @@ class CameraLost:
             self.kmotion_dir = kmotion_dir
             self.feed = int(feed)
 
-            www_parser = mutex_www_parser_rd(self.kmotion_dir)
-            self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
-            self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
-            self.feed_list = []
-            for section in www_parser.sections():
-                try:
-                    if 'motion_feed' in section:
-                        if www_parser.getboolean(section, 'feed_enabled'):
-                            feed = int(section.replace('motion_feed', ''))
-                            self.feed_list.append(feed)
-                except Exception:
-                    log.exception('init error')
-            self.feed_list.sort()
+            config = ConfigRW(self.kmotion_dir).read_www()
+            self.feed_username = config['feeds'][self.feed]['feed_lgn_name']
+            self.feed_password = config['feeds'][self.feed]['feed_lgn_pw']
+            self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
             self.feed_thread = self.feed_list.index(self.feed) + 1
 
             urllib.FancyURLopener.prompt_user_passwd = lambda *a, **k: (None, None)
-            self.feed_url = add_userinfo(
-                www_parser.get('motion_feed%02i' % self.feed, 'feed_url'), self.feed_username, self.feed_password)
-            self.reboot_url = add_userinfo(
-                www_parser.get('motion_feed%02i' % self.feed, 'feed_reboot_url'), self.feed_username, self.feed_password)
+            self.feed_url = add_userinfo(config['feeds'][self.feed]['feed_url'], self.feed_username, self.feed_password)
+            self.reboot_url = add_userinfo(config['feeds'][self.feed]['feed_reboot_url'], self.feed_username, self.feed_password)
         except Exception:
             log.exception('init error')
 

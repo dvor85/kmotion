@@ -8,9 +8,9 @@ changes. All changes should be in just this module.
 """
 
 import logger
-from mutex_parsers import *
 import os
 import utils
+from config import ConfigRW
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -19,22 +19,14 @@ class InitMotion:
 
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
-        self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
+        cfg = ConfigRW(kmotion_dir)
+        config_main = cfg.read_main()
+        self.config = cfg.read_www()
 
-        self.images_dbase_dir = self.kmotion_parser.get('dirs', 'images_dbase_dir')
-        self.ramdisk_dir = self.kmotion_parser.get('dirs', 'ramdisk_dir')
+        self.images_dbase_dir = config_main['images_dbase_dir']
+        self.ramdisk_dir = config_main['ramdisk_dir']
 
-        self.feed_list = []
-        for section in self.www_parser.sections():
-            try:
-                if 'motion_feed' in section:
-                    if self.www_parser.getboolean(section, 'feed_enabled'):
-                        feed = int(section.replace('motion_feed', ''))
-                        self.feed_list.append(feed)
-            except Exception:
-                log.exception('init error')
-        self.feed_list.sort()
+        self.feed_list = sorted([f for f in self.config['feeds'].keys() if self.config['feeds'][f].get('feed_enabled', False)])
 
     def create_mask(self, feed):
         """
@@ -48,11 +40,11 @@ class InitMotion:
         return  : none
         """
 
-        mask_hex_str = self.www_parser.get('motion_feed%02i' % feed, 'feed_mask')
+        mask_hex_str = self.config['feeds'][feed]['feed_mask']
         log.debug('create_mask() - mask hex string: %s' % mask_hex_str)
 
-        image_width = self.www_parser.getint('motion_feed%02i' % feed, 'feed_width')
-        image_height = self.www_parser.getint('motion_feed%02i' % feed, 'feed_height')
+        image_width = self.config['feeds'][feed]['feed_width']
+        image_height = self.config['feeds'][feed]['feed_height']
 
         log.debug('create_mask() - width: %i height: %i' % (image_width, image_height))
 
@@ -217,7 +209,7 @@ webcam_localhost off
                 print >> f_obj1, 'norm 1'
 
                 # feed mask,
-                if self.www_parser.get('motion_feed%02i' % feed, 'feed_mask') != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
+                if self.config['feeds'][feed]['feed_mask'] != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
                     self.create_mask(feed)
                     print >> f_obj1, 'mask_file %s/core/masks/mask%0.2i.pgm' % (self.kmotion_dir, feed)
 
@@ -248,32 +240,30 @@ webcam_localhost off
 snapshot_interval 1
 webcam_localhost off
 '''
-                motion_detector = 1
-                if self.www_parser.has_option('motion_feed%02i' % feed, 'motion_detector'):
-                    motion_detector = self.www_parser.getint('motion_feed%02i' % feed, 'motion_detector')
+                motion_detector = self.config['feeds'][feed].get('motion_detector', 1)
 
                 print >> f_obj1, 'target_dir %s' % self.ramdisk_dir
 
                 # device and input
-                feed_device = int(self.www_parser.get('motion_feed%02i' % feed, 'feed_device'))
+                feed_device = self.config['feeds'][feed]['feed_device']
                 if feed_device > -1:  # /dev/video? device
                     print >> f_obj1, 'videodevice /dev/video%s' % feed_device
-                    print >> f_obj1, 'input %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_input')
+                    print >> f_obj1, 'input %s' % self.config['feeds'][feed]['feed_input']
                 else:  # netcam
-                    print >> f_obj1, 'netcam_url  %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_url')
-                    print >> f_obj1, 'netcam_proxy %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_proxy')
+                    print >> f_obj1, 'netcam_url  %s' % self.config['feeds'][feed]['feed_url']
+                    print >> f_obj1, 'netcam_proxy %s' % self.config['feeds'][feed]['feed_proxy']
                     print >> f_obj1, 'netcam_userpass %s:%s' % (
-                        self.www_parser.get('motion_feed%02i' % feed, 'feed_lgn_name'),
-                        self.www_parser.get('motion_feed%02i' % feed, 'feed_lgn_pw'))
+                        self.config['feeds'][feed]['feed_lgn_name'],
+                        self.config['feeds'][feed]['feed_lgn_pw'])
 
-                print >> f_obj1, 'width %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_width')
-                print >> f_obj1, 'height %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_height')
+                print >> f_obj1, 'width %s' % self.config['feeds'][feed]['feed_width']
+                print >> f_obj1, 'height %s' % self.config['feeds'][feed]['feed_height']
 
-                print >> f_obj1, 'threshold %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_threshold')
-                print >> f_obj1, 'quality %s' % self.www_parser.get('motion_feed%02i' % feed, 'feed_quality')
+                print >> f_obj1, 'threshold %s' % self.config['feeds'][feed]['feed_threshold']
+                print >> f_obj1, 'quality %s' % self.config['feeds'][feed]['feed_quality']
 
                 # show motion box
-                if self.www_parser.getboolean('motion_feed%02i' % feed, 'feed_show_box'):
+                if self.config['feeds'][feed]['feed_show_box']:
                     print >> f_obj1, 'locate on'
 
                 # always on for feed updates

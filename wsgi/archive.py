@@ -18,17 +18,18 @@ class Archive():
     def __init__(self, kmotion_dir, env):
         sys.path.append(kmotion_dir)
         from core.utils import Request
-        from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
+        from core.config import ConfigRW
         self.kmotion_dir = kmotion_dir
         self.env = env
         self.params = Request(self.env)
         self.func = self.params['func']
-        kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.images_dbase_dir = kmotion_parser.get('dirs', 'images_dbase_dir')
+        cfg = ConfigRW(self.kmotion_dir)
+        config_main = cfg.read_main()
+        self.images_dbase_dir = config_main['images_dbase_dir']
         www_rc = 'www_rc_%s' % (self.getUsername())
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
             www_rc = 'www_rc'
-        self.www_rc_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
+        self.config = cfg.read_www(www_rc)
 
     def getUsername(self):
         try:
@@ -53,20 +54,18 @@ class Archive():
 
     def get_feeds(self, date):
         feeds_list = {}
-        for section in self.www_rc_parser.sections():
+        for feed, conf in self.config['feeds'].iteritems():
             try:
-                if 'motion_feed' in section:
-                    if self.www_rc_parser.getboolean(section, 'feed_enabled'):
-                        feed = int(section.replace('motion_feed', ''))
-                        feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
-                        if os.path.isdir(feed_dir):
-                            title = 'Cam %02i' % feed
-                            with open(os.path.join(feed_dir, 'title'), 'r') as f_obj:
-                                title = f_obj.read()
+                if conf.get('feed_enabled'):
+                    feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
+                    if os.path.isdir(feed_dir):
+                        title = 'Cam %02i' % feed
+                        with open(os.path.join(feed_dir, 'title'), 'r') as f_obj:
+                            title = f_obj.read()
 
-                            feeds_list[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir, 'movie')),
-                                                'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
-                                                'title': title}
+                        feeds_list[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir, 'movie')),
+                                            'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
+                                            'title': title}
             except Exception:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))

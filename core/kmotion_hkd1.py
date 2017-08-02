@@ -8,12 +8,12 @@ configuration. Checks the current kmotion software version every 24 hours.
 
 import time
 import logger
-from mutex_parsers import *
 from www_logs import WWWLog
 from multiprocessing import Process
 import subprocess
 import utils
 import os
+from config import ConfigRW
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -28,7 +28,6 @@ class Kmotion_Hkd1(Process):
         self.images_dbase_dir = ''  # the 'root' directory of the images dbase
         self.kmotion_dir = kmotion_dir
         self.max_size_gb = 0  # max size permitted for the images dbase
-        self.version = ''  # the current kmotion software version
         self.motion_log = os.path.join(self.kmotion_dir, 'www', 'motion_out')
         self.www_logs = WWWLog(self.kmotion_dir)
 
@@ -42,31 +41,9 @@ class Kmotion_Hkd1(Process):
         return self.active
 
     def read_config(self):
-
-        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-
-        try:  # try - except because kmotion_rc is a user changeable file
-            self.version = parser.get('version', 'string')
-            self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
-            self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-            # 2**30 = 1GB
-            self.max_size_gb = parser.getint('storage', 'images_dbase_limit_gb') * 2 ** 30
-
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            log.exception('** CRITICAL ERROR ** corrupt \'kmotion_rc\'')
-            log.exception('** CRITICAL ERROR ** killing all daemons and terminating')
-            # sys.exit()
-
-        www_parser = mutex_www_parser_rd(self.kmotion_dir)
-        self.feed_list = []
-        for section in www_parser.sections():
-            try:
-                if 'motion_feed' in section:
-                    if www_parser.getboolean(section, 'feed_enabled'):
-                        feed = int(section.replace('motion_feed', ''))
-                        self.feed_list.append(feed)
-            except Exception:
-                log.exception('init error')
+        config_main = ConfigRW(self.kmotion_dir).read_main()
+        self.images_dbase_dir = config_main['images_dbase_dir']
+        self.max_size_gb = config_main['images_dbase_limit_gb'] * 2 ** 30
 
     def truncate_motion_logs(self):
         try:

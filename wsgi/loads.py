@@ -51,19 +51,19 @@ class Loads:
         data['uname'] = uname.strip()
 
         data['cpu'] = 0
-        with open('/proc/cpuinfo', 'r') as f_obj:
+        with open('/proc/cpuinfo', 'rb') as f_obj:
             for l in f_obj:
                 if 'processor' in l:
                     data['cpu'] += 1
 
-        with open('/proc/loadavg', 'r') as f_obj:
+        with open('/proc/loadavg', 'rb') as f_obj:
             loadavg = f_obj.readline()
             lavg = loadavg.split()
             data['l1'] = lavg[0]
             data['l2'] = lavg[1]
             data['l3'] = lavg[2]
 
-        with open('/proc/uptime', 'r') as f_obj:
+        with open('/proc/uptime', 'rb') as f_obj:
             uptime_seconds = round(float(f_obj.readline().split()[0]))
             uptime = str(timedelta(seconds=uptime_seconds))
             data['up'] = uptime

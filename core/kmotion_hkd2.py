@@ -9,9 +9,9 @@ import time
 import shutil
 from datetime import datetime
 import logger
-from mutex_parsers import *
 from multiprocessing import Process
 import os
+from config import ConfigRW
 
 
 log = logger.Logger('kmotion', logger.WARN)
@@ -40,20 +40,17 @@ class Hkd2_Feed():
         return  : none
         """
 
-        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        try:  # try - except because kmotion_rc is user changeable file
-            self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
-            self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            log.exception('** CRITICAL ERROR ** corrupt \'kmotion_rc\'')
-            log.exception('** CRITICAL ERROR ** killing all daemons and terminating')
-            # sys.exit()
+        cfg = ConfigRW(self.kmotion_dir)
+        config_main = cfg.read_main()
+        config = cfg.read_www()
+        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.images_dbase_dir = config_main['images_dbase_dir']
+        # sys.exit()
 
-        parser = mutex_www_parser_rd(self.kmotion_dir)
-        self.feed_snap_enabled = parser.getboolean('motion_feed%02i' % self.feed, 'feed_snap_enabled')
-        self.feed_snap_interval = parser.getint('motion_feed%02i' % self.feed, 'feed_snap_interval')
-        self.feed_fps = parser.getint('motion_feed%02i' % self.feed, 'feed_fps')
-        self.feed_name = parser.get('motion_feed%02i' % self.feed, 'feed_name')
+        self.feed_snap_enabled = config['feeds'][self.feed]['feed_snap_enabled']
+        self.feed_snap_interval = config['feeds'][self.feed]['feed_snap_interval']
+        self.feed_fps = config['feeds'][self.feed]['feed_fps']
+        self.feed_name = config['feeds'][self.feed]['feed_name']
         self.inc_snap_time(self.feed_snap_interval)
 
     def main(self):
@@ -127,20 +124,12 @@ class Kmotion_Hkd2(Process):
         self.active = False
         self.daemon = True
         self.kmotion_dir = kmotion_dir
-        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
 
-        www_parser = mutex_www_parser_rd(self.kmotion_dir)
-        self.feed_list = []
-        for section in www_parser.sections():
-            try:
-                if 'motion_feed' in section:
-                    if www_parser.getboolean(section, 'feed_enabled'):
-                        feed = int(section.replace('motion_feed', ''))
-                        self.feed_list.append(feed)
-            except Exception:
-                log.exception('init error')
-        self.feed_list.sort()
+        cfg = ConfigRW(self.kmotion_dir)
+        config_main = cfg.read_main()
+        config = cfg.read_www()
+        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
 
     def sleep(self, timeout):
         t = 0

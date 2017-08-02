@@ -8,8 +8,8 @@ import sys
 import logger
 import subprocess
 from string import Template
-from mutex_parsers import *
 import os
+from config import ConfigRW
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -39,15 +39,16 @@ class InitCore:
 
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
-        self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
+        cfg = ConfigRW(kmotion_dir)
+        config_main = cfg.read_main()
+        config = cfg.read_www()
 
-        self.ramdisk_dir = self.kmotion_parser.get('dirs', 'ramdisk_dir')
-        self.images_dbase_dir = self.kmotion_parser.get('dirs', 'images_dbase_dir')
-        self.port = self.kmotion_parser.get('misc', 'port')
-        self.port_notice = self.kmotion_parser.get('misc', 'port_notice')
-        self.version = self.kmotion_parser.get('version', 'string')
-        self.title = self.kmotion_parser.get('version', 'title')
+        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.images_dbase_dir = config_main['images_dbase_dir']
+        self.port = config_main['port']
+        self.port_notice = config_main.get('port_notice', 0)
+        self.version = config_main['string']
+        self.title = config_main['title']
         self.AUTH_block = """
         # ** INFORMATION ** Users digest file enabled ...
         AuthType Basic
@@ -60,16 +61,7 @@ class InitCore:
         self.wsgi_scripts = os.path.join(self.kmotion_dir, 'wsgi')
         self.wsgi_notice = os.path.join(self.kmotion_dir, 'wsgi_notice')
 
-        self.feed_list = []
-        for section in self.www_parser.sections():
-            try:
-                if 'motion_feed' in section:
-                    if self.www_parser.getboolean(section, 'feed_enabled'):
-                        feed = int(section.replace('motion_feed', ''))
-                        self.feed_list.append(feed)
-            except Exception:
-                log.exception('init error')
-        self.feed_list.sort()
+        self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
 
     def init_ramdisk_dir(self):
         """

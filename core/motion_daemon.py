@@ -6,10 +6,10 @@ import time
 import subprocess
 from init_motion import InitMotion
 from multiprocessing import Process
-from mutex_parsers import mutex_www_parser_rd
 import logger
 import urllib
 import utils
+from config import ConfigRW
 
 
 log = logger.Logger('kmotion', logger.DEBUG)
@@ -32,25 +32,12 @@ class MotionDaemon(Process):
         self.init_motion = InitMotion(self.kmotion_dir)
         self.motion_daemon = None
         self.stop_motion()
-        self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
-        self.get_feeds()
-
-    def get_feeds(self):
-        self.feeds_list = {}
-        for section in self.www_parser.sections():
-            try:
-                if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed', ''))
-                    conf = {}
-                    for k, v in self.www_parser.items(section):
-                        conf[k] = utils.parseStr(v)
-                    if conf.get('feed_enabled', False):
-                        self.feeds_list[feed] = conf
-            except Exception as e:
-                log.error(e)
+        cfg = ConfigRW(kmotion_dir)
+        self.config = cfg.read_www()
 
     def feed2thread(self, feed):
-        return sorted([f for f in self.feeds_list.keys()]).index(feed) + 1
+        return sorted([f for f in self.config['feeds'].keys()
+                       if self.config['feeds'][f].get('feed_enabled', False)]).index(feed) + 1
 
     def count_motion_running(self):
         p_obj = subprocess.Popen('pgrep -f "^motion.+-c.*"', shell=True, stdout=subprocess.PIPE)
@@ -131,8 +118,8 @@ class MotionDaemon(Process):
                     self.stop_motion()
                     self.start_motion()
 
-                for feed, conf in self.feeds_list.iteritems():
-                    if conf.get('motion_detector', 1) == 0:
+                for feed, conf in self.config['feeds'].iteritems():
+                    if conf.get('feed_enabled', False) and conf.get('motion_detector', 1) == 0:
                         self.pause_motion_detector(self.feed2thread(feed))
 
 #                 raise Exception('motion killed')

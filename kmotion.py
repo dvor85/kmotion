@@ -15,7 +15,6 @@ import signal
 import time
 
 import subprocess
-from core.mutex_parsers import *
 from core.www_logs import WWWLog
 from core.motion_daemon import MotionDaemon
 from core.init_core import InitCore
@@ -25,6 +24,7 @@ from core.kmotion_setd import Kmotion_setd
 from core.kmotion_split import Kmotion_split
 from core.motion_detector import Detector
 from core import logger
+from core.config import ConfigRW
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -43,8 +43,9 @@ class Kmotion:
         self.pidfile = '/run/kmotion/kmotion.pid'
         self.www_log = WWWLog(self.kmotion_dir)
 
-        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
+        cfg = ConfigRW(self.kmotion_dir)
+        config_main = cfg.read_main()
+        self.ramdisk_dir = config_main['ramdisk_dir']
 
         self.init_core = InitCore(self.kmotion_dir)
 
@@ -79,10 +80,7 @@ class Kmotion:
         # init the ramdisk dir
         self.init_core.init_ramdisk_dir()
 
-        try:  # wrapping in a try - except because parsing data from kmotion_rc
-            self.init_core.gen_vhost()
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            raise exit_('corrupt \'kmotion_rc\' : %s' % sys.exc_info()[1])
+        self.init_core.gen_vhost()
 
         self.init_core.set_uid_gid_named_pipes(os.getuid(), os.getgid())
 

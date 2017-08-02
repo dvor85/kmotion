@@ -5,10 +5,10 @@
 import threading
 from multiprocessing import Process
 import time
-from mutex_parsers import *
 import logger
 import events
 import os
+from config import ConfigRW
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -27,8 +27,8 @@ class Kmotion_split(Process):
         self.active = False
         self.daemon = True
         self.kmotion_dir = kmotion_dir
-        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
-        self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
+        config_main = ConfigRW(self.kmotion_dir).read_main()
+        self.ramdisk_dir = config_main['ramdisk_dir']
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
         self.max_duration = 180
         self.semaphore = threading.Semaphore(8)
@@ -45,7 +45,7 @@ class Kmotion_split(Process):
             try:
                 event_file = os.path.join(self.events_dir, feed)
 
-                if os.path.isfile(event_file) and (time.time() - os.path.getmtime(event_file)) >= self.max_duration:
+                if os.path.isfile(event_file) and (time.time() - os.path.getatime(event_file)) >= self.max_duration:
                     log.debug('split feed %s' % (feed))
                     events.Events(self.kmotion_dir, feed, events.STATE_START).end()
             finally:

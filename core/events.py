@@ -6,9 +6,9 @@ import subprocess
 import logger
 import cPickle
 import time
-from mutex_parsers import *
 import actions.actions as actions
 import os
+from config import ConfigRW
 
 
 STATE_START = 'start'
@@ -23,9 +23,9 @@ class Events:
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
 
-        parser = mutex_kmotion_parser_rd(kmotion_dir)
-        self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-        self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
+        config = ConfigRW(kmotion_dir).read_main()
+        self.ramdisk_dir = config['ramdisk_dir']
+        self.images_dbase_dir = config['images_dbase_dir']
 
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
         self.state_file = os.path.join(self.ramdisk_dir, 'states', str(self.feed))

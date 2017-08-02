@@ -8,7 +8,7 @@ import cPickle
 import events
 import threading
 from multiprocessing import Process
-from mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
+from config import ConfigRW
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -28,37 +28,19 @@ class Detector(Process):
         self.read_config()
 
     def read_config(self):
+        cfg = ConfigRW(self.kmotion_dir)
+        config_main = cfg.read_main()
+        self.config = cfg.read_www()
 
-        parser = mutex_kmotion_parser_rd(self.kmotion_dir)
+        self.ramdisk_dir = config_main['ramdisk_dir']
 
-        try:
-            self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-        except Exception:
-            log.exception('** CRITICAL ERROR ** corrupt \'kmotion_rc\'')
-
-        self.www_parser = mutex_www_parser_rd(self.kmotion_dir)
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
-        self.get_feeds()
-
-    def get_feeds(self):
-        self.feeds_list = {}
-        for section in self.www_parser.sections():
-            try:
-                if 'motion_feed' in section:
-                    feed = int(section.replace('motion_feed', ''))
-                    conf = {}
-                    for k, v in self.www_parser.items(section):
-                        conf[k] = utils.parseStr(v)
-                    if conf.get('feed_enabled', False):
-                        self.feeds_list[feed] = conf
-            except Exception as e:
-                log.error(e)
 
     def find_feed_by_ip(self, ip):
         log.debug('find feed by ip "{0}"'.format(ip))
         if ip:
-            for feed, conf in self.feeds_list.iteritems():
-                if ip in conf['feed_url']:
+            for feed, conf in self.config['feeds'].iteritems():
+                if conf.get('feed_enabled', False) and conf.get('motion_detector', 1) == 0 and ip in conf['feed_url']:
                     return feed
 
     def sleep(self, timeout):
@@ -85,7 +67,7 @@ class Detector(Process):
 
         try:
 
-            if feed is not None and int(feed) > 0:
+            if feed is not None and int(feed) > 0 and feed in self.config['feeds'].keys():
                 log.debug('main {0}'.format(feed))
                 if feed not in self.locks:
                     self.locks[feed] = threading.Lock()
@@ -115,7 +97,7 @@ class Detector(Process):
     def run(self):
         self.active = True
         log.info('starting daemon ...')
-        while self.active:
+        while self.active and len(self.config['feeds']) > 0:
             try:
                 data = self.read_pipe(1)
                 if data:

@@ -1,5 +1,5 @@
 import os
-from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd, mutex_www_parser_wr
+from mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd, mutex_www_parser_wr
 import logger
 import utils
 
@@ -8,27 +8,22 @@ log = logger.Logger('kmotion', logger.DEBUG)
 
 class ConfigRW():
 
-    def __init__(self, kmotion_dir, www_rc='www_rc'):
+    def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
-
-        if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
-            www_rc = 'www_rc'
-        self.www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
-        self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
 
     def read_main(self):
         config = {}
+        self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
         for section in self.kmotion_parser.sections():
             for k, v in self.kmotion_parser.items(section):
                 config[k] = utils.parseStr(v)
 
-        config['www_dir'] = os.path.join(self.kmotion_dir, 'www/www')
-        config['logs_dir'] = os.path.join(self.kmotion_dir, 'www/apache_logs')
-        config['wsgi_scripts'] = os.path.join(self.kmotion_dir, 'wsgi')
-
         return config
 
-    def read_www(self):
+    def read_www(self, www_rc='www_rc'):
+        if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
+            www_rc = 'www_rc'
+        self.www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
         max_feed = 1
 
         config = {"feeds": {},
@@ -93,7 +88,7 @@ class ConfigRW():
 
         return config
 
-    def write(self, config):
+    def write_www(self, config):
         user = config["user"]
         del(config["user"])
 
