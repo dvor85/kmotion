@@ -28,8 +28,8 @@ def application(env, start_response):
             from wsgi.outs import Outs
             body = Outs(kmotion_dir, env).main()
         elif path_info == '/config':
-            from wsgi.config import ConfigRW
-            body = ConfigRW(kmotion_dir, env).main()
+            from wsgi.config import Settings
+            body = Settings(kmotion_dir, env).main()
 
     except Exception:
         exc_type, exc_value, exc_traceback = sys.exc_info()

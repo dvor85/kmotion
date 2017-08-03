@@ -10,7 +10,7 @@ import os
 import time
 import urllib
 from utils import add_userinfo
-from config import ConfigRW
+from config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -25,7 +25,8 @@ class CameraLost:
             self.kmotion_dir = kmotion_dir
             self.feed = int(feed)
 
-            config = ConfigRW(self.kmotion_dir).read_www()
+            cfg = Settings.get_instance(self.kmotion_dir)
+            config = cfg.get('www_rc')
             self.feed_username = config['feeds'][self.feed]['feed_lgn_name']
             self.feed_password = config['feeds'][self.feed]['feed_lgn_pw']
             self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])

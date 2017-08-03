@@ -11,7 +11,7 @@ from datetime import datetime
 import logger
 from multiprocessing import Process
 import os
-from config import ConfigRW
+from config import Settings
 
 
 log = logger.Logger('kmotion', logger.WARN)
@@ -40,9 +40,9 @@ class Hkd2_Feed():
         return  : none
         """
 
-        cfg = ConfigRW(self.kmotion_dir)
-        config_main = cfg.read_main()
-        config = cfg.read_www()
+        cfg = Settings.get_instance(self.kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        config = cfg.get('www_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.images_dbase_dir = config_main['images_dbase_dir']
         # sys.exit()
@@ -125,9 +125,9 @@ class Kmotion_Hkd2(Process):
         self.daemon = True
         self.kmotion_dir = kmotion_dir
 
-        cfg = ConfigRW(self.kmotion_dir)
-        config_main = cfg.read_main()
-        config = cfg.read_www()
+        cfg = Settings.get_instance(self.kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        config = cfg.get('www_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
 

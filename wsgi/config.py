@@ -8,7 +8,7 @@ except ImportError:
     import json
 
 
-class ConfigRW():
+class Settings():
 
     def __init__(self, kmotion_dir, env):
         sys.path.append(kmotion_dir)
@@ -17,15 +17,15 @@ class ConfigRW():
         self.env = env
         self.params = Request(self.env)
 
-        from core.config import ConfigRW as CFG
+        from core.config import Settings
 
         www_rc = 'www_rc_%s' % (self.getUsername())
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
             www_rc = 'www_rc'
 
-        conf = CFG(kmotion_dir)
-        self.config = conf.read_www(www_rc)
-        config_main = conf.read_main()
+        conf = Settings.get_instance(kmotion_dir)
+        self.config = conf.get(www_rc)
+        config_main = conf.get('kmotion_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.version = config_main['string']
         self.title = config_main['title']
@@ -78,4 +78,4 @@ class ConfigRW():
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    print ConfigRW(kmotion_dir, {}).read()
+    print Settings(kmotion_dir, {}).read()

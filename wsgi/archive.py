@@ -18,18 +18,18 @@ class Archive():
     def __init__(self, kmotion_dir, env):
         sys.path.append(kmotion_dir)
         from core.utils import Request
-        from core.config import ConfigRW
+        from core.config import Settings
         self.kmotion_dir = kmotion_dir
         self.env = env
         self.params = Request(self.env)
         self.func = self.params['func']
-        cfg = ConfigRW(self.kmotion_dir)
-        config_main = cfg.read_main()
+        cfg = Settings.get_instance(self.kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
         self.images_dbase_dir = config_main['images_dbase_dir']
         www_rc = 'www_rc_%s' % (self.getUsername())
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
             www_rc = 'www_rc'
-        self.config = cfg.read_www(www_rc)
+        self.config = cfg.get(www_rc)
 
     def getUsername(self):
         try:

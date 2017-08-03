@@ -9,7 +9,7 @@ from multiprocessing import Process
 import logger
 import urllib
 import utils
-from config import ConfigRW
+from config import Settings
 
 
 log = logger.Logger('kmotion', logger.DEBUG)
@@ -32,8 +32,8 @@ class MotionDaemon(Process):
         self.init_motion = InitMotion(self.kmotion_dir)
         self.motion_daemon = None
         self.stop_motion()
-        cfg = ConfigRW(kmotion_dir)
-        self.config = cfg.read_www()
+        cfg = Settings.get_instance(kmotion_dir)
+        self.config = cfg.get('www_rc')
 
     def feed2thread(self, feed):
         return sorted([f for f in self.config['feeds'].keys()

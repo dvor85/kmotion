@@ -113,9 +113,7 @@ class WWWLog:
         excepts :
         return  : none
         """
-        mutex = Mutex(self.kmotion_dir, 'logs')
-        mutex.acquire()
-        try:
+        with Mutex(self.kmotion_dir, 'logs'):
             with open(self.log_file, 'r+') as f_obj:
                 events = f_obj.read().splitlines()
                 events.append(new_event)
@@ -124,8 +122,6 @@ class WWWLog:
                 f_obj.seek(0)
                 f_obj.write('\n'.join(events))
                 f_obj.truncate()
-        finally:
-            mutex.release()
 
 
 if __name__ == '__main__':

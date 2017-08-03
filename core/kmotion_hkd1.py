@@ -13,7 +13,7 @@ from multiprocessing import Process
 import subprocess
 import utils
 import os
-from config import ConfigRW
+from config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -41,7 +41,7 @@ class Kmotion_Hkd1(Process):
         return self.active
 
     def read_config(self):
-        config_main = ConfigRW(self.kmotion_dir).read_main()
+        config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
         self.images_dbase_dir = config_main['images_dbase_dir']
         self.max_size_gb = config_main['images_dbase_limit_gb'] * 2 ** 30
 

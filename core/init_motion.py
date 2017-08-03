@@ -10,7 +10,7 @@ changes. All changes should be in just this module.
 import logger
 import os
 import utils
-from config import ConfigRW
+from config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -19,9 +19,9 @@ class InitMotion:
 
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
-        cfg = ConfigRW(kmotion_dir)
-        config_main = cfg.read_main()
-        self.config = cfg.read_www()
+        cfg = Settings.get_instance(kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        self.config = cfg.get('www_rc')
 
         self.images_dbase_dir = config_main['images_dbase_dir']
         self.ramdisk_dir = config_main['ramdisk_dir']

@@ -8,7 +8,7 @@ import cPickle
 import events
 import threading
 from multiprocessing import Process
-from config import ConfigRW
+from config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -28,9 +28,9 @@ class Detector(Process):
         self.read_config()
 
     def read_config(self):
-        cfg = ConfigRW(self.kmotion_dir)
-        config_main = cfg.read_main()
-        self.config = cfg.read_www()
+        cfg = Settings.get_instance(self.kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        self.config = cfg.get('www_rc')
 
         self.ramdisk_dir = config_main['ramdisk_dir']
 

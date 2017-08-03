@@ -8,7 +8,7 @@ import time
 import logger
 import events
 import os
-from config import ConfigRW
+from config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -27,7 +27,7 @@ class Kmotion_split(Process):
         self.active = False
         self.daemon = True
         self.kmotion_dir = kmotion_dir
-        config_main = ConfigRW(self.kmotion_dir).read_main()
+        config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
         self.max_duration = 180

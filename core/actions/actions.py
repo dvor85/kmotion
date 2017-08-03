@@ -17,9 +17,9 @@ class Actions():
         log.debug('init')
         self.actions_list = []
         try:
-            from core.mutex_parsers import mutex_www_parser_rd
-            www_parser = mutex_www_parser_rd(self.kmotion_dir)
-            self.feed_actions = set(www_parser.get('motion_feed%02i' % self.feed, 'feed_actions').split(' '))
+            from core.config import Settings
+            config = Settings.get_instance(self.kmotion_dir).get('www_rc')
+            self.feed_actions = config['feeds'][self.feed]['feed_actions'].split(' ')
 
             for feed_action in self.feed_actions:
                 try:

@@ -9,7 +9,7 @@ import logger
 import subprocess
 from string import Template
 import os
-from config import ConfigRW
+from config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -39,9 +39,9 @@ class InitCore:
 
     def __init__(self, kmotion_dir):
         self.kmotion_dir = kmotion_dir
-        cfg = ConfigRW(kmotion_dir)
-        config_main = cfg.read_main()
-        config = cfg.read_www()
+        cfg = Settings.get_instance(kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        config = cfg.get('www_rc')
 
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.images_dbase_dir = config_main['images_dbase_dir']

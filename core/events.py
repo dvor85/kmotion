@@ -8,7 +8,7 @@ import cPickle
 import time
 import actions.actions as actions
 import os
-from config import ConfigRW
+from config import Settings
 
 
 STATE_START = 'start'
@@ -23,9 +23,10 @@ class Events:
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
 
-        config = ConfigRW(kmotion_dir).read_main()
-        self.ramdisk_dir = config['ramdisk_dir']
-        self.images_dbase_dir = config['images_dbase_dir']
+        cfg = Settings.get_instance(self.kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.images_dbase_dir = config_main['images_dbase_dir']
 
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
         self.state_file = os.path.join(self.ramdisk_dir, 'states', str(self.feed))

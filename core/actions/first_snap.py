@@ -19,13 +19,10 @@ class first_snap(sample.sample):
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         self.key = 'first_snap'
-        try:
-            from core.mutex_parsers import mutex_kmotion_parser_rd
-            parser = mutex_kmotion_parser_rd(kmotion_dir)
-            self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-            self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
-        except Exception:
-            log.exception('init error')
+        from core.config import Settings
+        config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
+        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.images_dbase_dir = config_main['images_dbase_dir']
 
     def start(self):
         sample.sample.start(self)

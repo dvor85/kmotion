@@ -24,7 +24,7 @@ from core.kmotion_setd import Kmotion_setd
 from core.kmotion_split import Kmotion_split
 from core.motion_detector import Detector
 from core import logger
-from core.config import ConfigRW
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -43,8 +43,8 @@ class Kmotion:
         self.pidfile = '/run/kmotion/kmotion.pid'
         self.www_log = WWWLog(self.kmotion_dir)
 
-        cfg = ConfigRW(self.kmotion_dir)
-        config_main = cfg.read_main()
+        cfg = Settings.get_instance(self.kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
 
         self.init_core = InitCore(self.kmotion_dir)

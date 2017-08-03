@@ -23,27 +23,27 @@ class rtsp2mp4(sample.sample):
         log = logger.Logger('kmotion', logger.DEBUG)
         self.key = 'rtsp2mp4'
 
-        try:
-            from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
-            parser = mutex_kmotion_parser_rd(kmotion_dir)
-            self.ramdisk_dir = parser.get('dirs', 'ramdisk_dir')
-            self.images_dbase_dir = parser.get('dirs', 'images_dbase_dir')
-        except Exception:
-            log.exception('init error while parsing kmotion_rc file')
+        from core.config import Settings
+        cfg = Settings.get_instance(self.kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        config = cfg.get('www_rc')
+        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.images_dbase_dir = config_main['images_dbase_dir']
 
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
 
         try:
-            www_parser = mutex_www_parser_rd(self.kmotion_dir)
-            self.sound = www_parser.getboolean('motion_feed%02i' % self.feed, '%s_sound' % self.key)
-            self.recode = www_parser.getboolean('motion_feed%02i' % self.feed, '%s_recode' % self.key)
-            self.feed_kbs = www_parser.get('motion_feed%02i' % self.feed, 'feed_kbs')
-            self.feed_username = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_name')
-            self.feed_password = www_parser.get('motion_feed%02i' % self.feed, 'feed_lgn_pw')
+            self.sound = config['feeds'][self.feed]['%s_sound' % self.key]
+            self.recode = config['feeds'][self.feed]['%s_recode' % self.key]
+            self.feed_kbs = config['feeds'][self.feed]['feed_kbs']
+            self.feed_username = config['feeds'][self.feed]['feed_lgn_name']
+            self.feed_password = config['feeds'][self.feed]['feed_lgn_pw']
 
             from core.utils import add_userinfo
             self.feed_grab_url = add_userinfo(
-                www_parser.get('motion_feed%02i' % self.feed, '%s_grab_url' % self.key), self.feed_username, self.feed_password)
+                config['feeds'][self.feed]['%s_grab_url' % self.key],
+                self.feed_username,
+                self.feed_password)
         except Exception:
             log.exception('init error')
 
