@@ -213,9 +213,6 @@ webcam_localhost off
                     self.create_mask(feed)
                     print >> f_obj1, 'mask_file %s/core/masks/mask%0.2i.pgm' % (self.kmotion_dir, feed)
 
-                # framerate,
-                print >> f_obj1, 'framerate 3'  # default for feed updates
-
                 print >> f_obj1, '''
 # ------------------------------------------------------------------------------
 # 'user' section from 'virtual_motion_conf/thread%02i.conf'
@@ -241,6 +238,12 @@ snapshot_interval 1
 webcam_localhost off
 '''
                 motion_detector = self.config['feeds'][feed].get('motion_detector', 1)
+                # framerate,
+                print >> f_obj1, 'framerate {fps}'.format(fps=self.config['feeds'][feed]['feed_fps'])
+                if self.config['feeds'][feed]['feed_fps'] > 2:
+                    print >> f_obj1, 'minimum_frame_time 0'
+                else:
+                    print >> f_obj1, 'minimum_frame_time 1'
 
                 print >> f_obj1, 'target_dir %s' % self.ramdisk_dir
 
