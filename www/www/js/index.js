@@ -814,9 +814,9 @@ KM.display_live_ = function () {
     
     var last_camera_select = 0; // the last camera selected
     var latest_events = [];
-    var fps = 1;
     var max_streams = 10;
     var update_counter = {};
+    var stream_counter = 0; //счетчик одновременных обновлений
 
     function init() {
         // setup for grid display
@@ -852,8 +852,8 @@ KM.display_live_ = function () {
         // refresh the grid display     
         KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls            
         if (KM.session_id.current === session_id) {                
-            update_feeds();
-            KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000/fps));
+            update_latest_events();
+            KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000));
         }
     }
     
@@ -1328,7 +1328,7 @@ KM.display_live_ = function () {
         }
     };
     
-    function update_feeds() {
+    function update_latest_events() {
 
         // A function that get the latest jpeg filenames and event status from
         // the server with an 'xmlHttp' call then splits the returned data and
@@ -1347,7 +1347,7 @@ KM.display_live_ = function () {
                 try {
                     latest_events = JSON.parse(xmlHttp.responseText);
                     text_refresh();
-                    update_jpegs();
+                    update_feeds();
                 } catch(e) {console.log('Error while updating feeds!')}
             }
         };
@@ -1398,75 +1398,89 @@ KM.display_live_ = function () {
         }
     }
     
-    function update_jpegs() { 
-        var feed;
+    function update_feed(feed, feeds_length) {
         var image_feed;
+        var fps=KM.config['feeds'][feed].feed_fps;
         
+        KM.kill_timeout_ids(feed);        
+        try {
+            image_feed = document.getElementById('image_'+feed);
+            if (image_feed === null)
+                return false;
+            if (image_feed.onclick === null)
+                image_feed.onclick = function(feed) {return function() {camera_jpeg_clicked(feed)}}(feed);
+                
+            if (KM.config.feeds[feed].feed_enabled){                    
+                if (image_feed.onload === null)
+                    image_feed.onload = function(feed) {return function() {image_loads.onload(feed)}}(feed);
+                if (image_feed.onerror === null)
+                    image_feed.onerror = function(feed) {return function() {image_loads.onerror(feed)}}(feed);
+                
+                
+               /* console.log('error = ' + image_loads.is_error(feed));
+                console.log('update_counter = ' + (update_counter[feed]>=KM.getRandomInt(5,10)));
+                console.log('length = ' + display_feeds_sorted.length);
+                console.log('in_latest = ' + KM.item_in_array(feed, latest_events));
+                console.log('is_loaded = ' + image_loads.is_loaded(feed));
+                console.log('max_counter = ' + (max_counter<1));*/
+                
+                /*  Обновление с приоритетами
+                    Обновить если:
+                    1) Произошла ошибка загрузки 
+                        или
+                    2)  а) счетчик обновлений каждой камеры больше случайного значения между 5 и 10 или
+                        б) выбран вид одной камеры или
+                        в) камера в последних событиях
+                        и
+                    3)  а) изображение загружено и
+                        б) счетчик одновременных обновлений меньше 10
+                */
+                if (image_loads.is_error(feed) || 
+                
+                   ((update_counter[feed]>=KM.getRandomInt(5,10)) ||
+                   (feeds_length == 1) || 
+                   (KM.item_in_array(feed, latest_events))) && 
+                   
+                   (image_loads.is_loaded(feed) && (stream_counter<max_streams)))  {
+                   
+                        /*console.log('\n');
+                        console.log('UPDATE FEED ' + feed);
+                        console.log('\n');*/
+                        update_counter[feed] = 0;
+                        stream_counter++;
+                        image_loads.reset(feed);
+                        image_feed.src=KM.get_jpeg(feed);  
+                        if (KM.item_in_array(feed, latest_events))    {
+                            KM.add_timeout_id(feed, setTimeout(function () {update_feed(feed, feeds_length); }, 1000/fps));
+                        }
+                        
+                } else {
+                    if (update_counter[feed] !== undefined) {
+                        update_counter[feed]++;
+                    } else {
+                        update_counter[feed] = 1;
+                    }
+                    
+                }
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    }
+    
+    function update_feeds() { 
         var display_feeds_sorted = KM.config.display_feeds[KM.config.misc.display_select].slice(0);
+        
         display_feeds_sorted.sort(display_feeds_compare_by_counter).sort(display_feeds_compare_by_latest);
+        stream_counter = 0;
+        
         /*console.log('display_feeds_b = ' + KM.config.display_feeds[KM.config.misc.display_select]);
         console.log('display_feeds_sorted = ' + display_feeds_sorted);
         console.log('display_feeds_a = ' + KM.config.display_feeds[KM.config.misc.display_select]);*/
-        
-        var stream_counter = 0; //счетчик одновременных обновлений
+                
         for (var i=0;i<display_feeds_sorted.length;i++) {    
-            try {  
-                feed = display_feeds_sorted[i];
-                image_feed = document.getElementById('image_'+feed);
-                if (image_feed.onclick === null)
-                    image_feed.onclick = function(feed) {return function() {camera_jpeg_clicked(feed)}}(feed);
-                    
-                if (KM.config.feeds[feed].feed_enabled){                    
-                    if (image_feed.onload === null)
-                        image_feed.onload = function(feed) {return function() {image_loads.onload(feed)}}(feed);
-                    if (image_feed.onerror === null)
-                        image_feed.onerror = function(feed) {return function() {image_loads.onerror(feed)}}(feed);
-                    
-                    
-                   /* console.log('error = ' + image_loads.is_error(feed));
-                    console.log('update_counter = ' + (update_counter[feed]>=KM.getRandomInt(5,10)));
-                    console.log('length = ' + display_feeds_sorted.length);
-                    console.log('in_latest = ' + KM.item_in_array(feed, latest_events));
-                    console.log('is_loaded = ' + image_loads.is_loaded(feed));
-                    console.log('max_counter = ' + (max_counter<1));*/
-                    
-                    /*  Обновление с приоритетами
-                        Обновить если:
-                        1) Произошла ошибка загрузки 
-                            или
-                        2)  а) счетчик обновлений каждой камеры больше случайного значения между 5 и 10 или
-                            б) выбран вид одной камеры или
-                            в) камера в последних событиях
-                            и
-                        3)  а) изображение загружено и
-                            б) счетчик одновременных обновлений меньше 10
-                    */
-                    if (image_loads.is_error(feed) || 
-                    
-                       ((update_counter[feed]>=KM.getRandomInt(5,10)) ||
-                       (display_feeds_sorted.length == 1) || 
-                       (KM.item_in_array(feed, latest_events))) && 
-                       
-                       (image_loads.is_loaded(feed) && (stream_counter<max_streams)))  {
-                       
-                            /*console.log('\n');
-                            console.log('UPDATE FEED ' + feed);
-                            console.log('\n');*/
-                            update_counter[feed] = 0;
-                            stream_counter++;
-                            image_loads.reset(feed);
-                            image_feed.src=KM.get_jpeg(feed);
-                            
-                    } else {
-                        if (update_counter[feed] !== undefined) {
-                            update_counter[feed]++;
-                        } else {
-                            update_counter[feed] = 1;
-                        }
-                        
-                    }
-                }
-            } catch (e) {}
+            var feed = display_feeds_sorted[i];
+            update_feed(feed, display_feeds_sorted.length);    
         }       
     };
     
@@ -3284,6 +3298,7 @@ KM.display_config_ = function () {
                   <div class="config_text">Proxy:</div>\
                   <div class="config_text">Password:</div>\
                   <div class="config_text">Height:</div>\
+                  <div class="config_text">FPS:</div>\
                 </div>\
                 <div class="config_tick_margin">\
                 <div class="config_text">\
@@ -3302,6 +3317,7 @@ KM.display_config_ = function () {
                   <div class="config_text"><input type="text" id="feed_proxy" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
                   <div class="config_text"><input type="password" id="feed_lgn_pw" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
                   <div class="config_text"><input type="text" id="feed_height" size="4" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;">px</span></div>\
+                  <div class="config_text"><input type="text" id="feed_fps" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
                 </div></div>\
                 <br /><hr style="margin:10px" class="clear_float"/>\
                 <div class="config_tick_margin">\
@@ -3533,17 +3549,20 @@ KM.display_config_ = function () {
 
         KM.session_id.current++; // needed to kill updates
         conf_error_daemon(KM.session_id.current);
-
-        var ids = ['mask_all' , 'mask_invert', 'mask_none',
-        'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
-        'feed_input', 'feed_proxy', 'feed_lgn_pw', 'feed_height', 'feed_name',
-        'feed_show_box', 'feed_snap_enabled', 'feed_snap_interval']
-
-        for (var i = 0; i < ids.length; i++) {
-            try {
-                document.getElementById(ids[i]).disabled = true;
+        for (var s in KM.config.feeds[cur_camera]) {
+            try {   
+                if (s != 'feed_enabled')
+                    document.getElementById(s).disabled = true;
             } catch (e) {}
         }
+
+        var ids = ['mask_all' , 'mask_invert', 'mask_none'];       
+        for (var i = 0; i < ids.length; i++) {
+             try {
+                 document.getElementById(ids[i]).disabled = true;
+             } catch (e) {}
+        }
+        
         for (var i = 1; i < 226; i++) {
             try {
                 document.getElementById('mask_img_' + (i)).src = 'images/mask_trans.png'
@@ -3564,16 +3583,19 @@ KM.display_config_ = function () {
         //
 
         conf_live_feed_daemon(KM.session_id.current, cur_camera);
-
-        var ids = ['mask_all' , 'mask_invert', 'mask_none',
-        'feed_device', 'feed_url', 'feed_lgn_name', 'feed_width',
-        'feed_input', 'feed_proxy', 'feed_lgn_pw', 'feed_height', 'feed_name',
-        'feed_show_box', 'feed_snap_enabled', 'feed_snap_interval']
-
-        for (var i = 0; i < ids.length; i++) {
-            try {
-                document.getElementById(ids[i]).disabled = false;
+        
+        for (var s in KM.config.feeds[cur_camera]) {
+            try {  
+                if (s != 'feed_enabled')
+                    document.getElementById(s).disabled = false;
             } catch (e) {}
+        }
+
+        var ids = ['mask_all' , 'mask_invert', 'mask_none'];       
+        for (var i = 0; i < ids.length; i++) {
+             try {
+                 document.getElementById(ids[i]).disabled = false;
+             } catch (e) {}
         }
         
         conf_feed_net_highlight();	

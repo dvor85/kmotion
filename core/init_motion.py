@@ -240,7 +240,6 @@ webcam_localhost off
                 # framerate,
                 fps = self.config['feeds'][feed]['feed_fps']
                 if fps < 2:
-                    fps = 2
                     print >> f_obj1, 'minimum_frame_time 1'
                 else:
                     print >> f_obj1, 'minimum_frame_time 0'
