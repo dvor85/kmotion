@@ -25,6 +25,7 @@ body {
 	overflow-y: auto;
 	background-color:#000000;
 	color: #C1C1C1;
+    user-select: none;
 }
 
 /* *****************************************************************************
@@ -336,7 +337,7 @@ Main display section - CSS specific to 'config' - General
 }
 
 #main_display .config_button_bar {
-	text-align: center;
+	text-align: center;    
 }
 
 #main_display .config_divider{

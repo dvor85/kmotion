@@ -838,7 +838,7 @@ KM.display_live_ = function () {
         if (no_feeds) return; // no feeds
         refresh(KM.session_id.current); 
     }
-
+    
     function refresh(session_id) {
 
         // A function that performs the main refresh loop, complex by
@@ -906,8 +906,8 @@ KM.display_live_ = function () {
             var camera_old=KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
             if (KM.config.feeds[last_camera_select] && KM.config.feeds[last_camera_select].feed_enabled) {
                 KM.config.display_feeds[KM.config.misc.display_select][camera_pos]=last_camera_select;
-                if (camera_last_pos>0) {
-                KM.config.display_feeds[KM.config.misc.display_select][camera_last_pos]=camera_old;
+                if (camera_last_pos>=0) {
+                    KM.config.display_feeds[KM.config.misc.display_select][camera_last_pos]=camera_old;
                 }
             }
             last_camera_select = 0;
@@ -1550,11 +1550,11 @@ KM.display_archive_ = function () {
         KM.set_main_display_size(); // in case user has 'zoomed' browser view
         init_backdrop_html();
         
-        populate_dates_dbase(callback_populate_dates_dbase, session_id);
+        populate_dates_dbase(callback_populate_dates_dbase, session_id);        
      
         
     }
-    
+
     function callback_populate_dates_dbase(session_id) {
         if (dates === {}) {
             var html  = '<div class="archive_msg" style="text-align: center"><br><br>';
@@ -2565,13 +2565,14 @@ KM.display_archive_ = function () {
 			
 		default:              
             if (!html5player) {
-                KM.videoPlayer.set_video_player({id:'movie', name: name, width: backdrop_width-5, height: backdrop_height-5});
+                KM.videoPlayer.set_video_player({id:'movie', src: name, width: backdrop_width-5, height: backdrop_height-5});
                 html5player = document.getElementById('html5player');
                 if (html5player) {                    
                     html5player.onloadeddata=html5VideoLoaded;				
                     html5player.onseeked=html5VideoScrolled;
                     html5player.ontimeupdate=html5VideoProgress;
                     html5player.onended=html5VideoFinished;
+                    html5player.onclick=html5playerPlayPause;
                     html5player = null;
                 } 			
             } else {
@@ -4103,7 +4104,7 @@ KM.conf_feed_mask_button = KM.display_config_.conf_feed_mask_button;
 
 KM.blink_button = function(button, callback) {
     var fw = button.style.fontWeight;
-    var c = button.style.color;
+    var c = KM.BLUE;
     button.style.fontWeight = 'bold';
     button.style.color = KM.RED;
     restore_button = function() {
@@ -4355,10 +4356,137 @@ KM.videoPlayer = function() {
         }
     }
     
+    function set_video_player(params) {
+		function getFileExtension(filename) {
+			var ext = /^.+\.([^.]+)$/.exec(filename);
+			return ext == null ? "" : ext[1];
+		}
+
+		function ID() {
+			return '_' + Math.random().toString(36).substr(2, 9);
+		}
+
+		function checkVideo(format) {
+			switch (format) {
+			case 'mp4':
+				var vidTest = document.createElement("video");
+				if (vidTest.canPlayType) {
+					h264Test = vidTest
+							.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'); // mp4
+																						// format
+					if (!h264Test) { // if it doesnot support .mp4 format
+						return "flash"; // play flash
+					} else {
+						if (h264Test == "probably") { // supports .mp4 format
+							return "html5"; // play HTML5 video
+						} else {
+							return "flash"; // play flash video if it doesnot
+											// support any of them.
+						}
+					}
+				}
+			case 'ogv':
+				var vidTest = document.createElement("video");
+				if (vidTest.canPlayType) {
+					oggTest = vidTest
+							.canPlayType('video/ogg; codecs="theora, vorbis"'); // ogg
+																				// format
+					if (!oggTest) { // if it doesnot support
+						return "none"; // play flash
+					} else {
+						if (oggTest == "probably") { // supports
+							return "html5"; // play HTML5 video
+						} else {
+							return "none"; // play flash video if it doesnot
+											// support any of them.
+						}
+					}
+				}
+			case 'webm':
+				var vidTest = document.createElement("video");
+				if (vidTest.canPlayType) {
+					webmTest = vidTest
+							.canPlayType('video/webm; codecs="vp8.0, vorbis"'); // webm
+																				// format
+					if (!webmTest) { // if it doesnot support
+						return "none"; // play flash
+					} else {
+						if (webmTest == "probably") { // supports
+							return "html5"; // play HTML5 video
+						} else {
+							return "none"; // play flash video if it doesnot
+											// support any of them.
+						}
+					}
+				}
+				break;
+			case 'flv':
+			case 'swf':
+				return "flash";
+				break;
+			default:
+				return "none";
+			}
+		}
+
+		var canplay = checkVideo(getFileExtension(params.src));
+
+		if (canplay == "html5") {
+			document.getElementById(params.id).innerHTML = '<video id="html5player" width="'
+					+ params.width
+					+ '" height="'
+					+ params.height
+					+ '" autoplay controls ></video>';
+
+			var html5player = document.getElementById('html5player');
+			html5player.innerHTML = "<p><a href=\"" + document.URL + params.src
+					+ "\" target='_blank'>DOWNLOAD: "
+					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
+
+			html5player.src = params.src;
+		} else if (canplay == "flash") {
+			var id = ID();
+			document.getElementById(params.id).innerHTML = '<div id="' + id
+					+ '"> </div>';
+			document.getElementById(id).innerHTML = "<p><a href=\"" + document.URL
+					+ params.src + "\" target='_blank'>DOWNLOAD: "
+					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
+
+			var flashvars = {
+				video_url : params.src,
+				permalink_url : document.URL + params.src,
+				bt : 5,
+				scaling : 'fill',
+				hide_controlbar : 0,
+				flv_stream : false,
+				autoplay : true,
+				js : 1
+			};
+			var fparams = {
+				allowfullscreen : 'true',
+				allowscriptaccess : 'always',
+				quality : 'best',
+				bgcolor : '#000000',
+				scale : 'exactfit'
+			};
+			var fattributes = {
+				id : 'flashplayer',
+				name : 'flashplayer'
+			};
+			swfobject.embedSWF('media/kt_player.swf', id, params.width, params.height,
+					'9.124.0', 'media/expressInstall.swf', flashvars, fparams,
+					fattributes);
+		} else {
+			document.getElementById(params.id).innerHTML = "<p><a href=\""
+					+ document.URL + params.src + "\" target='_blank'>DOWNLOAD: "
+					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
+		}
+	}
+    
     ///////////////////EXPORT METHODS//////////////////////////////
     
     return {
-        set_video_player: video_player,
+        set_video_player: set_video_player,
         set_cur_event_secs: set_cur_event_secs,
         set_next_movie: set_next_movie,
         set_movie_duration: set_movie_duration,

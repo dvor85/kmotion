@@ -10,7 +10,6 @@
 <meta name="robots" content="none">
 <title>&nbsp;</title>
 <script type="text/javascript" src="js/swfobject.js"></script>
-<script type="text/javascript" src="js/vp.js"></script>
 <script type="text/javascript" >
 
 /* *****************************************************************************
