@@ -19,7 +19,6 @@ KM.GHOST =     '#E2E2E2';
 KM.BUTTON_BLINK = 'BUTTON_BLINK';
 KM.ERROR_DAEMON = 'ERROR_DAEMON';
 KM.GET_DATA     = 'GET_DATA';
-KM.FEED_CACHE   = 'FEED_CACHE';
 KM.DISPLAY_LOOP = 'DISPLAY_LOOP';
 KM.ARCH_LOOP    = 'ARCH_LOOP';
 KM.LOGS         = 'LOGS';
@@ -713,7 +712,6 @@ KM.function_button_clicked = function (button) {
                 KM.disable_display_buttons();
                 KM.disable_camera_buttons();
                 KM.display_archive();
-                KM.videoPlayer.set_play_accel(1);
                 break;
 
             case 3: // 'log button'
@@ -1401,8 +1399,9 @@ KM.display_live_ = function () {
     function update_feed(feed, feeds_length) {
         var image_feed;
         var fps=KM.config['feeds'][feed].feed_fps;
+        var timeout_id=KM.DISPLAY_LOOP+feed;
         
-        KM.kill_timeout_ids(feed);        
+        KM.kill_timeout_ids(timeout_id);        
         try {
             image_feed = document.getElementById('image_'+feed);
             if (image_feed === null)
@@ -1451,7 +1450,7 @@ KM.display_live_ = function () {
                         image_loads.reset(feed);
                         image_feed.src=KM.get_jpeg(feed);  
                         if (KM.item_in_array(feed, latest_events))    {
-                            KM.add_timeout_id(feed, setTimeout(function () {update_feed(feed, feeds_length); }, 1000/fps));
+                            KM.add_timeout_id(timeout_id, setTimeout(function () {update_feed(feed, feeds_length); }, 1000/fps));
                         }
                         
                 } else {
@@ -1516,21 +1515,11 @@ KM.display_archive_ = function () {
     // done with more multi-dimensional arrays but this approach is easier to
     // understand
 
-    var movie_show =    false; // currently showing
-    var snap_show =     false;
-    
     var dates =         {}; // array of avaliable dates
     var cameras =       {}; // multi-dimensional array of cameras per date
     var movies =        {};
 
-    var event_mode =  true; // in event as opposed to display mode
-    var play_mode =   true; // in play as opposed to frame mode
     var display_secs =   0; // the current secs count
-    var play_accel =     1; // the FF/REW play_acceleration -4 to 4
-
-    var tline_old_slt = -1; // the old timeline slot
-    var tline_old_src = ''; // the old time line src
-
     var backdrop_height = 0; // archive backdrop height
     var backdrop_width =  0; // archive backdrop width
 
@@ -1556,29 +1545,13 @@ KM.display_archive_ = function () {
     }
 
     function callback_populate_dates_dbase(session_id) {
-        if (dates === {}) {
-            var html  = '<div class="archive_msg" style="text-align: center"><br><br>';
-            html += 'There are currently no recorded events or snapshots to display.<br><br>';
-            html += 'To enable event recording select either \'frame mode\' or ';
-            html += '\'movie mode\'<br>in the camera configuration ';
-            html += 'section and edit the motion mask.<br><br>';
-            html += 'To enable snapshot recording select \'snapshot mode\' in the camera<br>';
-            html += 'configuration section</div>';
-            document.getElementById('display_html').innerHTML = html;
-
-        } else {
+        if (dates !== {}) {
             populate_date_dropdown();
         }
     }
     
     function callback_populate_cams_dbase(session_id) {
-        if (cameras === {}) {
-            var html  = '<div class="archive_msg" style="text-align: center"><br><br>';
-            html += 'There are currently no cameras enabled.<br><br>';            
-            html += '</div>';
-            document.getElementById('display_html').innerHTML = html;
-
-        } else {
+        if (cameras !== {}) {
             populate_camera_dropdown();            
             init_main_menus(session_id);
         }
@@ -1595,35 +1568,12 @@ KM.display_archive_ = function () {
         //
         // returns:
         //
-        update_title_noclock();        
-        mode_setto_event();
+        set_null_playback_info();        
 
         document.getElementById('date_select').disabled =   false;
         document.getElementById('camera_select').disabled = false;
         document.getElementById('view_select').disabled =   false;
-        document.getElementById('mode_select').disabled =   false;
 
-    }
-
-    function init_to_event_mode() {
-
-	// A function that initialises the archive display and the timeline.
-	// This is the 4th and final part of display archive init, split due to
-	// asynchronous nature of xmlhttp calls and the need for setTimeout's
-	// (yuk!)
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	mode_setto_event();
-	update_title_noclock(); // strip the clock
-	blank_button_bar();
-	var date = document.getElementById('date_select').value;
-	var camera = document.getElementById('camera_select').value;
-	init_events_html(date, camera);
-	populate_tline();
     }
 
     function init_backdrop_html() {
@@ -1644,93 +1594,39 @@ KM.display_archive_ = function () {
 	var dropdown_width = backdrop_width / 4;
 	var button_width =   backdrop_width / 5;
 
-	document.getElementById('main_display').innerHTML = '' +
+	document.getElementById('main_display').innerHTML = '\
+    <div class="title">Kmotion: Archive <span id="playback_info"></span></div>\
+    <div id="arch_display">\
+		<div id="config_bar">\
+			<form name="config" action="" onsubmit="return false">\
+				<select id="date_select" onchange="KM.arch_change_date();"> </select> \
+				<select id="camera_select" onchange="KM.arch_change_camera();"> </select> \
+				<select id="view_select" onchange="KM.arch_change_view();"> </select> \
+			</form>\
+		</div>\
+		<div id="arch_display_html">\
+			<div id="arch_playlist"></div>\
+			<div id="arch_player"></div>\
+            <form id="playback_form">\
+                <input id="playback_rate" type="range" value="1" min="0.1" max="10" step="0.1" list="tickmarks">\
+                    <datalist id="tickmarks">\
+                        <option value="0" label="0">\
+                        <option value="1" label="1">\
+                        <option value="2" label="2">\
+                        <option value="3" label="3">\
+                        <option value="4" label="4">\
+                        <option value="5" label="5">\
+                        <option value="6" label="6">\
+                        <option value="7" label="7">\
+                        <option value="8" label="8">\
+                        <option value="9" label="9">\
+                        <option value="10" label="10">\
+                    </datalist>\
+            </form>\
+		</div>\
+	</div>';
 
-	'<div id="title" style="width:' + backdrop_width + 'px;">' +
-	    '<span class="italic">kmotion</span>: Archive ' +
-	    '<span id="config_clock"> - </span>' +
-	'</div>' +
-
-	'<div class="divider">' +
-	    '<img src="images/archive_divider.png" style="width:' + backdrop_width + 'px;" alt="" />' +
-	'</div>' +
-
-	'<div id="config_bar" class="archive_bar">' +
-	    '<form name="config" action="" onsubmit="return false">' +
-
-		'<select id="date_select" OnChange="KM.arch_change_date();" style="width:' + dropdown_width + 'px;" disabled >' +
-		    '<option>----/--/--</option>' +
-		'</select>' +
-
-		'<select id="camera_select" OnChange="KM.arch_change_camera();" style="width:' + dropdown_width + 'px;" disabled>' +
-		    '<option>-:</option>' +
-		'</select>' +
-
-		'<select id="view_select" OnChange="KM.arch_change_view();" style="width:' + dropdown_width + 'px;" disabled >' +
-		    '<option>-</option>' +
-		'</select>' +
-
-		'<select id="mode_select" OnChange="KM.arch_change_mode();" style="width:' + dropdown_width + 'px;" disabled >' +
-		    '<option>Event mode</option>' +
-		    '<option>Display mode</option>' +
-		'</select>' +
-
-	    '</form>' +
-	'</div>' +
-
-	'<div id="display_html" class="archive_backdrop" style="overflow-x:hidden;width:' + backdrop_width + 'px;height:' + backdrop_height + 'px;">' +
-	'</div>' +
-
-	'<div class="archive_bar">' +
-	    '<input type="button" id="bar_button1" style="width:' + button_width + 'px;" OnClick="KM.arch_bar_button_clicked(1);" value="-" disabled>' +
-	    '<input type="button" id="bar_button2" style="width:' + button_width + 'px;" OnClick="KM.arch_bar_button_clicked(2);" value="-" disabled>' +
-	    '<input type="button" id="bar_button3" style="width:' + button_width + 'px;" OnClick="KM.arch_bar_button_clicked(3);" value="-" disabled>' +
-	    '<input type="button" id="bar_button4" style="width:' + button_width + 'px;" OnClick="KM.arch_bar_button_clicked(4);" value="-" disabled>' +
-	    '<input type="button" id="bar_button5" style="width:' + button_width + 'px;" OnClick="KM.arch_bar_button_clicked(5);" value="-" disabled>' +
-	'</div>' +
-
-	'<div id="timeline" class="archive_timeline" style="width:' + backdrop_width + 'px;">' +
-	'</div>';
-
-	// timeline html, calculated rather than hard coded
-	var tline_html = '';
-	var pos = 0, old_pos = 0;
-	var mins = 0, hours = 0, title = '';
-	var segments = (24 * 60) / 5;
-	var scale = backdrop_width / segments;
-	var width = 0;
-
-	for (var i = 1; i < segments + 1; i++) {
-	    pos = Math.round(i * scale);
-	    pos = Math.min(backdrop_width, pos);
-	    width = pos - old_pos;
-	    old_pos = pos;
-
-	    // generate 'title' HH:MM
-	    mins = (i - 1) * 5;
-	    hours = parseInt(mins / 60);
-	    mins = mins - (hours * 60);
-	    title = KM.pad_out2(hours) + ":" + KM.pad_out2(mins);
-
-	    tline_html += '<img id="tslot_' + i + '" src="./images/tline_g0.png" style="width:' +
-	    width + 'px;height:30px;" onClick="KM.arch_tline_clicked(' + ((i - 1) * 5 * 60) + ')" title="' +
-	    title  + '" alt="timeline">';
-	}
-	document.getElementById('timeline').innerHTML = tline_html;
-	show_downloading_msg();
-    }
-
-    function show_downloading_msg() {
-
-	// A function that shows the 'downloading' message
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	document.getElementById('display_html').innerHTML = '<br><div class="archive_msg" style="text-align: center">... downloading data ...</div>';
-    }
+    }   
 
     function populate_date_dropdown() {
 
@@ -1830,14 +1726,12 @@ KM.display_archive_ = function () {
 
 	var movie_enabled =  cameras[document.getElementById('camera_select').value]['movie_flag'];
 	var snap_enabled =   cameras[document.getElementById('camera_select').value]['snap_flag'];
-
-	var drop_opts = [];
-	drop_opts[0] = 'No filter';
-
-	if (movie_enabled && snap_enabled) {
-	    drop_opts[1] = 'Filter event movies';
-	    drop_opts[2] = 'Filter snapshots';
-	}
+    var drop_opts = [];
+	if (movie_enabled) 
+        drop_opts.push('Movies');
+    if (snap_enabled) 
+	    drop_opts.push('Snapshots');
+	
 
 	for (var i = 0; i < drop_opts.length; i++) {
 	    var new_opt = document.createElement('option');
@@ -1856,75 +1750,7 @@ KM.display_archive_ = function () {
     change_view();
     }
 
-    function populate_tline() {
-
-	// A closure that populates the time line with appropreate graphics,
-	// the more activity within a time slot, the 'higher' the graphic
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	var tline_block = 5 * 60;
-	var thold = (5 * 60) / 6;
-	var tmp = 0, src = '';
-	var level = 0;
-
-	for (var i = 1; i < 289; i++) {
-	    src = './images/tline_g0.png';
-
-	    if (snap_show) { // show snapshot data
-            if (snap_tblock((i - 1) * tline_block, i * tline_block)) 
-                src = './images/tline_b1.png';
-	    } 
-        if (movie_show) { // show movie data
-            level = 0;
-            tmp = movie_tblock((i - 1) * tline_block, (i * tline_block) - 1);
-            if (tmp > thold * 5)      level = 6;
-            else if (tmp > thold * 4) level = 5;
-            else if (tmp > thold * 3) level = 4;
-            else if (tmp > thold * 2) level = 3;
-            else if (tmp > thold)     level = 2;
-            else if (tmp > 0)         level = 1;
-            if (level !== 0) 
-                src = './images/tline_r' + level + '.png';
-	    }
-
-	    document.getElementById('tslot_' + i).src = src;
-	}
-	tline_old_slt = -1; // ensure 'tline_old_slt' is marked invalid
-
-
-	function snap_tblock(from_secs, to_secs) {
-	    // return bool if timeblock contains snapshot
-        
-        var start;
-        for (var i=0; i<movies['snaps'].length; i++) {
-            start = movies['snaps'][i]['start'];
-            if (start <= to_secs && start >= from_secs) {
-                return true
-            }
-        }	    
-	}
-
-
-	function movie_tblock(from_secs, to_secs) {
-	    // return seconds of timeblock filled by movie
-	    var secs = 0;
-        var start,end;
-	    for (var i = 0; i < movies['movies'].length; i++) {
-            start = movies['movies'][i]['start'];
-            end = movies['movies'][i]['end'];
-            if (start <= to_secs && end >= from_secs) {
-                secs += Math.min(end, to_secs) - Math.max(start, from_secs);
-            }
-	    }
-	    return secs;
-	}
-    }
-
-    function init_events_html(date, camera) {
+    function fill_events() {
 
 	// A closure that generates the event HTML inside the archive backdrop
 	// HTML and embeds highlighting for the top 10% of event durations.
@@ -1939,7 +1765,11 @@ KM.display_archive_ = function () {
 	var html = '', span_html = '', duration = 0;
     var start, end;
     
-	if (movie_show) { // movie events
+    var view = document.getElementById('view_select').value;
+    var date = document.getElementById('date_select').value;
+    var camera = document.getElementById('camera_select').value;
+    
+	if (view == 0) { // movie events
 	    var hlight = top_10pc();
 	    for (var i=0; i<movies['movies'].length; i++) {
             start = movies['movies'][i]['start'];
@@ -1948,42 +1778,25 @@ KM.display_archive_ = function () {
             duration = end - start;
             if (KM.item_in_array(duration, hlight)) 
                 span_html += ' style="color:#D90000"';
-            //var src = 'images_dbase/' + date + '/' + KM.pad_out2(camera) + '/snap/' + KM.secs_hhmmss(movies[movie]['start']) + '.jpg';
-            //html += '<span ' + span_html + ' onmouseover="showhint(\'<img width=256px src='+src+'>\')" onmouseout="hidehint()" onclick="hidehint()">';
             html += '<span ' + span_html + '>';
-            html += '&nbsp;Movie event&nbsp;&nbsp;';
             html += KM.secs_hh_mm_ss(start);
             html += '&nbsp;&nbsp;-&nbsp;&nbsp;';
             html += KM.secs_hh_mm_ss(end);
-            html += '&nbsp;&nbsp;duration&nbsp;&nbsp;';
-            html += KM.pad_out4(duration);
-            html += '&nbsp;&nbsp;secs&nbsp;&nbsp ... &nbsp;&nbsp;click to view<br>';
+            html += '<br>';
             html += '</span>';
 	    }
-	} else if (snap_show) { //snap events
+	} else if (view == 1) { //snap events
         for (var i=0; i<movies['snaps'].length; i++) {
             start = movies['snaps'][i]['start'];
             span_html = 'onclick="KM.arch_event_clicked(' + i + ')"';
-            //var src = 'images_dbase/' + date + '/' + KM.pad_out2(camera) + '/snap/' + KM.secs_hhmmss(movies[movie]['start']) + '.jpg';
-            //html += '<span ' + span_html + ' onmouseover="showhint(\'<img width=256px src='+src+'>\')" onmouseout="hidehint()" onclick="hidehint()">';
             html += '<span ' + span_html + '>';
-            html += '&nbsp;Snap event&nbsp;&nbsp;';
             html += KM.secs_hh_mm_ss(start);
-            html += '&nbsp;&nbsp;secs&nbsp;&nbsp ... &nbsp;&nbsp;click to view<br>';
+            html += '<br>';
             html += '</span>';
 	    }
     }
 
-	if (html.length === 0) {
-	    html += '<div class="archive_msg" style="text-align: center"><br><br>';
-	    html += 'There are currently no recorded events to display.<br><br>';
-	    html += 'To enable event recording select either \'frame mode\' or ';
-	    html += '\'movie mode\'<br>in the camera configuration ';
-	    html += 'section and edit the motion mask.<br><br>To display ';
-	    html += 'snapshot images select \'Display mode\'.</div>';
-	} 
-
-	document.getElementById('display_html').innerHTML = html;
+	document.getElementById('arch_playlist').innerHTML = html;
 
 	function top_10pc() {
 	    // return a list of the top 10% event durations        
@@ -2005,7 +1818,6 @@ KM.display_archive_ = function () {
 
         // A function that is executed when the date is changed, re-inits
         // 'camera', 'view' and 'mode' dropdowns, reloads the frame dbase and
-        // calls 'populate_tline'
         //
         // expects:
         //
@@ -2014,18 +1826,15 @@ KM.display_archive_ = function () {
 
         KM.session_id.current++;
         var session_id = KM.session_id.current;
-        wipe_tline();
         display_secs = 0;
-        show_downloading_msg();
         populate_cams_dbase(callback_populate_cams_dbase, document.getElementById('date_select').value, session_id);
-			
+		reset_display_html();	
     };
 
     function change_camera() {
 
         // A function that is executed when the camera is changed, re-inits
         // 'view' and 'mode' dropdowns, reloads the frame dbase and
-        // calls 'populate_tline'
         //
         // expects:
         //
@@ -2034,103 +1843,41 @@ KM.display_archive_ = function () {
 
         KM.session_id.current++;
         var session_id = KM.session_id.current;
-        wipe_tline();
         display_secs = 0;
-        show_downloading_msg();
-        mode_setto_event();
         populate_frame_dbase(populate_view_dropdown, document.getElementById('date_select').value,
                                        document.getElementById('camera_select').value, session_id);
+        reset_display_html();
     };
 
     function change_view() {
 
         // A function that is executed when the view is changed, calls
-        // 'init_to_event_mode'
-        //
         // expects:
         //
         // returns:
         //
+        
+        fill_events();
+        reset_display_html();
+    };
 
-        wipe_tline();
-        show_downloading_msg();
-
-        var movie_enabled = cameras[document.getElementById('camera_select').value]['movie_flag'];
-        var snap_enabled = cameras[document.getElementById('camera_select').value]['snap_flag'];
-
-        var view = document.getElementById('view_select').value;
-
-        // no filtering
-        movie_show =  movie_enabled;
-        snap_show =   snap_enabled;
-
-        if (view == 1) {	    
-            snap_show = false;
-
-        } else if (view == 2) {
-            movie_show =  false;
+    function playlist_hlight(movie_index) {
+        KM.videoPlayer.set_next_movie(movie_index+1);
+        var playlist = document.getElementById('arch_playlist');
+        if (playlist === null){
+            return false;
         }
-
-        // 'init_to_event_mode' so as not to re-init the dropdown to default
-        init_to_event_mode();
-    };
-
-    function change_mode() {
-
-        // A function that is executed when the mode is changed between display
-        // and event
-        //
-        // expects:
-        //
-        // returns:
-        //
-
-        if (document.getElementById('mode_select').selectedIndex === 0) {
-            // event mode
-            KM.session_id.current++;
-            event_mode = true;            
-            remove_tline_marker();  // don't wipe tline
-            init_to_event_mode();
-            document.onkeydown=null; //stop memory leak
-
-        } else {
-            // display mode
-            event_mode = false;
-            play_mode = true;
-            play_accel = 1; // play forward
-            update_button_bar_play_mode();
-            tline_clicked(display_secs);
-            KM.videoPlayer.set_play_accel(play_accel);
+        var lines = playlist.children;
+        for (var i = 0; i < lines.length; i++) {
+            if (i != movie_index) {
+                lines[i].classList.remove('playlist_hlight');
+            } else {
+                lines[i].classList.add('playlist_hlight');
+            }
         }
-    };
+    }
 
-    function mode_setto_event() {
-
-	// A function that sets the display to 'event'
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	event_mode = true;
-	document.getElementById('mode_select').selectedIndex = 0;
-    };
-
-    function mode_setto_display() {
-
-	// A function that sets the display to 'display'
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	event_mode = false;
-	document.getElementById('mode_select').selectedIndex = 1;
-    };
-
-    function update_title_clock(secs) {
+    function update_playback_info(secs) {
 
 	// A function to updates the title and 'clock'
 	//
@@ -2143,13 +1890,14 @@ KM.display_archive_ = function () {
 	var feed = document.getElementById('camera_select').value;
 	var title = cameras[feed]['title'];
 	var time = KM.secs_hh_mm_ss(secs+KM.videoPlayer.get_time());
-	document.getElementById('config_clock').innerHTML = '' +
-	'(' + KM.pad_out2(feed) + ':' + title + ' ' + time + ')';
+    var rate = document.getElementById('playback_rate').value;
+	document.getElementById('playback_info').innerHTML = '' +
+	KM.pad_out2(feed) + ':' + title + ' ' + time + ' [' + rate + ']';
 	feed = null; // stop memory leak
 	title = null;
     };
 
-    function update_title_noclock() {
+    function set_null_playback_info() {
 
 	// A function to updates the title but does not show the 'clock'
 	//
@@ -2160,322 +1908,22 @@ KM.display_archive_ = function () {
 
 	var feed = document.getElementById('camera_select').value;
 	var title = cameras[feed]['title'];
-	document.getElementById('config_clock').innerHTML = '' +
-	'(' + KM.pad_out2(feed) + ':' + title + ')';
+	document.getElementById('playback_info').innerHTML = '' +
+	KM.pad_out2(feed) + ':' + title;
 	feed = null; // stop memory leak
 	title = null;
     };
 
-    function blank_button_bar() {
-
-	// A function to disable and populate the bottom button bar with '-'
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	// disable buttons
-	for (var i = 1; i < 6; i++) {
-	    document.getElementById('bar_button' + i).disabled = true;
-	}
-
-	document.getElementById('bar_button1').value = '-';
-	document.getElementById('bar_button2').value = '-';
-	document.getElementById('bar_button3').value = '-';
-	document.getElementById('bar_button4').value = '-';
-	document.getElementById('bar_button5').value = '-';
-    };
-
-    function disable_button_bar() {
-
-	// A function to disable the bottom button bar
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	for (var i = 1; i < 6; i++) {
-	    document.getElementById('bar_button' + i).disabled = true;
-	}
-    };
-
-    function enable_button_bar() {
-
-	// A function to enable the bottom button bar
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	for (var i = 1; i < 6; i++) {
-	    document.getElementById('bar_button' + i).disabled = false;
-	}
-    };
-
-    function update_button_bar_play_mode() {
-
-	// A function to populate the bottom button bar 'play' text and
-	// highlight appropreate button
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	// play_accel value reference
-	//
-	// 0, <<<< highlighted
-	// 1, <<<  highlighted
-	// 2, <<   highlighted
-	// 3, <    highlighted
-	// 4, >    highlighted
-	// 5, >>   highlighted
-	// 6, >>>  highlighted
-	// 7, >>>> highlighted
-
-	// enable all buttons
-	for (var i = 1; i < 6; i++) {
-        if (i!==3) {
-            document.getElementById('bar_button' + i).disabled = false;
-        } else if (snap_show) {
-            document.getElementById('bar_button3').disabled = false;
-        }
-	}
-
-	// delete all highlights
-	for (var i = 1; i < 6; i++) {
-	    document.getElementById('bar_button' + i).style.color = KM.BLACK;
-	};
-
-	var grid = {"-4":['<<<<', '<', '>', '>>'],
-                "-3":['<<<', '<', '>', '>>'],
-                "-2":['<<', '<', '>', '>>'],
-                "-1":['<<', '<', '>', '>>'],
-                 "1":['<<', '<', '>', '>>'],
-                 "2":['<<', '<', '>', '>>'],
-	             "3":['<<', '<', '>', '>>>'],
-	             "4":['<<', '<', '>', '>>>>']};
-
-	var text = grid[play_accel];
-	grid=null;
-
-	document.getElementById('bar_button1').value = text[0];
-	document.getElementById('bar_button2').value = text[1];
-	document.getElementById('bar_button3').value = 'Click for frames';
-	document.getElementById('bar_button4').value = text[2];
-	document.getElementById('bar_button5').value = text[3];
-
-	if (play_accel < -1 ) document.getElementById('bar_button1').style.color = KM.RED;
-	if (play_accel === -1) document.getElementById('bar_button2').style.color = KM.RED;
-	if (play_accel === 1) document.getElementById('bar_button4').style.color = KM.RED;
-	if (play_accel > 1)  document.getElementById('bar_button5').style.color = KM.RED;
-    };
-
-    function update_button_bar_frame_mode() {
-
-	// A function to populate the bottom button bar 'frame' text
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	// enable all buttons
-	for (var i = 1; i < 6; i++) {
-	    document.getElementById('bar_button' + i).disabled = false;
-	}
-
-	// delete all highlights
-	for (var i = 1; i < 6; i++) {
-	    document.getElementById('bar_button' + i).style.color = KM.BLACK;
-	}
-
-	document.getElementById('bar_button1').value = '-event';
-	document.getElementById('bar_button2').value = '-frame';
-	document.getElementById('bar_button3').value = 'Click to play';
-	document.getElementById('bar_button4').value = '+frame';
-	document.getElementById('bar_button5').value = '+event';
-    };
-
-    function wipe_tline() {
-
-	// A function wipe the time line, used while downloading
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-	for (var i = 1; i < 289; i++) {
-	   document.getElementById('tslot_' + i).src = './images/tline_g0.png';
-	}
-    }
-
-    function update_tline_marker(secs) {
-
-        // A function to update the time line marker to current 'secs', deletes
-        // the old marker if neccessary
-        //
-        // expects:
-        // 'secs' ... the current 'secs'
-        //
-        // returns:
-        //
-
-        var slot = parseInt(secs / (5 * 60)) + 1;
-        if (slot != tline_old_slt) {
-            if (tline_old_slt > -1) { // check for 1st time
-                document.getElementById('tslot_' + tline_old_slt).src = tline_old_src;
-            }
-            tline_old_slt = slot;
-            tline_old_src = document.getElementById('tslot_' + slot).src;
-            document.getElementById('tslot_' + slot).src = '/images/tline_y6.png';
-        }
-    }
-
-    function remove_tline_marker() {
-
-        // A function to remove the time line marker
-        //
-        // expects:
-        //
-        // returns:
-        //
-
-        if (tline_old_slt > -1) { // check for 1st time
-            document.getElementById('tslot_' + tline_old_slt).src = tline_old_src;
-        }
-    }
-
-    function bar_button_clicked(button) {
-
-	// A function called when a bar button is clicked, its function depends
-	// on the archive mode
-	//
-	// expects:
-	// button ... the button number 1 to 5
-	//
-	// returns:
-	//
-
-	// play_accel value reference
-	//
-	// -4, <<<< highlighted
-	// -3, <<<  highlighted
-	// -2, <<   highlighted
-	// -1, <    highlighted
-	// 1, >    highlighted
-	// 2, >>   highlighted
-	// 3, >>>  highlighted
-	// 4, >>>> highlighted
-
-	if (play_mode) { // play mode
-	    if (button == 1) { // fast play backward            
-		    play_accel--;
-            if (play_accel>=0) {
-                play_accel = -2;
-            }
-		    play_accel = Math.max(-4, play_accel);
-            
-		} else if (button == 2) { // play backward
-            play_accel = -1;
-            
-        } else if (button == 3) { // frame mode
-            play_accel = 1;        
-            
-	    } else if (button == 4) { // play forward
-            play_accel = 1;
-            
-	    } else if (button == 5) { // fast play forward
-            play_accel++;
-            if (play_accel<=0) {
-                play_accel = 2;
-            }
-            play_accel = Math.min(4, play_accel);
-        }  
-        
-        KM.videoPlayer.set_play_accel(play_accel);
-        snap_player.set_accel(play_accel);
-        
-        if ((button == 3) && (snap_show)) {
-            play_mode = false;  
-            update_button_bar_frame_mode();
-            snap_player.playpause();
-        }
-        else {
-            update_button_bar_play_mode();
-        }
-		
-        
-	} else if (snap_show) { // frame mode
-
-	    if (button <=2) { // -event
-	        play_accel = -1; // play backward
-            
-	    } else if (button == 3) { // play mode            
-            play_accel = 1; // play forward            
-            
-	    } else if (button >= 4) { // +frame
-            play_accel = 1; // play forward
-	    }        
-        
-        snap_player.set_accel(play_accel);
-        if (button == 3) {
-            play_mode = true;
-            update_button_bar_play_mode();
-            snap_player.playpause();
-        } else {
-            snap_player.play();
-        }
-	}
-    };
-
-    function tline_clicked(secs) {
-
-        // A function called when a the time line is clicked
-        //
-        // expects:
-        // 'movie_id' ... the movie index
-        //
-        // returns:
-        //
-        
-        var id = 0;
-        var old_secs;
-        if (movie_show) {
-            old_secs = movies['movies'][id]['start'];
-            for (var i=0; i<movies['movies'].length; i++) {
-                if (secs <= old_secs) {
-                    id = i;
-                    break;
-                } else {
-                    old_secs = movies['movies'][i]['start'];
-                }        
-            }
-            play_movie(id);
-        } else if (snap_show) {
-            old_secs = movies['snaps'][id]['start'];
-            for (var i=0; i<movies['snaps'].length; i++) {
-                if (secs <= old_secs) {
-                    id = i;
-                    break;
-                } else {
-                    old_secs = movies['snaps'][i]['start'];
-                }        
-            }
-            play_snap(id);
-        }
-    }
-    
     function event_clicked(id) {
-        if (movie_show) {
+        var view = document.getElementById('view_select').value;
+
+        if (view == 0) {	    
             play_movie(id);
-        } else if (snap_show) {
+
+        } else if (view == 1) {
             play_snap(id);
         }
+        playlist_hlight(id);
     }
     
     function play_movie(movie_id) {
@@ -2492,14 +1940,9 @@ KM.display_archive_ = function () {
 
         KM.session_id.current++;
         KM.kill_timeout_ids(KM.ARCH_LOOP);
-        mode_setto_display();
-
-        play_mode = true;
-        update_button_bar_play_mode();
 
         if (movies['movies'][movie_id] !== undefined) {
             display_secs = movies['movies'][movie_id]['start'];
-            update_tline_marker(display_secs);	  
             if (!document.getElementById('html5player')) {
                 reset_display_html(); 
             }
@@ -2510,10 +1953,8 @@ KM.display_archive_ = function () {
     function play_snap(snap_id) {
         KM.session_id.current++;
         reset_display_html();
-        mode_setto_display();
-        update_button_bar_play_mode();
-        document.getElementById('display_html').innerHTML = '<div id="movie" style="overflow:hidden;background-color:#000000;width:100%;height:100%"> </div>';
-        snap_player.set_player({id:'movie', width: backdrop_width-5, height: backdrop_height-5, snap_id: snap_id});
+        document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
+        snap_player.set_player({id:'player_obj', width: '100%', height: '100%', snap_id: snap_id});
     }
 
     function build_video_player(movie_id) {
@@ -2540,32 +1981,44 @@ KM.display_archive_ = function () {
         var html5player = document.getElementById('html5player');
 
         if (!html5player) {
-            document.getElementById('display_html').innerHTML = '<div id="movie" style="overflow:hidden;background-color:#000000;width:100%;height:100%"> </div>';
+            document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
         }
 		
 		KM.videoPlayer.set_movie_duration(end-start);
 		KM.videoPlayer.set_cur_event_secs(start);
 		KM.videoPlayer.set_next_movie(next_id);
 		
-		update_title_clock(start);
+		update_playback_info(start);
 
 		
 		switch (file_ext) {
                     
 		case '.swf':
-			document.getElementById('movie').innerHTML = '<div id="player"> </div>';
-			document.getElementById('player').innerHTML = "<p><a href=\""+document.URL+name+"\" target='_blank'>DOWNLOAD: "+name.split(/(\\|\/)/g).pop()+"</a></p>";
+			document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
+			document.getElementById('player_obj').innerHTML = "<p><a href=\""+document.URL+name+"\" target='_blank'>DOWNLOAD: "+name.split(/(\\|\/)/g).pop()+"</a></p>";
 
 			var flashvars = {};
 			var fparams = {allowFullScreen:'true', allowscriptaccess: 'always', quality:'best', bgcolor:'#000000', scale:'exactfit'};
-			var fattributes = {id: 'movie_id', name: 'movie_id'};
-			swfobject.embedSWF(name, 'player', backdrop_width - 5, backdrop_height - 5, '9.124.0', 'expressInstall.swf', flashvars, fparams, fattributes);
-			movie_id = document.getElementById('movie_id');
+			var fattributes = {id: 'player_obj', name: 'player_obj'};
+			swfobject.embedSWF(name, 'player_obj', backdrop_width - 5, backdrop_height - 5, '9.124.0', 'expressInstall.swf', flashvars, fparams, fattributes);
+			movie_id = document.getElementById('player_obj');
 			break;
 			
 		default:              
             if (!html5player) {
-                KM.videoPlayer.set_video_player({id:'movie', src: name, width: backdrop_width-5, height: backdrop_height-5});
+                var rate = document.getElementById('playback_rate').value;
+                KM.videoPlayer.set_video_player({
+                    id:'player_obj', 
+                    src: name, 
+                    width: '100%', 
+                    height: '100%', 
+                    config: {
+                        autoplay:true, 
+                        controls:true, 
+                        muted:true, 
+                        playbackRate:rate
+                    }
+                });
                 html5player = document.getElementById('html5player');
                 if (html5player) {                    
                     html5player.onloadeddata=html5VideoLoaded;				
@@ -2592,41 +2045,73 @@ KM.display_archive_ = function () {
         var snap_id = -1;
         var direct = 1;
         var delay = 1000;
-        var time = 0;
+        var time = 0;      
         
         
         function set_player(params) {
             KM.session_id.current++;
-            player = document.getElementById(params.id);
-            snap.width = params.width;
-            snap.height = params.height;
+            player = document.getElementById(params.id);            
+            snap.style.width = params.width;
+            snap.style.height = params.height;
+            add_events();
             snap.onload = function() {reload()};
+            snap.onclick = playpause;
             player.appendChild(snap);
             snap_id = params.snap_id;            
             playpause();
         }              
         
         function reload() {            
-            if (KM.session_id.current === session_id) {
+            if (KM.session_id.current === session_id) {                
                 KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, delay-get_delta()));
             }
         }
+        
+        function add_events() {
+            document.onkeydown = function(e) {              
+                    switch (e.which) {
+                    case 39:
+                        snap_id+=1;
+                        playlist_hlight(snap_id);
+                        break;
+                    case 37:
+                        snap_id-=1;
+                        playlist_hlight(snap_id);
+                        break;
+                    case 32:
+                        playpause();
+                        break;
+                    }
+                return false;
+                }
+                
+            }
+        
         
         function get_delta() {
             return Math.min(100, new Date().getTime()-time);
         }
         
         function play() {
-            KM.kill_timeout_ids(KM.ARCH_LOOP);
-            if (movies['snaps'][snap_id+direct]) {
-                snap_id+=direct;
-                snap.src = movies['snaps'][snap_id]['file'];
+            KM.kill_timeout_ids(KM.ARCH_LOOP);            
+            if (movies['snaps'][snap_id+direct]) {  
+                playlist_hlight(snap_id);
+                snap.src = movies['snaps'][snap_id]['file'];            
+                snap_id+=direct;                
                 time = new Date().getTime();
                 display_secs = movies['snaps'][snap_id]['start'];
-                update_title_clock(display_secs);
-                update_tline_marker(display_secs);                
-                //reload(session_id);
+                update_playback_info(display_secs); 
+                progress();
             }            
+        }
+        
+        function progress() {
+            var rate = document.getElementById('playback_rate');            
+            if (rate !== null) {
+                direct = Math.sign(rate.value);
+                fps = Math.abs(rate.value);
+            }
+            delay = 1000/fps;           
         }
         
         function playpause() {
@@ -2639,22 +2124,17 @@ KM.display_archive_ = function () {
             }
         }        
         
-        function set_accel(val) {
-            direct = Math.sign(val);
-            fps = Math.abs(val);
-            delay = 1000/fps;
-        }
-        
+      
         return {
             set_player: set_player,            
-            set_accel: set_accel,
             playpause: playpause,
-            play: play
+            play: play,
+            progress: progress
         }
     }();
 
     function reset_display_html() {
-        document.getElementById('display_html').innerHTML = '';
+        document.getElementById('arch_player').innerHTML = '';
     }
         
     function populate_cams_dbase(callback, date, session_id) {
@@ -2812,11 +2292,8 @@ KM.display_archive_ = function () {
 	change_date: change_date,
 	change_camera: change_camera,
 	change_view: change_view,
-	change_mode: change_mode,
-	bar_button_clicked: bar_button_clicked,	
-	tline_clicked: tline_clicked,
     event_clicked: event_clicked,
-	update_title_clock: update_title_clock
+	update_playback_info: update_playback_info
     };
 }();
 
@@ -2824,11 +2301,8 @@ KM.display_archive = KM.display_archive_.init;
 KM.arch_change_date = KM.display_archive_.change_date;
 KM.arch_change_camera = KM.display_archive_.change_camera;
 KM.arch_change_view = KM.display_archive_.change_view;
-KM.arch_change_mode = KM.display_archive_.change_mode;
-KM.arch_bar_button_clicked = KM.display_archive_.bar_button_clicked;
 KM.arch_event_clicked = KM.display_archive_.event_clicked;
-KM.arch_tline_clicked = KM.display_archive_.tline_clicked;
-KM.update_title_clock = KM.display_archive_.update_title_clock;
+KM.update_playback_info = KM.display_archive_.update_playback_info;
 
 
 /* ****************************************************************************
@@ -3059,7 +2533,7 @@ KM.display_config_ = function () {
         '</div>' +
 
         '<div class="config_backdrop" style="width:'+backdrop_width+'px;height:'+backdrop_height+'px;">' +
-        '<div id="config_bar" class="config_button_bar" style="height:30px;overflow:hidden;" >' +
+        '<div class="config_button_bar" style="height:30px;overflow:hidden;" >' +
 
             '<input type="button" value="Misc" id="misc_button" onclick="KM.conf_misc_html()" '+
             'style="width:' + button_width + 'px;"/>' +
@@ -4217,7 +3691,7 @@ KM.videoPlayer = function() {
                 document.getElementById('flashplayer').jsScroll(++tm);
             }
         }
-        KM.update_title_clock(cur_event_secs);
+        KM.update_playback_info(cur_event_secs);
     }
     
     function ktVideoFinished() {
@@ -4228,7 +3702,7 @@ KM.videoPlayer = function() {
     function ktVideoScrolled(time) {
     // вызовется при перемотке видео
         tm=parseInt(time,10);
-        KM.update_title_clock(cur_event_secs);
+        KM.update_playback_info(cur_event_secs);
     }
     
     function ktVideoStarted() {
@@ -4281,7 +3755,7 @@ KM.videoPlayer = function() {
                     }
                     break;
                 }
-                KM.update_title_clock(cur_event_secs);
+                KM.update_playback_info(cur_event_secs);
                 flashplayer=null;
             }
             return false;
@@ -4291,15 +3765,11 @@ KM.videoPlayer = function() {
     function html5VideoProgress() {
         if (document.getElementById('html5player')) {
             var html5player=document.getElementById('html5player');
-            var rate=1;
-            if (current_play_accel<0)
-                rate=0.5;
-            else if (current_play_accel>1)
-                rate=2;
-                
+            
+            var rate = document.getElementById('playback_rate').value;
             html5player.playbackRate=rate;
             tm=html5player.currentTime;
-            KM.update_title_clock(cur_event_secs);
+            KM.update_playback_info(cur_event_secs);
             html5player=null;
         }	
     }
@@ -4308,14 +3778,14 @@ KM.videoPlayer = function() {
         if (document.getElementById('html5player')) {
             var html5player=document.getElementById('html5player');
             tm=html5player.currentTime;
-            KM.update_title_clock(cur_event_secs);
+            KM.update_playback_info(cur_event_secs);
             html5player=null;
         }
     }
     
     function html5VideoFinished() {
         tm=0;
-        KM.arch_event_clicked(next_movie);
+        KM.arch_event_clicked(next_movie);        
     }
     
     function html5playerPlayPause() {
@@ -4349,7 +3819,7 @@ KM.videoPlayer = function() {
                     tm=html5player.currentTime;
                     break;
                 }
-                KM.update_title_clock(cur_event_secs);
+                KM.update_playback_info(cur_event_secs);
                 html5player=null;
             }
             return false;
@@ -4436,9 +3906,15 @@ KM.videoPlayer = function() {
 					+ params.width
 					+ '" height="'
 					+ params.height
-					+ '" autoplay controls ></video>';
-
+                    + '"</video>';
+            
 			var html5player = document.getElementById('html5player');
+            for (var key in params.config) {
+                if (params.config.hasOwnProperty(key))
+                    try {
+                        html5player[key] = params.config[key];
+                    } catch (e) {};
+            }
 			html5player.innerHTML = "<p><a href=\"" + document.URL + params.src
 					+ "\" target='_blank'>DOWNLOAD: "
 					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
