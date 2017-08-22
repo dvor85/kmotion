@@ -10,7 +10,7 @@ port_notice = 8110
 images_dbase_limit_gb = 480
 
 [version]
-string = 7.0
+string = 7.0.1
 title=Видеонаблюдение
 
 

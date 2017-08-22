@@ -1,9 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 
 class Outs():
@@ -13,11 +11,11 @@ class Outs():
         self.kmotion_dir = kmotion_dir
         self.env = env
 
-    def main(self):
+    def __call__(self, *args, **kwargs):
         with open(os.path.join(self.kmotion_dir, 'www/motion_out'), 'r') as f_obj:
             lines = f_obj.read().splitlines()
 
         if len(lines) > 500:
             lines = lines[-500:]
 
-        return json.dumps(lines)
+        return lines

@@ -1,9 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import subprocess
 from datetime import timedelta
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 
 class Loads:
@@ -45,7 +43,7 @@ class Loads:
         self.kmotion_dir = kmotion_dir
         self.env = env
 
-    def main(self):
+    def __call__(self):
         data = {}
         uname = subprocess.Popen('uname -srvo', shell=True, stdout=subprocess.PIPE).communicate()[0]
         data['uname'] = uname.strip()
@@ -81,4 +79,4 @@ class Loads:
         data['cu'] = vmstat[-3]
         data['cs'] = vmstat[-4]
 
-        return json.dumps(data)
+        return data

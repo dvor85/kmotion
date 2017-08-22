@@ -2,7 +2,7 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<link href="css/base.css" rel="stylesheet" type="text/css" media="screen"/> 
+<link href="css/base.css?ver=7.0.1" rel="stylesheet" type="text/css" media="screen"/> 
 <meta name="keywords" content="" />
 <meta name="description" content="" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -169,9 +169,9 @@ function hidehint() {
 $debug = false;
 $user=!empty($_SERVER["PHP_AUTH_USER"])?$_SERVER["PHP_AUTH_USER"]:"";
 if ($debug and $user=='admin') {
-    echo '<script type="text/javascript" src="js/index.js"></script>';
+    echo '<script type="text/javascript" src="js/index.js?ver=7.0.1"></script>';
 } else {
-    echo '<script type="text/javascript" src="js/index-min.js"></script>';
+    echo '<script type="text/javascript" src="js/index-min.js?ver=7.0.1"></script>';
 }
 ?>
 

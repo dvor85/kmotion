@@ -1,9 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 
 class Logs():
@@ -13,7 +11,7 @@ class Logs():
         self.kmotion_dir = kmotion_dir
         self.env = env
 
-    def main(self):
+    def __call__(self, *args, **kwargs):
         from core.mutex import Mutex
         with Mutex(self.kmotion_dir, 'logs'):
             with open(os.path.join(self.kmotion_dir, 'www/logs'), 'r') as f_obj:
@@ -22,4 +20,4 @@ class Logs():
             if len(lines) > 500:
                 lines = lines[-500:]
 
-        return json.dumps(lines)
+        return lines

@@ -8,6 +8,7 @@ log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class Settings():
+    VERSION = '7.0.1'
     _instance = None
     _lock = Lock()
 
@@ -40,7 +41,7 @@ class Settings():
                 self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
                 for section in self.kmotion_parser.sections():
                     for k, v in self.kmotion_parser.items(section):
-                        config[k] = utils.parseStr(v)
+                        config[k] = utils.parse_str(v)
             except Exception as e:
                 log.exception(e)
             self.config['kmotion_rc'] = config
@@ -82,12 +83,12 @@ class Settings():
                     for k, v in www_parser.items(section):
                         try:
                             if 'display_feeds_' in k:
-                                display = utils.parseStr(k.replace('display_feeds_', ''))
+                                display = utils.parse_str(k.replace('display_feeds_', ''))
                                 config['display_feeds'][display] = utils.uniq(
-                                    [utils.parseStr(i) for i in v.split(',')
+                                    [utils.parse_str(i) for i in v.split(',')
                                      if www_parser.has_section('motion_feed%02i' % int(i))])
                             else:
-                                conf[k] = utils.parseStr(v)
+                                conf[k] = utils.parse_str(v)
                         except Exception as e:
                             log.exception('error: {error}'.format(error=e))
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import traceback
@@ -7,19 +9,19 @@ try:
 except ImportError:
     import json
 
+from core.config import Settings
+from core import utils
 
-class Settings():
+
+class Config():
 
     def __init__(self, kmotion_dir, env):
-        sys.path.append(kmotion_dir)
-        from core.utils import Request
         self.kmotion_dir = kmotion_dir
         self.env = env
-        self.params = Request(self.env)
 
-        from core.config import Settings
+        self.username = utils.true_enc(utils.safe_str(env.get('REMOTE_USER')))
 
-        www_rc = 'www_rc_%s' % (self.getUsername())
+        www_rc = 'www_rc_%s' % (self.username)
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
             www_rc = 'www_rc'
 
@@ -27,25 +29,10 @@ class Settings():
         self.config = conf.get(www_rc)
         config_main = conf.get('kmotion_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
-        self.version = config_main['string']
-        self.title = config_main['title']
-
-    def getUsername(self):
-        try:
-            username = ''
-            auth = self.env['HTTP_AUTHORIZATION']
-            if auth:
-                scheme, data = auth.split(None, 1)
-                if scheme.lower() == 'basic':
-                    username, password = data.decode('base64').split(':', 1)
-        except Exception:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            print 'error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value})
-        return username
+        self.title = config_main.get('title', 'Surveillance')
 
     def read(self):
-        config = {"ramdisk_dir": self.ramdisk_dir,
-                  "version": self.version,
+        config = {"version": Settings.VERSION,
                   "title": self.title,
                   "feeds": {},
                   "display_feeds": {}
@@ -57,25 +44,27 @@ class Settings():
                 if eo in conf:
                     del(conf[eo])
 
-        return json.dumps(config)
+        return config
 
-    def write(self):
-        config = json.loads(self.params['jdata'])
-        config['user'] = self.getUsername()
-        with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
+    def write(self, jdata):
+        config = json.loads(jdata)
+        config['user'] = self.username
+        with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'wb') as pipeout:
             pipeout.write(json.dumps(config))
 
         return ''
 
-    def main(self):
-        if 'read' in self.params:
+    def __call__(self, *args, **kwargs):
+        if 'read' in kwargs:
             return self.read()
-        elif 'write' in self.params:
-            return self.write()
+        elif 'write' in kwargs:
+            jdata = kwargs.get("jdata")
+            return self.write(jdata)
         else:
             return ''
 
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    print Settings(kmotion_dir, {}).read()
+    print Config(kmotion_dir, {}).read()
+#     requests.post("http://127.0.0.1:8080/config", json={'jsonrpc': '2.0', 'method': 'config', 'id': '1', 'params': {'read': '1'} }, headers={"Content-type": "application/json"}).content

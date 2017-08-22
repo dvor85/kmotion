@@ -62,7 +62,7 @@ class Kmotion_setd(Process):
                         if not www_parser.has_section(feed_section):
                             www_parser.add_section(feed_section)
                         for k, v in self.config[section][feed].iteritems():
-                            if k == 'reboot_camera' and utils.parseStr(v) == True and www_rc == 'www_rc':
+                            if k == 'reboot_camera' and utils.parse_str(v) == True and www_rc == 'www_rc':
                                 cam_lost = CameraLost(self.kmotion_dir, feed)
                                 threading.Thread(target=cam_lost.reboot_camera).start()
                             else:

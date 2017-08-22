@@ -467,14 +467,12 @@ Main display section - CSS specific to 'config' - General
 	font-weight: bold;
 	margin-left: 16px;
 	float:left;
-
 }
 
 #main_display .config_text_margin { 
 	font-size: 17px;
 	font-weight: bold;
 	margin-left: 20px;
-	
 }
 
 #main_display .config_text { 
@@ -606,17 +604,6 @@ Main display section - CSS specific to 'logs', 'about' and 'msg'
 	font-size: 17px;
 	font-weight: bold;
 	width: 992px;
-}
-
-#main_display .logs_backdrop {	
-	font-size: 17px;
-	font-weight: bold;
-	margin-top: 18px;
-	margin-left: auto;
-	margin-right: auto;
-	overflow: auto;
-	background-color: #505050;
-	color: #C1C1C1; 
 }
 
 #hint

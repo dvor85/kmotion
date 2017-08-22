@@ -1,25 +1,19 @@
+# -*- coding: utf-8 -*-
 
 import os
-import sys
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from core.config import Settings
 
 
 class Feeds():
 
     def __init__(self, kmotion_dir, env):
-        sys.path.append(kmotion_dir)
-        from core.utils import Request
         self.kmotion_dir = kmotion_dir
         self.env = env
-        self.params = Request(env)
-        self.ramdisk_dir = self.params['rdd']
+        self.ramdisk_dir = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')['ramdisk_dir']
 
-    def main(self):
+    def __call__(self, *args, **kwargs):
 
         events = os.listdir(os.path.join(self.ramdisk_dir, 'events'))
         events.sort()
 
-        return json.dumps(events)
+        return events

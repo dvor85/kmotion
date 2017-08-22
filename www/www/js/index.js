@@ -17,11 +17,10 @@ KM.GHOST =     '#E2E2E2';
 
 // 'timeout_id' group contants
 KM.BUTTON_BLINK = 'BUTTON_BLINK';
-KM.ERROR_DAEMON = 'ERROR_DAEMON';
 KM.GET_DATA     = 'GET_DATA';
 KM.DISPLAY_LOOP = 'DISPLAY_LOOP';
 KM.ARCH_LOOP    = 'ARCH_LOOP';
-KM.LOGS         = 'LOGS';
+KM.LOGS         = 'LOGS_LOOP';
 KM.CONFIG_LOOP  = 'CONFIG_LOOP';
 KM.MISC_JUMP    = 'MISC_JUMP';
 
@@ -163,15 +162,6 @@ KM.kill_timeout_ids = KM.timeout_ids.kill_ids;
 
 
 KM.get_xmlHttp_obj = function () {
-
-    // A function that generates and returns an appropreate 'xmlHttp' object for
-    // the current browser
-    //
-    // expects :
-    //
-    // returns :
-    // 'xmlHttp' ... 'xmlHttp' object
-
     var xmlHttp = null;
     try {           // Firefox, Opera 8.0+, Safari
         xmlHttp = new XMLHttpRequest();
@@ -187,64 +177,78 @@ KM.get_xmlHttp_obj = function () {
     return xmlHttp;
 };
 
-KM.load_settings = function (callback) {
-
-    // a closure that loads the kmotion browser settings from the server
-    // 'www_rc' file via an 'xmlHttp' call to 'xmlHttp_settings_rd.py'
-
-    function get_settings(callback) {
-
-	// A function that retrieves raw 'www_rc' data from the server using
-	// repeated 'xmlHttp' calls to 'xmlHttp_settings_rd.py'
-	//
-	// expects :
-	// 'callback' ... the callback object
-	//
-	// returns :
-	//
-
-	// local 'xmlHttp' object to enable multiple instances, one for each
-	// function call.
+KM.json_request = function(url, json, callback, onerror){
 	var xmlHttp = KM.get_xmlHttp_obj();
-	var _got = false;
-	function request() {
-	    xmlHttp.onreadystatechange = function () {
-            if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                xmlHttp.onreadystatechange = null; // plug memory leak
-                try {
-                    KM.config = JSON.parse(xmlHttp.responseText);
-                    _got = true;                    
-                } catch(e) {console.log('Error while getting config!')}
-                set_settings(callback);
-            }
-	    };
-	    xmlHttp.open('GET', '/ajax/config?read='+ Math.random(), true);
-	    xmlHttp.send(null);
-	}
+	var jreq = json;
+	var json = JSON.stringify(jreq);
+	xmlHttp.open('POST', url, true);
+	xmlHttp.setRequestHeader("Content-type", "application/json");
+	xmlHttp.onreadystatechange = function() {
+		if (xmlHttp.readyState == 4) {
+			xmlHttp.onreadystatechange = null; // plug memory leak
+			if (xmlHttp.status == 200) {
+				try {
+                    var jres = JSON.parse(xmlHttp.responseText);
+                    if (jres.id != jreq.id){
+                        console.log("Invalid ID");
+                        if (onerror)
+                            onerror();
+                        return false;
+                    }
+                    if (jres.error) {
+                        console.log(jres.error.message);
+                        if (onerror) 
+                            onerror();
+                        return false;                        
+                    }
+                    if (callback) 
+                        callback(jres.result);
+                
+                    return true;
+				} catch (e) {
+                    console.log("Request error");
+                    if (onerror) 
+                        onerror();
+                    return false;
+                    
+                }    
+			}
+		}
+	}	
+	xmlHttp.send(json);
+}
 
-	function retry() {
-        KM.kill_timeout_ids(KM.GET_DATA);
-	    if (!_got) {
-            request();
-            KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {retry(); }, 5000));
-	    }
-	}
-    retry();
+KM.load_settings = function () { 
+    function init_interface() {
+        KM.browser.set_title();
+        KM.background_button_clicked(KM.config.misc.color_select);
+        KM.enable_display_buttons(KM.config.misc.display_select);
+        KM.menu_bar_buttons.construct_camera_sec();
+        KM.enable_camera_buttons();
+        if (KM.config.misc.hide_button_bar) {
+            KM.toggle_button_bar();
+        }            
+        KM.enable_function_buttons(1); // select 'live' mode
+        KM.function_button_clicked(1); // start 'live' mode
     }
+    
+    function get_settings() {        
+        function retry() {
+            KM.kill_timeout_ids(KM.GET_DATA);
+            KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {get_settings(); }, 5000));
+        }
+        
+        function callback(obj_data) {
+            KM.config = obj_data;
+            set_settings();
+            init_interface();
+        }
+    
+        var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {read: '1'} };
+        KM.json_request("/ajax/config", jreq, callback, onerror=retry);
+    }    
 
-
-    function set_settings(callback) {
-
-	// A function that splits the raw 'www_rc' data and loads the browser
-	// settings then executes 'callback'
-	//
-	// expects :
-	// 'data' ...     the raw 'www_rc' data
-	// 'callback' ... the callback object
-	//
-	// returns :
-	//
-
+    function set_settings() {
         KM.set_main_display_size();
         var user_agent = navigator.userAgent.toLowerCase();
 
@@ -255,13 +259,16 @@ KM.load_settings = function (callback) {
         KM.browser.browser_SP = (user_agent.search('iphone') > -1 ||
         user_agent.search('ipod') > -1 || user_agent.search('android') > -1 || user_agent.search('ipad') > -1 ||
         user_agent.search('iemobile') > -1 ||  user_agent.search('blackberry') > -1);
-        
-        // finally tha callback
-        callback();
-    }
+    };
     
-    get_settings(callback);
-};
+    get_settings();
+    
+    return {
+        init: get_settings
+    }
+}();
+
+KM.init = KM.load_settings.init;
 
 KM.set_main_display_size = function () {
 
@@ -838,19 +845,9 @@ KM.display_live_ = function () {
     }
     
     function refresh(session_id) {
-
-        // A function that performs the main refresh loop, complex by
-        // necessity
-        //
-        // expects:
-        //
-        // returns:
-        //
-
-        // refresh the grid display     
         KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls            
         if (KM.session_id.current === session_id) {                
-            update_latest_events();
+            update_latest_events(session_id);
             KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000));
         }
     }
@@ -1326,33 +1323,25 @@ KM.display_live_ = function () {
         }
     };
     
-    function update_latest_events() {
-
-        // A function that get the latest jpeg filenames and event status from
-        // the server with an 'xmlHttp' call then splits the returned data and
-        // stores it in 'KM.feeds.latest_jpegs' and 'KM.feeds.latest_events'.
-        //
-        // expects :
-        //
-        // returns :
-        //
-
-        var xmlHttp = KM.get_xmlHttp_obj();
-
-        xmlHttp.onreadystatechange = function () {
-        if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                xmlHttp.onreadystatechange = null; // plug memory leak
-                try {
-                    latest_events = JSON.parse(xmlHttp.responseText);
-                    text_refresh();
-                    update_feeds();
-                } catch(e) {console.log('Error while updating feeds!')}
+    function update_latest_events(session_id) {        
+        function retry() {            
+            KM.kill_timeout_ids(KM.DISPLAY_LOOP);
+            if (KM.session_id.current === session_id) {
+                KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {update_latest_events(); }, 100));
             }
-        };
-
-        xmlHttp.open('GET', '/ajax/feeds?'+Math.random() + '&rdd='+encodeURIComponent(KM.config.ramdisk_dir), true);
-        xmlHttp.send(null);
-    };
+        }
+        
+        function callback(obj_data) {
+            latest_events = obj_data;
+            text_refresh();
+            update_feeds();
+        }
+        
+        if (KM.session_id.current === session_id) {
+            var jreq = {jsonrpc: '2.0', method: 'feeds', id: Math.random(), params: {rdd: KM.config.ramdisk_dir} };
+            KM.json_request("/ajax/feeds", jreq, callback, onerror=retry);
+        }
+    }  
     
     function text_refresh() {
 
@@ -1538,24 +1527,10 @@ KM.display_archive_ = function () {
         var session_id = KM.session_id.current;
         KM.set_main_display_size(); // in case user has 'zoomed' browser view
         init_backdrop_html();
-        
-        populate_dates_dbase(callback_populate_dates_dbase, session_id);        
-     
-        
+        update_dates_dbase(session_id);        
     }
 
-    function callback_populate_dates_dbase(session_id) {
-        if (dates !== {}) {
-            populate_date_dropdown();
-        }
-    }
     
-    function callback_populate_cams_dbase(session_id) {
-        if (cameras !== {}) {
-            populate_camera_dropdown();            
-            init_main_menus(session_id);
-        }
-    }
 
     function init_main_menus(session_id) {
 
@@ -1627,6 +1602,62 @@ KM.display_archive_ = function () {
 	</div>';
 
     }   
+    
+    function update_cams_dbase(date, session_id) {        
+        function retry() {
+            KM.kill_timeout_ids(KM.ARCH_LOOP);
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_cams_dbase(date, session_id); }, 5000));
+        }
+        
+        function callback(obj_data) {
+            cameras = obj_data;
+            if (cameras !== {}) {
+                populate_camera_dropdown();            
+                init_main_menus(session_id);
+            }
+        }
+    
+        if (KM.session_id.current === session_id) {
+            var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"feeds", date:date} };
+            KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
+        }
+    } 
+    
+    function update_dates_dbase(session_id) {        
+        function retry() {
+            KM.kill_timeout_ids(KM.ARCH_LOOP);
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_dates_dbase(session_id); }, 5000));
+        }
+        
+        function callback(obj_data) {
+            dates = obj_data;
+            if (dates !== {}) {
+                populate_date_dropdown();            
+            }
+        }
+    
+        if (KM.session_id.current === session_id) {
+            var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"dates"} };
+            KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
+        }
+    } 
+    
+    function update_movies_dbase(date, camera, session_id) {        
+        function retry() {
+            KM.kill_timeout_ids(KM.ARCH_LOOP);
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_movies_dbase(date, camera, session_id); }, 5000));
+        }
+        
+        function callback(obj_data) {
+            movies = obj_data;
+            populate_view_dropdown();
+        }
+    
+        if (KM.session_id.current === session_id) {
+            var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {date: date, feed: camera, func:"movies"} };
+            KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
+        }
+    }
 
     function populate_date_dropdown() {
 
@@ -1639,27 +1670,27 @@ KM.display_archive_ = function () {
 	//
 
 	// remove all 'date_select' options
-	var date_select = document.getElementById('date_select');
-	for (var i = date_select.options.length - 1; i > -1; i--) {
-	    date_select.remove(i);
-	}
+        var date_select = document.getElementById('date_select');
+        for (var i = date_select.options.length - 1; i > -1; i--) {
+            date_select.remove(i);
+        }
 
-	// add the avaliable dates
-	var new_opt = '', date = '';
-	for (var i=0; i<dates.length; i++) {
-        var date = dates[i];
-	    new_opt = document.createElement('option');	    
-	    new_opt.text = date.slice(0, 4) + ' / ' + date.slice(4, 6) + ' / ' + date.slice(6);
-        new_opt.value = date;
-	    try {
-	      date_select.add(new_opt, null); // standards compliant; doesn't work in IE
-	    }
-	    catch(ex) {
-	      date_select.add(new_opt); // IE only
-	    }
-    }    
-    document.getElementById('date_select').selectedIndex = 0;
-    change_date();
+        // add the avaliable dates
+        var new_opt = '', date = '';
+        for (var i=0; i<dates.length; i++) {
+            var date = dates[i];
+            new_opt = document.createElement('option');	    
+            new_opt.text = date.slice(0, 4) + ' / ' + date.slice(4, 6) + ' / ' + date.slice(6);
+            new_opt.value = date;
+            try {
+              date_select.add(new_opt, null); // standards compliant; doesn't work in IE
+            }
+            catch(ex) {
+              date_select.add(new_opt); // IE only
+            }
+        }    
+        document.getElementById('date_select').selectedIndex = 0;
+        change_date();
 	
     }
 
@@ -1674,35 +1705,35 @@ KM.display_archive_ = function () {
 	//
 
 	// remove all 'camera_select' options
-	var camera_select = document.getElementById('camera_select');
-	var selected_index = camera_select.selectedIndex;
-	var selected_feed = parseInt(camera_select.value);
-	
-	
-	for (var i = camera_select.options.length - 1; i > -1; i--) {
-	    camera_select.remove(i);
-	}
+        var camera_select = document.getElementById('camera_select');
+        var selected_index = camera_select.selectedIndex;
+        var selected_feed = parseInt(camera_select.value);
+        
+        
+        for (var i = camera_select.options.length - 1; i > -1; i--) {
+            camera_select.remove(i);
+        }
 
-	// add the avaliable cameras based on 'archive.dates'
-	var date = document.getElementById('date_select').value;
-	var new_opt = '';
-	for (var feed in cameras) {
-	    new_opt = document.createElement('option');
-	    new_opt.text = KM.pad_out2(feed) + ' : ' + cameras[feed]['title'];
-        new_opt.value = feed;		
-	    try {
-	      camera_select.add(new_opt, null); // standards compliant; doesn't work in IE
-	    }
-	    catch(ex) {
-	      camera_select.add(new_opt); // IE only
-	    }        
-	}
-    if (!isNaN(selected_feed)) {
-        camera_select.value = selected_feed;
-    } else {
-        camera_select.selectedIndex = 0;
-    }
-    change_camera();
+        // add the avaliable cameras based on 'archive.dates'
+        var date = document.getElementById('date_select').value;
+        var new_opt = '';
+        for (var feed in cameras) {
+            new_opt = document.createElement('option');
+            new_opt.text = KM.pad_out2(feed) + ' : ' + cameras[feed]['title'];
+            new_opt.value = feed;		
+            try {
+              camera_select.add(new_opt, null); // standards compliant; doesn't work in IE
+            }
+            catch(ex) {
+              camera_select.add(new_opt); // IE only
+            }        
+        }
+        if (!isNaN(selected_feed)) {
+            camera_select.value = selected_feed;
+        } else {
+            camera_select.selectedIndex = 0;
+        }
+        change_camera();
     }
 
     function populate_view_dropdown() {
@@ -1715,39 +1746,39 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-    var view_select = document.getElementById('view_select');
-    var selected_index = view_select.selectedIndex;
-	var selected_value = parseInt(view_select.value);
-    
-	
-	for (var i = view_select.options.length - 1; i > -1; i--) {
-	    view_select.remove(i);
-	}
+        var view_select = document.getElementById('view_select');
+        var selected_index = view_select.selectedIndex;
+        var selected_value = parseInt(view_select.value);
+        
+        
+        for (var i = view_select.options.length - 1; i > -1; i--) {
+            view_select.remove(i);
+        }
 
-	var movie_enabled =  cameras[document.getElementById('camera_select').value]['movie_flag'];
-	var snap_enabled =   cameras[document.getElementById('camera_select').value]['snap_flag'];
-    var drop_opts = [];
-	if (movie_enabled) 
-        drop_opts.push('Movies');
-    if (snap_enabled) 
-	    drop_opts.push('Snapshots');
-	
+        var movie_enabled =  cameras[document.getElementById('camera_select').value]['movie_flag'];
+        var snap_enabled =   cameras[document.getElementById('camera_select').value]['snap_flag'];
+        var drop_opts = [];
+        if (movie_enabled) 
+            drop_opts.push('Movies');
+        if (snap_enabled) 
+            drop_opts.push('Snapshots');
+        
 
-	for (var i = 0; i < drop_opts.length; i++) {
-	    var new_opt = document.createElement('option');
-	    new_opt.text = drop_opts[i];
-        new_opt.value = i;
+        for (var i = 0; i < drop_opts.length; i++) {
+            var new_opt = document.createElement('option');
+            new_opt.text = drop_opts[i];
+            new_opt.value = i;
 
-	    try { view_select.add(new_opt, null); } // standards compliant; doesn't work in IE
-	    catch(e) { view_select.add(new_opt); } // IE only
-	}
-	
-	if (!isNaN(selected_value)) {
-        view_select.value = selected_value;
-    } else {
-        view_select.selectedIndex = 0;
-    }
-    change_view();
+            try { view_select.add(new_opt, null); } // standards compliant; doesn't work in IE
+            catch(e) { view_select.add(new_opt); } // IE only
+        }
+        
+        if (!isNaN(selected_value)) {
+            view_select.value = selected_value;
+        } else {
+            view_select.selectedIndex = 0;
+        }
+        change_view();
     }
 
     function fill_events() {
@@ -1762,56 +1793,56 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	var html = '', span_html = '', duration = 0;
-    var start, end;
-    
-    var view = document.getElementById('view_select').value;
-    var date = document.getElementById('date_select').value;
-    var camera = document.getElementById('camera_select').value;
-    
-	if (view == 0) { // movie events
-	    var hlight = top_10pc();
-	    for (var i=0; i<movies['movies'].length; i++) {
-            start = movies['movies'][i]['start'];
-            end = movies['movies'][i]['end'];
-            span_html = 'onclick="KM.arch_event_clicked(' + i + ')"';
-            duration = end - start;
-            if (KM.item_in_array(duration, hlight)) 
-                span_html += ' style="color:#D90000"';
-            html += '<span ' + span_html + '>';
-            html += KM.secs_hh_mm_ss(start);
-            html += '&nbsp;&nbsp;-&nbsp;&nbsp;';
-            html += KM.secs_hh_mm_ss(end);
-            html += '<br>';
-            html += '</span>';
-	    }
-	} else if (view == 1) { //snap events
-        for (var i=0; i<movies['snaps'].length; i++) {
-            start = movies['snaps'][i]['start'];
-            span_html = 'onclick="KM.arch_event_clicked(' + i + ')"';
-            html += '<span ' + span_html + '>';
-            html += KM.secs_hh_mm_ss(start);
-            html += '<br>';
-            html += '</span>';
-	    }
-    }
-
-	document.getElementById('arch_playlist').innerHTML = html;
-
-	function top_10pc() {
-	    // return a list of the top 10% event durations        
-	    var top = [];
+        var html = '', span_html = '', duration = 0;
         var start, end;
         
-	    for (var i=0; i<movies['movies'].length; i++) {
-            start = movies['movies'][i]['start'];
-            end = movies['movies'][i]['end'];
-            top[i] = end - start;
-	    }
-	    top = top.sort(function(a,b){return a - b});
-	    var num_hlight = Math.max(1, parseInt(top.length / 10, 10));
-	    return top.splice(top.length - num_hlight, num_hlight);
-	}
+        var view = document.getElementById('view_select').value;
+        var date = document.getElementById('date_select').value;
+        var camera = document.getElementById('camera_select').value;
+        
+        if (view == 0) { // movie events
+            var hlight = top_10pc();
+            for (var i=0; i<movies['movies'].length; i++) {
+                start = movies['movies'][i]['start'];
+                end = movies['movies'][i]['end'];
+                span_html = 'onclick="KM.arch_event_clicked(' + i + ')"';
+                duration = end - start;
+                if (KM.item_in_array(duration, hlight)) 
+                    span_html += ' style="color:#D90000"';
+                html += '<span ' + span_html + '>';
+                html += KM.secs_hh_mm_ss(start);
+                html += '&nbsp;&nbsp;-&nbsp;&nbsp;';
+                html += KM.secs_hh_mm_ss(end);
+                html += '<br>';
+                html += '</span>';
+            }
+        } else if (view == 1) { //snap events
+            for (var i=0; i<movies['snaps'].length; i++) {
+                start = movies['snaps'][i]['start'];
+                span_html = 'onclick="KM.arch_event_clicked(' + i + ')"';
+                html += '<span ' + span_html + '>';
+                html += KM.secs_hh_mm_ss(start);
+                html += '<br>';
+                html += '</span>';
+            }
+        }
+
+        document.getElementById('arch_playlist').innerHTML = html;
+
+        function top_10pc() {
+            // return a list of the top 10% event durations        
+            var top = [];
+            var start, end;
+            
+            for (var i=0; i<movies['movies'].length; i++) {
+                start = movies['movies'][i]['start'];
+                end = movies['movies'][i]['end'];
+                top[i] = end - start;
+            }
+            top = top.sort(function(a,b){return a - b});
+            var num_hlight = Math.max(1, parseInt(top.length / 10, 10));
+            return top.splice(top.length - num_hlight, num_hlight);
+        }
     };
 
     function change_date() {
@@ -1827,7 +1858,7 @@ KM.display_archive_ = function () {
         KM.session_id.current++;
         var session_id = KM.session_id.current;
         display_secs = 0;
-        populate_cams_dbase(callback_populate_cams_dbase, document.getElementById('date_select').value, session_id);
+        update_cams_dbase(document.getElementById('date_select').value, session_id);
 		reset_display_html();	
     };
 
@@ -1844,7 +1875,7 @@ KM.display_archive_ = function () {
         KM.session_id.current++;
         var session_id = KM.session_id.current;
         display_secs = 0;
-        populate_frame_dbase(populate_view_dropdown, document.getElementById('date_select').value,
+        update_movies_dbase(document.getElementById('date_select').value,
                                        document.getElementById('camera_select').value, session_id);
         reset_display_html();
     };
@@ -2137,156 +2168,6 @@ KM.display_archive_ = function () {
         document.getElementById('arch_player').innerHTML = '';
     }
         
-    function populate_cams_dbase(callback, date, session_id) {
-
-	// A closure that populates the dates cameras, titles, movie_flags,
-	// smovie_flags, and snap_flags archive database then executes the
-	// 'callback' object.
-	//
-	// this is a near duplicate of 'populate_frame_dbase' but seperate to
-	// avoid 'retry' and 'got_coded_str' clashes
-	//
-	// expects :
-	// 'session_id'  ... the current session id
-	// 'callback' ...   the callback object
-	//
-	// returns :
-	//
-
-	var _got = false;
-	function request() {
-	    // repeat 'xmlHttp' until data blob received from 'xmlHttp_arch.py'
-	    // local 'xmlHttp' object to enable multiple instances, one for each
-	    // function call.
-	    var xmlHttp = KM.get_xmlHttp_obj();
-	    xmlHttp.onreadystatechange = function () {
-            if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                xmlHttp.onreadystatechange = null; // plug memory leak
-                
-                if (KM.session_id.current === session_id) {   
-                    try {
-                        cameras = JSON.parse(xmlHttp.responseText);                       
-                        _got = true;                         
-                    } catch(e) {console.log('Error while getting cameras!')}
-                    callback(session_id);
-                }
-            }
-	    };	    
-	    xmlHttp.open('GET', '/ajax/archive?'+Math.random()+'&func=feeds&date='+date, true);
-	    xmlHttp.send(null);
-	}
-
-	function retry() {
-        KM.kill_timeout_ids(KM.ARCH_LOOP);
-	    if (!_got) {
-            request();
-            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {retry(); }, 5000));
-	    }
-	}
-    retry();
-    }
-    
-    function populate_dates_dbase(callback, session_id) {
-
-	// A closure that populates the dates cameras, titles, movie_flags,
-	// smovie_flags, and snap_flags archive database then executes the
-	// 'callback' object.
-	//
-	// this is a near duplicate of 'populate_frame_dbase' but seperate to
-	// avoid 'retry' and 'got_coded_str' clashes
-	//
-	// expects :
-	// 'session_id'  ... the current session id
-	// 'callback' ...   the callback object
-	//
-	// returns :
-	//
-
-	var _got = false;
-	function request() {
-	    // repeat 'xmlHttp' until data blob received from 'xmlHttp_arch.py'
-	    // local 'xmlHttp' object to enable multiple instances, one for each
-	    // function call.
-	    var xmlHttp = KM.get_xmlHttp_obj();
-	    xmlHttp.onreadystatechange = function () {
-            if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                xmlHttp.onreadystatechange = null; // plug memory leak
-                
-                if (KM.session_id.current === session_id) {    
-                    try {
-                        dates = JSON.parse(xmlHttp.responseText);
-                        _got = true;                       
-                    } catch(e) {console.log('Error while getting dates!')}
-                    callback(session_id);
-                }
-            }
-	    };
-
-	    xmlHttp.open('GET', '/ajax/archive?'+Math.random()+'&func=dates', true);
-	    xmlHttp.send(null);
-	}
-
-	function retry() {
-        KM.kill_timeout_ids(KM.ARCH_LOOP);
-	    if (!_got) {
-            request();
-            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {retry(); }, 5000));
-	    }
-	}
-
-	retry();
-    }
-
-    function populate_frame_dbase(callback, date, camera, session_id) {
-
-	// A closure that populates the frame archive database given the 'date'
-	// and 'camera'. The degree of population depends on the three
-	// 'current show' variables.
-	//
-	// this is a near duplicate of 'populate_dates_cams_dbase' but seperate
-	// to avoid 'retry' and	'got_coded_str' clashes
-	//
-	// expects :
-	// 'date' ...   the selected date
-	// 'camera' ... the selected camera
-	// 'session_id'  ... the current session id
-	//
-	// returns :
-	//
-
-	var _got = false;
-	function request() {
-	    // repeat 'xmlHttp' until data blob received from 'xmlHttp_arch.py'
-	    // local 'xmlHttp' object to enable multiple instances, one for each
-	    // function call.
-	    var xmlHttp = KM.get_xmlHttp_obj();
-	    xmlHttp.onreadystatechange = function () {
-		if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-		    xmlHttp.onreadystatechange = null; // plug memory leak
-		   
-		    if (KM.session_id.current === session_id) {
-                try {
-                    movies = JSON.parse(xmlHttp.responseText);
-                    _got = true;
-                } catch(e) {console.log('Error while getting movies!')}
-                callback(session_id);
-		    }
-		}
-	    };
-	    xmlHttp.open('GET', '/ajax/archive?'+Math.random()+'&date=' + date + '&feed=' + camera + '&func=movies', true);
-	    xmlHttp.send(null);
-	}
-
-	function retry() {
-        KM.kill_timeout_ids(KM.ARCH_LOOP);
-	    if (!_got) {
-            request();
-            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {retry(); }, 5000));
-	    }
-	}
-	retry();
-    }
-    
     return {
 	init: init,
 	change_date: change_date,
@@ -2312,7 +2193,7 @@ Displays logs with critical information highlighted
 **************************************************************************** */
 
 
-KM.display_logs = function () {
+KM.display_logs_ = function () {
 
     // A function that caches log information and displays it with critical
     // information highlighted
@@ -2322,85 +2203,125 @@ KM.display_logs = function () {
     // returns:
     //
 
-    KM.session_id.current++;
+    
     var events;
-    var session_id = KM.session_id.current;
-	var backdrop_width = KM.browser.main_display_width * 0.8;
-	var backdrop_height = KM.browser.main_display_height - 75;
+    var session_id;
+    var downloading_message = '<p style="text-align: center">Downloading Logs ...</p>';
+	
+    
+    function init() {    
+        set_logs_html();
+        get_kmotion_logs();
+    }
+    
+    function set_logs_html() {        
+        KM.session_id.current++;
+        session_id = KM.session_id.current;
+        
+        var backdrop_width = KM.browser.main_display_width * 0.8;
+        var backdrop_height = KM.browser.main_display_height - 75;
+        var button_width = backdrop_width / 2;
+        var config_height = backdrop_height-30; 
+        
+        document.getElementById('main_display').innerHTML = '' +
 
-	var button_width = backdrop_width / 7;
+        '<div class="title" style="width:'+backdrop_width+'px;">' +
+        'kmotion: Logs' +
+        '</div>' +
 
-    document.getElementById('main_display').innerHTML = '' +
-
-    '<div class="title" style="width:'+backdrop_width+'px;">' +
-	'kmotion: Logs' +
-    '</div>' +
-
-    '<div class="divider" >' +
-        '<img src="images/logs_divider_color.png" alt="" style="width:'+backdrop_width+'px;">' +
-    '</div>' +
-
-    '<div class="logs_backdrop" id="logs_html" style="width:'+backdrop_width+'px;height:'+backdrop_height+'px;padding-left:10px">' +
-    '<p style="text-align: center">Downloading Logs ...</p>' +
-    '</div>';
+        '<div class="divider" >' +
+            '<img src="images/logs_divider_color.png" alt="" style="width:'+backdrop_width+'px;">' +
+        '</div>' +
+        '<div class="config_backdrop" id="logs_html" style="width:'+backdrop_width+'px;height:'+backdrop_height+'px;padding-left:10px">' +
+        '<div class="config_button_bar" style="height:30px;overflow:hidden;" >' +
+            '<input type="button" value="Kmotion logs" onclick="KM.get_kmotion_logs()" '+
+            'style="width:' + button_width + 'px;"/>' +
+            '<input type="button" value="Motion outs" id="feed_button" onclick="KM.get_motion_outs()" '+
+            'style="width:' + button_width + 'px;"/>' +		           
+        '</div>' +
+        
+        '<div id="config_html" style="height:'+config_height+'px;"></div>' +
+        '</div>';
+    }
 
     function show_logs() {
         // show the logs
         var log_html = '';
         for (var i=events.length-1; i >= 0; i--) {
-            if (events[i].indexOf('Incorrect') !== -1 || events[i].indexOf('Deleting current') !== -1) {
+            if (events[i].search(new RegExp('failed|error|Deleting current|Incorrect', "i")) !== -1) {
                     log_html += '<span style="color:' + KM.RED + ';">' + format_event(events[i]) + '</span>';
                 }
-                else if (events[i].indexOf('Deleting') !== -1 || events[i].indexOf('Initial') !== -1) {
+                else if (events[i].search(new RegExp('Deleting|Initial', "i")) !== -1) {
                     log_html +=  '<span style="color:' + KM.BLUE + ';">' + format_event(events[i]) + '</span>';
                 }
                 else {
                     log_html += format_event(events[i]);
                 }
             }
-            document.getElementById('logs_html').innerHTML = log_html;
+            document.getElementById('config_html').innerHTML = log_html;
     }
 
     function format_event(event) {
         // string format an event
         var event_split = event.split('#');
-        return 'Date : ' + event_split[0] + '&nbsp;&nbsp;Time : ' +
-        event_split[1] + '&nbsp;&nbsp;Event : ' + event_split[2] + '<br>';
-    }
-
-    var got_logs = false;
-    function request() {
-        // repeat 'xmlHttp' until data blob received from 'xmlHttp_logs.py'
-        // local 'xmlHttp' object to enable multiple instances, one for each
-        // function call.
-        var xmlHttp = KM.get_xmlHttp_obj();
-        xmlHttp.onreadystatechange = function () {
-            if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                xmlHttp.onreadystatechange = null; // plug memory leak                
-                              
-                if (KM.session_id.current === session_id) {
-                    try {
-                        events = JSON.parse(xmlHttp.responseText);
-                        got_logs = true;	                        
-                    } catch(e) {console.log('Error while getting logs!')}
-                    show_logs();
-                }
-            }
-        };
-        xmlHttp.open('GET', '/ajax/logs?'+Math.random(), true);
-        xmlHttp.send(null);
-    }
-
-    function retry() {
-        KM.kill_timeout_ids(KM.LOGS);
-        events = null;
-        if (!got_logs) {            
-            request();
-            KM.add_timeout_id(KM.LOGS, setTimeout(function () {retry(); }, 5000));
+        if (event_split.length === 3) {
+            return 'Date : ' + event_split[0] + '&nbsp;&nbsp;Time : ' +
+                event_split[1] + '&nbsp;&nbsp;Event : ' + event_split[2] + '<br>';
+        } else {
+            return event+'<br>';
         }
     }
-    retry();
-};
+    
+    function callback(obj_data) {
+        events = obj_data;            
+        show_logs();
+    }
+    
+    function get_kmotion_logs() {        
+        function retry() {
+            KM.kill_timeout_ids(KM.LOGS);
+            if (session_id === KM.session_id.current) {
+                KM.add_timeout_id(KM.LOGS, setTimeout(function () {get_kmotion_logs(); }, 5000));
+            }
+        }
+        
+        if (session_id === KM.session_id.current) {
+            document.getElementById('config_html').innerHTML = downloading_message;
+            events = null;
+    
+            var jreq = {jsonrpc: '2.0', method: 'logs', id: Math.random()};
+            KM.json_request("/ajax/logs", jreq, callback, onerror=retry);
+        }
+    }  
+    
+    function get_motion_outs() {        
+        function retry() {
+            KM.kill_timeout_ids(KM.LOGS);
+            if (session_id === KM.session_id.current) {
+                KM.add_timeout_id(KM.LOGS, setTimeout(function () {get_kmotion_outs(); }, 5000));
+            }
+        }
+        
+        if (session_id === KM.session_id.current) {
+            document.getElementById('config_html').innerHTML = downloading_message;
+            events = null;
+    
+            var jreq = {jsonrpc: '2.0', method: 'outs', id: Math.random()};
+            KM.json_request("/ajax/outs", jreq, callback, onerror=retry);
+        }
+    }
+
+    return {
+        init: init,
+        get_kmotion_logs: get_kmotion_logs,
+        get_motion_outs: get_motion_outs
+    };
+}();
+
+KM.display_logs = KM.display_logs_.init;
+KM.get_kmotion_logs = KM.display_logs_.get_kmotion_logs;
+KM.get_motion_outs = KM.display_logs_.get_motion_outs;
+
 
 
 /* ****************************************************************************
@@ -2427,7 +2348,6 @@ KM.display_config_ = function () {
         KM.session_id.current++;
         conf_config_track.init();
         conf_backdrop_html();        
-        conf_error_daemon(KM.session_id.current);
     }
     
     conf_config_track = function() {
@@ -2484,13 +2404,9 @@ KM.display_config_ = function () {
             };
             
             var diff = diffObjects(KM.config, config);
-            
-            var jdata = JSON.stringify(diff);
-            var xmlHttp = KM.get_xmlHttp_obj();
-            xmlHttp.open('POST', '/ajax/config?write='+Math.random());
-            xmlHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-            xmlHttp.send('jdata=' + jdata);    
-            reset();
+            var jdata = JSON.stringify(diff);            
+            var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {write: 1, jdata: jdata}};
+            KM.json_request("/ajax/config", jreq, reset);            
         }
         
         return {
@@ -2518,7 +2434,7 @@ KM.display_config_ = function () {
         var backdrop_width = KM.browser.main_display_width * 0.8;
         var backdrop_height = KM.browser.main_display_height - 60;
         var config_height = backdrop_height-30; 
-        var button_width = backdrop_width / 4;
+        var button_width = backdrop_width / 3;
 
 
         document.getElementById('main_display').innerHTML = '' +
@@ -2538,9 +2454,7 @@ KM.display_config_ = function () {
             '<input type="button" value="Misc" id="misc_button" onclick="KM.conf_misc_html()" '+
             'style="width:' + button_width + 'px;"/>' +
             '<input type="button" value="Cameras" id="feed_button" onclick="KM.conf_feed_html()" '+
-            'style="width:' + button_width + 'px;"/>' +		    
-            '<input type="button" value="Motion Errors" id="error_button" onclick="KM.conf_select_errors();" ' +
-            'style="width:' + button_width + 'px;"/>' +
+            'style="width:' + button_width + 'px;"/>' +		                
             '<input type="button" value="Server Load" onclick="KM.conf_select_load();" ' +
             'style="width:' + button_width + 'px;"/>' +
 
@@ -3023,7 +2937,6 @@ KM.display_config_ = function () {
         //
 
         KM.session_id.current++; // needed to kill updates
-        conf_error_daemon(KM.session_id.current);
         for (var s in KM.config.feeds[cur_camera]) {
             try {   
                 if (s != 'feed_enabled')
@@ -3170,138 +3083,6 @@ KM.display_config_ = function () {
         }
     };
     
-    
-    /* ****************************************************************************
-    Config display - motion error screen
-
-    Displays the motion error code
-    **************************************************************************** */
-
-    function conf_select_errors() {
-
-        // A function that is executed when the 'errors' button is clicked
-        //
-        // expects:
-        //
-        // returns:
-        //
-        //error_lines="";
-        //KM.session_id.current++;
-        //conf_error_daemon(KM.session_id.current);
-        conf_error_html();
-    };
-
-    function conf_error_daemon(session_id) {
-
-        // A closure that acts as a daemon updateing 'error_lines' with
-        // motions output every 2 seconds. If errors are detected in this string
-        // enable the 'Motion Errors' button and colour it red.
-        //
-        // expects:
-        //
-        // returns:
-        //
-
-        reload();
-
-        function request() {
-            // local 'xmlHttp' object to enable multiple instances, one for each
-            // function call.
-            var xmlHttp = KM.get_xmlHttp_obj();
-            xmlHttp.onreadystatechange = function () {
-                if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                    xmlHttp.onreadystatechange = null; // plug memory leak
-                    var data = xmlHttp.responseText.trim();
-                    
-                    if (KM.session_id.current === session_id) {
-                        error_lines = JSON.parse(data);
-                        // scan the string looking for errors					
-                        var error_flag = false;
-                        for (var i = 0; i < error_lines.length; i++) {
-                            if (error_lines[i].search(error_search_str) !== -1) {
-                                error_flag = true;
-                                break;
-                            }
-                        }
-                        if (error_flag) {
-                            conf_highlight_error_button(); // control the 'server error' button
-                        } else {
-                            //KM.conf_disable_error_button();
-                        }
-                    }
-                }	
-            };
-            xmlHttp.open('GET', '/ajax/outs?'+Math.random(), true);
-            xmlHttp.send(null);
-        }
-
-        function reload() {
-            KM.kill_timeout_ids(KM.ERROR_DAEMON);
-            error_lines = null;
-            
-            // check for current session id        
-            if (KM.session_id.current === session_id) {   
-                request();            
-                KM.add_timeout_id(KM.ERROR_DAEMON, setTimeout(function () {reload(); }, 2000));
-                //if (error_lines!="")
-                //	KM.kill_timeout_ids(KM.ERROR_DAEMON);
-                //KM.conf_error_html();
-            }         
-        }
-    };
-
-    function conf_error_html() {
-
-        // A function that generates the error backdrop HTML. It sisplay the motion
-        // error text on the config backdrop 'slab'. If kernel/driver lockup
-        // detected displays advice. This option is only available if the error
-        // daemon detects motions output text containing errors.
-        //
-        // expects:
-        //
-        // returns:
-        //
-        var error_str = '';
-        for (var i = error_lines.length-1; i>=0; i--) {
-            if (error_lines[i].search(error_search_str) !== -1) {
-                error_str += '<span style="color:' + KM.RED + ';">' + error_lines[i] + '</span><br>';
-            }
-            else {
-                error_str += error_lines[i]+'<br>';
-            }
-        }
-        document.getElementById('config_html').innerHTML = error_str;        
-    };
-
-    function conf_highlight_error_button() {
-
-        // A function that enables and highlight the 'server error' button
-        //
-        // expects:
-        //
-        // returns:
-        //
-
-        document.getElementById('error_button').style.fontWeight = 'bold';
-        document.getElementById('error_button').style.color = KM.RED;
-        document.getElementById('error_button').disabled = false;
-    };
-
-    function conf_disable_error_button() {
-
-        // A function that disables the 'server error' button
-        //
-        // expects:
-        //
-        // returns:
-        //
-
-        document.getElementById('error_button').style.fontWeight = 'normal';
-        // horrible horrible color hack to simulate greyed out !
-        document.getElementById('error_button').style.color = '#c6c7c9';
-        document.getElementById('error_button').disabled = true;
-    };
-    
 
     /* ****************************************************************************
     Config display - Load screen
@@ -3403,10 +3184,7 @@ KM.display_config_ = function () {
             }
         }
 
-        function update_all() {
-            update_text();
-            update_bars();
-        }
+
 
         function update_text() {
             document.getElementById('server_info').innerHTML = dbase.uname + ' Uptime ' + dbase.up;
@@ -3484,40 +3262,28 @@ KM.display_config_ = function () {
                 document.getElementById('bar_fground10').style.backgroundColor = BAR_OK;
             }
         }
-
-        function rolling_update() {
-            // repeat until data blob received from 'xmlHttp_load.py'
-            // then call 'update' with the received data blob, then repeat.
-
-            function request() {
-                // local 'xmlHttp' object to enable multiple instances, one for each
-                // function call.
-                var xmlHttp = KM.get_xmlHttp_obj();
-                xmlHttp.onreadystatechange = function () {
-                    if ((xmlHttp.readyState === 4) && (xmlHttp.status === 200)) {
-                        xmlHttp.onreadystatechange = null; // plug memory leak
-                        
-                        if (KM.session_id.current === session_id) {
-                            dbase = JSON.parse(xmlHttp.responseText);
-                            update_all();
-                        } 
-                    }
-                };
-                xmlHttp.open('GET', '/ajax/loads?'+Math.random(), true);
-                xmlHttp.send(null);
+        
+        function rolling_update() {        
+            function callback(obj_data) {
+                dbase = obj_data;
+                update_text();
+                update_bars();
+                reload();
             }
-
+            
             function reload() {
                 KM.kill_timeout_ids(KM.CONFIG_LOOP);
                 dbase = null;                
-                // check for current session id            
-                if (KM.session_id.current === session_id) {                
-                    request();
-                    KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {reload(); }, 2000));
-                } 
+                KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {rolling_update(); }, 2000));
             }
-            reload(); // starts the enclosure process when 'rolling_update' is started
-        }
+            
+            if (KM.session_id.current === session_id) { 
+                var jreq = {jsonrpc: '2.0', method: 'loads', id: Math.random()};
+                KM.json_request("/ajax/loads", jreq, callback);
+            }
+            
+        } 
+
         rolling_update();
     };
 
@@ -3532,14 +3298,11 @@ KM.display_config_ = function () {
         
        
         KM.session_id.current++;
-        conf_error_daemon(KM.session_id.current);
         conf_load_html();
     };
 
     return {
         init: init,
-        conf_error_html: conf_error_html,
-        conf_select_errors: conf_select_errors,
         conf_select_load: conf_select_load,
         conf_misc_html: conf_misc_html,
         conf_misc_highlight: conf_misc_highlight,
@@ -3593,66 +3356,6 @@ KM.blink_button = function(button, callback) {
     
 };
 
-
-/* ****************************************************************************
-System - Misc code
-
-The bootup code ...
-**************************************************************************** */
-
-
-KM.init1 = function () {
-
-    // A function that performs early system initialization and downloads the
-    // settings data from the server before calling 'init2'
-    //
-    // expects :
-    //
-    // returns :
-    //
-
-    var callback = KM.init2;
-    KM.load_settings(callback);
-};
-
-KM.init2 = function () {
-
-    // A function that performs the main startup initialization. Delays are
-    // built in to enable preload and default values are set.
-    //
-    // expects :
-    // 'data' ... the settings data
-    //
-    // returns :
-    //
-
-    KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {init_interface(); }, 1));
-
-
-    function init_interface() {
-
-	// A function that performs final initialization
-	//
-	// expects :
-	//
-	// returns :
-	//
-        KM.kill_timeout_ids(KM.DISPLAY_LOOP);
-        KM.browser.set_title();
-        KM.background_button_clicked(KM.config.misc.color_select);
-        KM.enable_display_buttons(KM.config.misc.display_select);
-        KM.menu_bar_buttons.construct_camera_sec();
-        KM.enable_camera_buttons();
-		if (KM.config.misc.hide_button_bar) {
-			KM.toggle_button_bar();
-		}
-
-	    
-		KM.enable_function_buttons(1); // select 'live' mode
-		KM.function_button_clicked(1); // start 'live' mode
-           
-    }
-};
 
 KM.videoPlayer = function() {
 
@@ -4003,7 +3706,8 @@ var html5playerPlayPause = KM.videoPlayer.html5playerPlayPause;
 var html5VideoLoaded = KM.videoPlayer.html5VideoLoaded;
 
 
-KM.init1();
+KM.init();
+
 
 
 

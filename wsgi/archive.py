@@ -1,56 +1,35 @@
-#!/usr/bin/env python
-
-"""
-Returns the archive data index's
-"""
+# -*- coding: utf-8 -*-
 
 import os
 import sys
 from datetime import datetime
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from core.config import Settings
+from core import utils
 
 
 class Archive():
 
     def __init__(self, kmotion_dir, env):
-        sys.path.append(kmotion_dir)
-        from core.utils import Request
-        from core.config import Settings
         self.kmotion_dir = kmotion_dir
         self.env = env
-        self.params = Request(self.env)
-        self.func = self.params['func']
+
+        self.username = utils.true_enc(utils.safe_str(env.get('REMOTE_USER')))
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         self.images_dbase_dir = config_main['images_dbase_dir']
-        www_rc = 'www_rc_%s' % (self.getUsername())
+        www_rc = 'www_rc_%s' % (self.username)
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
             www_rc = 'www_rc'
         self.config = cfg.get(www_rc)
 
-    def getUsername(self):
-        try:
-            username = ''
-            auth = self.env['HTTP_AUTHORIZATION']
-            if auth:
-                scheme, data = auth.split(None, 1)
-                if scheme.lower() == 'basic':
-                    username, password = data.decode('base64').split(':', 1)
-        except Exception:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            print 'error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value})
-        return username
-
-    def main(self):
-        if self.func == 'dates':
+    def __call__(self, *args, **kwargs):
+        func = utils.safe_str(kwargs.get('func'))
+        if func == 'dates':
             return self.get_dates()
-        elif self.func == 'movies':
-            return self.journal_data(self.params['date'], int(self.params['feed']))
-        elif self.func == 'feeds':
-            return self.get_feeds(self.params['date'])
+        elif func == 'movies':
+            return self.journal_data(utils.safe_str(kwargs['date']), int(kwargs['feed']))
+        elif func == 'feeds':
+            return self.get_feeds(utils.safe_str(kwargs['date']))
 
     def get_feeds(self, date):
         feeds_list = {}
@@ -70,14 +49,14 @@ class Archive():
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
 
-        return json.dumps(feeds_list)
+        return feeds_list
 
     def get_dates(self):
 
         dates = [i for i in os.listdir(self.images_dbase_dir) if len(i) == 8]
         dates.sort(reverse=True)
 
-        return json.dumps(dates)
+        return dates
 
     def hhmmss_secs(self, hhmmss_str):
         return int(hhmmss_str[0:2]) * 3600 + int(hhmmss_str[2:4]) * 60 + int(hhmmss_str[4:6])
@@ -110,4 +89,4 @@ class Archive():
                 snap['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
                 journal['snaps'].append(snap)
 
-        return json.dumps(journal)
+        return journal
