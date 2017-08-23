@@ -70,7 +70,7 @@ System - Misc code
 Miscellaneous code that provides general closures and functions for kmotion
 **************************************************************************** */
 
-KM.toggle_button_bar=function () {
+KM.toggle_button_bar=function () {     
 	var button_bar=document.getElementById('button_bar');
 	var h_button_bar=document.getElementById('toggle_button_bar');
 	if (button_bar.style.display=='none') {
@@ -230,6 +230,7 @@ KM.load_settings = function () {
         }            
         KM.enable_function_buttons(1); // select 'live' mode
         KM.function_button_clicked(1); // start 'live' mode
+        window.onresize=function(){ (function(fsel){KM.function_button_clicked(fsel)})(KM.menu_bar_buttons.function_selected) };
     }
     
     function get_settings() {        
@@ -250,6 +251,7 @@ KM.load_settings = function () {
 
     function set_settings() {
         KM.set_main_display_size();
+        
         var user_agent = navigator.userAgent.toLowerCase();
 
         KM.browser.browser_IE = user_agent.search('msie') > -1;
@@ -846,7 +848,7 @@ KM.display_live_ = function () {
     
     function refresh(session_id) {
         KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls            
-        if (KM.session_id.current === session_id) {                
+        if (KM.session_id.current === session_id) {              
             update_latest_events(session_id);
             KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000));
         }
@@ -1338,7 +1340,7 @@ KM.display_live_ = function () {
         }
         
         if (KM.session_id.current === session_id) {
-            var jreq = {jsonrpc: '2.0', method: 'feeds', id: Math.random(), params: {rdd: KM.config.ramdisk_dir} };
+            var jreq = {jsonrpc: '2.0', method: 'feeds', id: Math.random()};
             KM.json_request("/ajax/feeds", jreq, callback, onerror=retry);
         }
     }  
@@ -1570,7 +1572,7 @@ KM.display_archive_ = function () {
 	var button_width =   backdrop_width / 5;
 
 	document.getElementById('main_display').innerHTML = '\
-    <div class="title">Kmotion: Archive <span id="playback_info"></span></div>\
+    <div class="title">Kmotion: Archive-><span id="playback_info"></span></div>\
     <div id="arch_display">\
 		<div id="config_bar">\
 			<form name="config" action="" onsubmit="return false">\
@@ -1922,8 +1924,7 @@ KM.display_archive_ = function () {
 	var title = cameras[feed]['title'];
 	var time = KM.secs_hh_mm_ss(secs+KM.videoPlayer.get_time());
     var rate = document.getElementById('playback_rate').value;
-	document.getElementById('playback_info').innerHTML = '' +
-	KM.pad_out2(feed) + ':' + title + ' ' + time + ' [' + rate + ']';
+	document.getElementById('playback_info').innerHTML = title + ' <' + time + '> [' + rate + ']';
 	feed = null; // stop memory leak
 	title = null;
     };
@@ -1939,8 +1940,7 @@ KM.display_archive_ = function () {
 
 	var feed = document.getElementById('camera_select').value;
 	var title = cameras[feed]['title'];
-	document.getElementById('playback_info').innerHTML = '' +
-	KM.pad_out2(feed) + ':' + title;
+	document.getElementById('playback_info').innerHTML = title;
 	feed = null; // stop memory leak
 	title = null;
     };
@@ -2216,7 +2216,9 @@ KM.display_logs_ = function () {
     
     function set_logs_html() {        
         KM.session_id.current++;
-        session_id = KM.session_id.current;
+        KM.set_main_display_size();
+        session_id = KM.session_id.current;      
+        
         
         var backdrop_width = KM.browser.main_display_width * 0.8;
         var backdrop_height = KM.browser.main_display_height - 75;
@@ -2236,7 +2238,7 @@ KM.display_logs_ = function () {
         '<div class="config_button_bar" style="height:30px;overflow:hidden;" >' +
             '<input type="button" value="Kmotion logs" onclick="KM.get_kmotion_logs()" '+
             'style="width:' + button_width + 'px;"/>' +
-            '<input type="button" value="Motion outs" id="feed_button" onclick="KM.get_motion_outs()" '+
+            '<input type="button" value="Motion logs" id="feed_button" onclick="KM.get_motion_logs()" '+
             'style="width:' + button_width + 'px;"/>' +		           
         '</div>' +
         
@@ -2287,6 +2289,7 @@ KM.display_logs_ = function () {
         
         if (session_id === KM.session_id.current) {
             document.getElementById('config_html').innerHTML = downloading_message;
+            document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Kmotion logs";
             events = null;
     
             var jreq = {jsonrpc: '2.0', method: 'logs', id: Math.random()};
@@ -2294,7 +2297,7 @@ KM.display_logs_ = function () {
         }
     }  
     
-    function get_motion_outs() {        
+    function get_motion_logs() {        
         function retry() {
             KM.kill_timeout_ids(KM.LOGS);
             if (session_id === KM.session_id.current) {
@@ -2304,6 +2307,7 @@ KM.display_logs_ = function () {
         
         if (session_id === KM.session_id.current) {
             document.getElementById('config_html').innerHTML = downloading_message;
+            document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Motion logs";
             events = null;
     
             var jreq = {jsonrpc: '2.0', method: 'outs', id: Math.random()};
@@ -2314,13 +2318,13 @@ KM.display_logs_ = function () {
     return {
         init: init,
         get_kmotion_logs: get_kmotion_logs,
-        get_motion_outs: get_motion_outs
+        get_motion_logs: get_motion_logs
     };
 }();
 
 KM.display_logs = KM.display_logs_.init;
 KM.get_kmotion_logs = KM.display_logs_.get_kmotion_logs;
-KM.get_motion_outs = KM.display_logs_.get_motion_outs;
+KM.get_motion_logs = KM.display_logs_.get_motion_logs;
 
 
 
@@ -2346,6 +2350,7 @@ KM.display_config_ = function () {
     
     function init() {
         KM.session_id.current++;
+        KM.set_main_display_size();
         conf_config_track.init();
         conf_backdrop_html();        
     }
@@ -2440,8 +2445,7 @@ KM.display_config_ = function () {
         document.getElementById('main_display').innerHTML = '' +
 
         '<div class="title" style="width:'+backdrop_width+'px;">' +
-        'kmotion Config : ' +
-        '<span id="update"></span>' +
+        'kmotion: Config' +        
         '</div>' +
 
         '<div class="divider" >' +
@@ -2528,6 +2532,7 @@ KM.display_config_ = function () {
         }
         document.getElementsByName('color_select')[KM.config.misc.color_select].checked = true;
         document.getElementById('save_display').checked = conf_config_track.get_saveDisplay();
+        document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Misc";
     };
     
     function conf_save_display() {		
@@ -2804,6 +2809,7 @@ KM.display_config_ = function () {
                 }
             }
         }
+        document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Cameras";
     };
 
     function conf_toggle_feed_mask(mask_num) {
@@ -3181,7 +3187,7 @@ KM.display_config_ = function () {
                     '<div id="bar_fground' + bar_number + '" class="bar_fground" style="background-color:' + BAR_OK + ';">' +
                     '</div>' +
                 '</div>';
-            }
+            }            
         }
 
 
@@ -3299,6 +3305,7 @@ KM.display_config_ = function () {
        
         KM.session_id.current++;
         conf_load_html();
+        document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Server load";
     };
 
     return {

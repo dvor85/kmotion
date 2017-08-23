@@ -47,7 +47,6 @@ class InitCore:
         self.images_dbase_dir = config_main['images_dbase_dir']
         self.port = config_main['port']
         self.port_notice = config_main.get('port_notice', 0)
-        self.version = config_main['string']
         self.title = config_main['title']
         self.AUTH_block = """
         # ** INFORMATION ** Users digest file enabled ...
