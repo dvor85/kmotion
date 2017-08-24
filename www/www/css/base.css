@@ -25,126 +25,11 @@ body {
 	overflow-y: auto;
 	background-color:#000000;
 	color: #C1C1C1;
+    cursor: default;
     user-select: none;
 }
 
-/*******************************************************************************
-ARCHIVE
-*******************************************************************************/
 
-/* #title {
-	color: #000;
-	height: 20px;
-	left: 0px;
-	top: 0px;	
-	padding: 10px;
-	margin: auto;
-	text-align: left;
-	font-size: 24px;
-	font-weight: bold;
-	position: absolute;
-} */
-
-#arch_display {
-	border: 2px solid #C1C1C1;
-	color: #C1C1C1;
-	bottom: 0px;
-	left: 0px;
-	top: 40px;
-	right: 0px;
-	padding: 0px;
-	position: absolute;
-}
-
-#config_bar {
-	top: 0px;
-	height: 30px;
-	left: 0px;
-	right: 0px;
-	padding: 5px;
-	position: relative;
-	margin: auto;
-	border-bottom: 2px solid #C1C1C1;
-}
-
-#arch_display_html {
-	overflow: hidden;
-	font-weight: bold;
-	color: #818181;
-	margin: auto;	
-	position: absolute;
-	top: 40px;
-	left: 0px;
-	bottom:0px;
-	right: 0px;	
-}
-
-#arch_playlist {
-	overflow-x: hidden;
-	overflow-y: auto;
-	padding: 10px;
-	top: 0px;
-	bottom: 0px;
-	left: 0px;
-	width: 180px;
-	border-right: 2px solid #C1C1C1;
-	position: absolute;	
-	text-align: center;
-	float: left;
-	
-}
-
-#arch_player {
-	position: absolute;
-	padding: 10px;
-	left: 200px;
-	right: 5px;
-	top: 0px;
-	bottom: 40px;
-}
-
-#playback_form {
-	position: absolute;
-	padding: 10px;
-	left: 200px;
-	right: 5px;
-	#top: 0px;
-	bottom: 0px;  
-}
-
-#playback_form  input{	  
-    width:100%;
-    height:20px;
-}
-
-#player_obj {
-	position: absolute;
-	padding: 10px;
-	top: 0px;
-	bottom:0px;
-	left: 0px;
-	right: 0px;
-} 
-
-#arch_playlist span {
-	cursor: pointer;
-	margin: auto;
-}
-
-#arch_playlist span:hover {
-	background-color: #505050;
-}
-
-
-#arch_display .playlist_hlight {
-	background-color: #00ff00;
-}
-
-#config_bar select {
-	width: 32%;
-	float: left;
-	margin: 0px 5px;
-}
 
 /* *****************************************************************************
 Common CSS classes and id's
@@ -246,6 +131,7 @@ Button bar section
 	font-size: 37px;
 	font-weight: bold;
 	text-align: center;
+    width: 100%;
 }
 
 #button_bar #version_num {
@@ -280,6 +166,7 @@ Button bar section
 	float: left;
 	padding-top: 2px;
 	padding-right: 2px;
+    cursor: pointer;
 }
 
 #button_bar .camera_button {
@@ -297,7 +184,7 @@ Button bar section
 	padding-top: 7px;
 	text-align: center;
 	font-weight: bold;
-	cursor: default; /* hide text 'bar' cursor */
+	cursor: pointer; /* hide text 'bar' cursor */
 }
 
 #button_bar .function_button {
@@ -316,7 +203,7 @@ Button bar section
 	padding-top: 7px;
 	text-align: center;
 	font-weight: bold;
-	cursor: default; /* hide text 'bar' cursor */
+	cursor: pointer;
 }
 
 #button_bar .button_line {
@@ -338,6 +225,106 @@ Button bar section
 }
 
 
+/*******************************************************************************
+ARCHIVE
+*******************************************************************************/
+
+#arch_display {
+	border: 2px solid #C1C1C1;
+	color: #C1C1C1;
+	bottom: 0px;
+	left: 0px;
+	top: 40px;
+	right: 0px;
+	padding: 0px;
+	position: absolute;
+}
+
+#config_bar {
+	top: 0px;
+	height: 20px;
+	left: 0px;
+	right: 0px;
+	padding: 5px;
+	position: absolute;
+	margin: auto;
+	border-bottom: 2px solid #C1C1C1;
+}
+
+#arch_display_html {
+	overflow: hidden;
+	font-weight: bold;
+	color: #818181;
+	margin: auto;	
+	position: absolute;
+	top: 35px;
+	left: 0px;
+	bottom:0px;
+	right: 0px;	
+}
+
+#arch_playlist {
+	overflow-x: hidden;
+	overflow-y: auto;
+	padding: 10px;
+	top: 0px;
+	bottom: 0px;
+	left: 0px;
+	width: 180px;
+	border-right: 2px solid #C1C1C1;
+	position: absolute;	
+	text-align: center;
+	float: left;
+	
+}
+
+#arch_player {
+	position: absolute;
+	padding: 10px;
+	left: 200px;
+	right: 5px;
+	top: 0px;
+	bottom: 40px;
+}
+
+#playback_form {
+	position: absolute;
+	padding: 10px;
+	left: 200px;
+	right: 5px;
+	#top: 0px;
+	bottom: 0px;  
+}
+
+#playback_form  input{	  
+    width:100%;
+    height:20px;
+    cursor: pointer;
+}
+
+#player_obj {
+	position: absolute;
+	padding: 10px;
+	top: 0px;
+	bottom:0px;
+	left: 0px;
+	right: 0px;
+} 
+
+#arch_playlist span {
+	cursor: pointer;
+	margin: auto;
+}
+
+#arch_playlist span:hover {
+	background-color: #505050;
+}
+
+
+#arch_display .playlist_hlight {
+	background-color: #00ff00;
+}
+
 
 /* *****************************************************************************
 Main display section
@@ -355,6 +342,12 @@ Main display section
 	border-right: 0px;	
 	padding: 2px;	
 	color: #C1C1C1;	
+    cursor: default;
+}
+
+#main_display img[id^='image_'] {
+    position:  absolute;
+    border: 3px solid #000;
 }
 
 #main_display .title { 
@@ -364,6 +357,7 @@ Main display section
 	font-weight: bold;
 	height:40px;	
 	overflow:hidden;
+    width: 100%;    
 }
 
 
@@ -372,6 +366,7 @@ Main display section
 	padding: 0px;
 	margin: 0px;
 	text-align: center;
+    width: 100%;
 }
 
 #main_display .link_word {
@@ -440,23 +435,40 @@ Main display section - CSS specific to 'config' - General
 	margin-right: auto;
 	background-color: #505050;
 	color: #C1C1C1; 
+    position: absolute;
+    width: 90%;
+    left: 0;
+    top: 60px;
+    bottom: 0;
+    right: 0;
 }
 
 #config_html {
 	padding-right:20px;
 	overflow-y:auto;
 	overflow-x:hidden;
-	position:relative;
+	position:absolute;
+    top: 30px;
+    bottom: 5px;
+    right: 10px;
+    left: 10px;
 	
+}
+
+#main_display .config_button_bar {
+	text-align: center; 
+    position:absolute;
+    top: 0px;
+    height: 20px;
+    right: 0;
+    left: 0;
 }
 
 #main_display .config_margin_left_20px {
 	margin-left: 20px;
 }
 
-#main_display .config_button_bar {
-	text-align: center;    
-}
+
 
 #main_display .config_divider{
 	text-align: center;
@@ -535,7 +547,7 @@ Main display section - CSS specific to 'config' - Server load
 
 #main_display .bar_bground {
 	height: 28px;
-	width: 955px;
+	width: 90%;
 	margin-left: auto;
 	margin-right: auto;
 	background-color: #C1C1C1;

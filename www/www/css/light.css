@@ -8,6 +8,11 @@ body {
 	color: #505050;
 }
 
+#main_display img[id^='image_'] {
+    position:  absolute;
+    border: 3px solid #ffffff;
+}
+
 
 #main_display .archive_backdrop {
 	background-color: #c1c1c1;

@@ -80,10 +80,10 @@ KM.toggle_button_bar=function () {
 	} else {
 		button_bar.style.display='none';
 		h_button_bar.style.right='0px';
-		document.getElementById('main_display').style.right='10px';
+		document.getElementById('main_display').style.right='2px';
 	}
 
-	KM.function_button_clicked(KM.menu_bar_buttons.function_selected);
+	//KM.function_button_clicked(KM.menu_bar_buttons.function_selected);
 }
 
 KM.browser.set_title = function() {
@@ -230,7 +230,7 @@ KM.load_settings = function () {
         }            
         KM.enable_function_buttons(1); // select 'live' mode
         KM.function_button_clicked(1); // start 'live' mode
-        window.onresize=function(){ (function(fsel){KM.function_button_clicked(fsel)})(KM.menu_bar_buttons.function_selected) };
+        
     }
     
     function get_settings() {        
@@ -250,8 +250,6 @@ KM.load_settings = function () {
     }    
 
     function set_settings() {
-        KM.set_main_display_size();
-        
         var user_agent = navigator.userAgent.toLowerCase();
 
         KM.browser.browser_IE = user_agent.search('msie') > -1;
@@ -271,47 +269,6 @@ KM.load_settings = function () {
 }();
 
 KM.init = KM.load_settings.init;
-
-KM.set_main_display_size = function () {
-
-    // A function that uses black magic to calculate the main display width
-    // and height, saves them in 'browser.main_display_width' and
-    // 'KM.browser.main_display_height'
-    //
-    // expects:
-    //
-    // returns :
-    //
-
-    var width, height;
-    // the more standards compliant browsers (mozilla/netscape/opera/IE7) use
-    // window.innerWidth and window.innerHeight
-    if (typeof window.innerWidth !== 'undefined') {
-        width = window.innerWidth;
-        height = window.innerHeight;
-    }
-
-    // IE6 in standards compliant mode
-    else if (typeof document.documentElement !== 'undefined' &&
-    typeof document.documentElement.clientWidth !== 'undefined' &&
-    document.documentElement.clientWidth !== 0) {
-        width = document.documentElement.clientWidth;
-        height = document.documentElement.clientHeight;
-    }
-
-    // older versions of IE
-    else {
-        width = document.getElementsByTagName('body')[0].clientWidth;
-        height = document.getElementsByTagName('body')[0].clientHeight;
-    }
-	if (document.getElementById('button_bar').style.display=='none') {
-		KM.browser.main_display_width = width - 16; // def -183
-	} else {
-		KM.browser.main_display_width = width - 183; // def -183
-	}
-
-    KM.browser.main_display_height = height - 16;
-};
 
 KM.secs_hhmmss = function (secs) {
 
@@ -828,7 +785,6 @@ KM.display_live_ = function () {
     function init() {
         // setup for grid display
         KM.session_id.current++;
-        KM.set_main_display_size(); // in case user has 'zoomed' browser view
         init_display_grid(KM.config.misc.display_select);
 
         // exit if no feeds enabled, else 100% CPU usage
@@ -924,7 +880,6 @@ KM.display_live_ = function () {
         // 'display_select' assigning consecutive jpeg and text id's and updates
         // 'main_display' HTML.
 
-        var PADDING = 3;  // padding between camera displays
 
         var left_margin =  0;
         var top_margin =   0;
@@ -981,10 +936,10 @@ KM.display_live_ = function () {
             bcam_jpeg = 'images/bcam_alt.png';
         }
         if (typeof text_left  === 'undefined') {
-            text_left = 10;
+            text_left = 1;
         }
         if (typeof text_top === 'undefined') {
-            text_top = 10;
+            text_top = 1;
         }
 
         var jpeg = gcam_jpeg;
@@ -1010,61 +965,25 @@ KM.display_live_ = function () {
         
         text = feed + ' : ' + text;
         
-        var l = [];
+        var l = [];        
         l.push('<img id="image_' + feed + '" ');
-        l.push('style="position:absolute; ');
-        l.push('left:' + left + 'px; ');
-        l.push('top:' + top + 'px; ');
-        l.push('width:' + width + 'px; ');
-        l.push('height:' + height + 'px;" ');
-        l.push('src="' + jpeg + '"; ');
+        l.push('style="left:' + left + '%; ');
+        l.push('top:' + top + '%; ');
+        l.push('width:' + width + '%; ');
+        l.push('height:' + height + '%;" ');
+        l.push('src="' + jpeg + '"; ');        
         l.push('alt="">');
         
         l.push('<span id="text_' + feed + '"; ');
         l.push('style="position:absolute; ');
-        l.push('left:' + (left + text_left) + 'px; ');
-        l.push('top:' +  (top + text_top) + 'px;');
+        l.push('left:' + (left + text_left) + '%; ');
+        l.push('top:' +  (top + text_top) + '%;');
         l.push('font-weight: bold;');
         l.push('color:' + text_color  + ';');
         l.push('">' + text + '</span>');
         html += l.join(' ');
         
         }
-
-
-        function set_display_area() {
-
-        // A function that calculates and sets the top and left margins plus
-        // the width and height of the display area while keeping to a 1.33
-        // aspect ratio and PADDING * 2 for outer borders
-        //
-        // expects :
-        //
-        // returns :
-        //
-
-        var scaled_width = KM.browser.main_display_width - PADDING * 2;
-        var scaled_height = KM.browser.main_display_height - PADDING * 2;
-
-        // calculate the scaled size keeping aspect ratio 384 / 288 = 1.33
-        var scale=KM.browser.main_display_width / KM.browser.main_display_height;
-        if (scale > 2) {
-            scale=2;
-        } else if (scale < 1) {
-            scale=1;
-        }
-
-        if ((scaled_width / scaled_height) < scale) {
-            scaled_height = scaled_width / scale;
-        } else {
-            scaled_width = scaled_height * scale;
-        }
-        left_margin = ((KM.browser.main_display_width - scaled_width) / 2);
-        top_margin = PADDING;
-        total_width = scaled_width;
-        total_height = scaled_height;
-        }
-
 
         function construct_grid_html(display_select) {
 
@@ -1089,8 +1008,6 @@ KM.display_live_ = function () {
         // returns :
         //
 
-        set_display_area();
-
         var row, col, rows, cols, inner_jpeg_width, inner_jpeg_height,
         jpeg_width, jpeg_height;
 
@@ -1099,13 +1016,13 @@ KM.display_live_ = function () {
             rows = 1;
             cols = 1;
 
-            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+            jpeg_width = 99 / cols;
+            jpeg_height = 99 / rows;
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
                 construct_cell_html(display_select,
-                left_margin + (col * (jpeg_width + PADDING)),
-                top_margin + (row * (jpeg_height + PADDING)),
+                left_margin + (col * (jpeg_width)),
+                top_margin + (row * (jpeg_height)),
                 jpeg_width, jpeg_height);
             }
             }
@@ -1115,14 +1032,14 @@ KM.display_live_ = function () {
             rows = 2;
             cols = 2;
 
-            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+            jpeg_width = 99 / cols;
+            jpeg_height = 99 / rows;
 
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
                 construct_cell_html(display_select,
-                left_margin + (col * (jpeg_width + PADDING)),
-                top_margin + (row * (jpeg_height + PADDING)),
+                left_margin + (col * (jpeg_width)),
+                top_margin + (row * (jpeg_height)),
                 jpeg_width, jpeg_height);
             }
             }
@@ -1132,14 +1049,14 @@ KM.display_live_ = function () {
             rows = 3;
             cols = 3;
 
-            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+            jpeg_width = 99 / cols;
+            jpeg_height = 99 / rows;
 
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
                 construct_cell_html(display_select,
-                left_margin + (col * (jpeg_width + PADDING)),
-                top_margin + (row * (jpeg_height + PADDING)),
+                left_margin + (col * (jpeg_width)),
+                top_margin + (row * (jpeg_height)),
                 jpeg_width, jpeg_height);
             }
             }
@@ -1149,17 +1066,15 @@ KM.display_live_ = function () {
 
             cols = Math.ceil(Math.sqrt(KM.max_feed()));//5;//
             rows = Math.ceil((KM.max_feed())/cols);
-            //console.log(cols);
-            //console.log(rows);
 
-            jpeg_width = (total_width - (PADDING * (cols - 1))) / cols;
-            jpeg_height = (total_height - (PADDING * (rows - 1))) / rows;
+            jpeg_width = 99 / cols;
+            jpeg_height = 99 / rows;
 
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
                 construct_cell_html(display_select,
-                left_margin + (col * (jpeg_width + PADDING)),
-                top_margin + (row * (jpeg_height + PADDING)),
+                left_margin + (col * (jpeg_width)),
+                top_margin + (row * (jpeg_height)),
                 jpeg_width, jpeg_height);
             }
             }
@@ -1169,18 +1084,18 @@ KM.display_live_ = function () {
             rows = [0, 1, 2, 2, 2];
             cols = [2, 2, 0, 1, 2];
 
-            jpeg_width = (total_width - (PADDING * 2)) / 3;
-            jpeg_height = (total_height - (PADDING * 2)) / 3;
+            jpeg_width = 99 / 3;
+            jpeg_height = 99 / 3;
 
             construct_cell_html(display_select, left_margin, top_margin,
-            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+            (jpeg_width * 2), (jpeg_height * 2));
 
             for (var i = 0; i < 5; i++) {
             row = rows[i];
             col = cols[i];
             construct_cell_html(display_select,
-            left_margin + (col * (jpeg_width + PADDING)),
-            top_margin + (row * (jpeg_height + PADDING)),
+            left_margin + (col * (jpeg_width)),
+            top_margin + (row * (jpeg_height)),
             jpeg_width, jpeg_height);
             }
             break;
@@ -1189,18 +1104,18 @@ KM.display_live_ = function () {
             rows = [0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
             cols = [2, 3, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3];
 
-            jpeg_width = (total_width - (PADDING * 3)) / 4;
-            jpeg_height = (total_height - (PADDING * 3)) / 4;
+            jpeg_width = 99 / 4;
+            jpeg_height = 99 / 4;
 
             construct_cell_html(display_select, left_margin, top_margin,
-            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+            (jpeg_width * 2), (jpeg_height * 2));
 
             for (i = 0; i < 12; i++) {
             row = rows[i];
             col = cols[i];
             construct_cell_html(display_select,
-            left_margin + (col * (jpeg_width + PADDING)),
-            top_margin + (row * (jpeg_height + PADDING)),
+            left_margin + (col * (jpeg_width)),
+            top_margin + (row * (jpeg_height)),
             jpeg_width, jpeg_height);
             }
             break;
@@ -1209,18 +1124,18 @@ KM.display_live_ = function () {
             rows = [0, 1, 2, 3, 3, 3, 3];
             cols = [3, 3, 3, 0, 1, 2, 3];
 
-            jpeg_width = (total_width - (PADDING * 3)) / 4;
-            jpeg_height = (total_height - (PADDING * 3)) / 4;
+            jpeg_width = 99 / 4;
+            jpeg_height = 99 / 4;
 
             construct_cell_html(display_select, left_margin, top_margin,
-            (jpeg_width * 3) + (PADDING * 2), (jpeg_height * 3) + (PADDING * 2));
+            (jpeg_width * 3), (jpeg_height * 3));
 
             for (i = 0; i < 7; i++) {
             row = rows[i];
             col = cols[i];
             construct_cell_html(display_select,
-            left_margin + (col * (jpeg_width + PADDING)),
-            top_margin + (row * (jpeg_height + PADDING)),
+            left_margin + (col * (jpeg_width)),
+            top_margin + (row * (jpeg_height)),
             jpeg_width, jpeg_height);
             }
             break;
@@ -1229,38 +1144,38 @@ KM.display_live_ = function () {
             rows = [0, 0, 1, 1, 2, 2, 3, 3];
             cols = [2, 3, 2, 3, 0, 1, 0, 1];
 
-            jpeg_width = (total_width - (PADDING * 3)) / 4;
-            jpeg_height = (total_height - (PADDING * 3)) / 4;
-
+            jpeg_width = 99 / 4;
+            jpeg_height = 99 / 4;
+            
             construct_cell_html(display_select, left_margin, top_margin,
-            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+             (jpeg_width * 2) , (jpeg_height * 2) );
 
             for (i = 0; i < 8; i++) {
             row = rows[i];
             col = cols[i];
             construct_cell_html(display_select,
-            left_margin + (col * (jpeg_width + PADDING)),
-            top_margin + (row * (jpeg_height + PADDING)),
+            left_margin + (col * (jpeg_width)),
+            top_margin + (row * (jpeg_height)),
             jpeg_width, jpeg_height);
             }
 
             construct_cell_html(display_select,
-            left_margin + (jpeg_width * 2) + (PADDING * 2),
-            top_margin + (jpeg_height * 2) + (PADDING * 2),
-            (jpeg_width * 2) + PADDING, (jpeg_height * 2) + PADDING);
+            left_margin + (jpeg_width * 2),
+            top_margin + (jpeg_height * 2),
+            (jpeg_width * 2) , (jpeg_height * 2));
             break;
 
         case 9:  // P in P 2 grid
-            jpeg_width = total_width;
-            jpeg_height = total_height;
+            jpeg_width = 99;
+            jpeg_height = 99;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
 
             construct_cell_html(display_select, left_margin, top_margin,
             jpeg_width, jpeg_height, false,
-            (jpeg_width * 0.02) + inner_jpeg_width + 10,
-            (jpeg_height * 0.02) + 10);
+            (jpeg_width * 0.02) + inner_jpeg_width + 1,
+            (jpeg_height * 0.02) + 1);
 
             construct_cell_html(display_select,
             left_margin + (jpeg_width * 0.02),
@@ -1269,16 +1184,16 @@ KM.display_live_ = function () {
             break;
 
         case 10:  // P in P 2 grid
-            jpeg_width = total_width;
-            jpeg_height = total_height;
+            jpeg_width = 99;
+            jpeg_height = 99;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
 
             construct_cell_html(display_select, left_margin, top_margin,
             jpeg_width, jpeg_height, false,
-            (jpeg_width * 0.02) + 10,
-            (jpeg_height * 0.02) + 10);
+            (jpeg_width * 0.02),
+            (jpeg_height * 0.02));
 
             construct_cell_html(display_select,
             left_margin + jpeg_width - inner_jpeg_width - (jpeg_width * 0.02),
@@ -1287,16 +1202,16 @@ KM.display_live_ = function () {
             break;
 
         case 11:  // P in P 2 grid
-            jpeg_width = total_width;
-            jpeg_height = total_height;
+            jpeg_width = 99;
+            jpeg_height = 99;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
 
             construct_cell_html(display_select, left_margin, top_margin,
             jpeg_width, jpeg_height, false,
-            (jpeg_width * 0.02) + 10,
-            (jpeg_height * 0.02) + 10);
+            (jpeg_width * 0.02),
+            (jpeg_height * 0.02));
 
             construct_cell_html(display_select,
             left_margin + (jpeg_width * 0.02),
@@ -1305,16 +1220,16 @@ KM.display_live_ = function () {
             break;
 
         case 12:  // P in P 2 grid
-            jpeg_width = total_width;
-            jpeg_height = total_height;
+            jpeg_width = 99;
+            jpeg_height = 99;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
 
             construct_cell_html(display_select, left_margin, top_margin,
             jpeg_width, jpeg_height, false,
-            (jpeg_width * 0.02) + 10,
-            (jpeg_height * 0.02) + 10);
+            (jpeg_width * 0.02),
+            (jpeg_height * 0.02));
 
             construct_cell_html(display_select,
             left_margin + jpeg_width - inner_jpeg_width - (jpeg_width * 0.02),
@@ -1355,18 +1270,21 @@ KM.display_live_ = function () {
         // returns :
         //
 
-        var text_color,feed;
+        var text_color,feed,border_color;
         for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
             try {
                 feed = KM.config.display_feeds[KM.config.misc.display_select][i]
                 text_color = KM.WHITE;           
                 if (KM.config.feeds[feed].feed_enabled) {
                     text_color = KM.BLUE;
+                    border_color = KM.BLACK;
                     if (KM.item_in_array(feed, latest_events)) {
                         text_color = KM.RED;
+                        border_color = KM.RED;
                     }
                 }
                 document.getElementById("text_" + feed).style.color = text_color;
+                //document.getElementById("image_" + feed).style.borderColor = border_color;
             } catch (e) {}
         }
     };
@@ -1511,10 +1429,8 @@ KM.display_archive_ = function () {
     var movies =        {};
 
     var display_secs =   0; // the current secs count
-    var backdrop_height = 0; // archive backdrop height
-    var backdrop_width =  0; // archive backdrop width
-
-
+    
+    
 	function init() {
 
 	// A function that initialises that sets the archive backdrop HTML,
@@ -1527,8 +1443,8 @@ KM.display_archive_ = function () {
 
         KM.session_id.current++;
         var session_id = KM.session_id.current;
-        KM.set_main_display_size(); // in case user has 'zoomed' browser view
         init_backdrop_html();
+        window.onresize=null;
         update_dates_dbase(session_id);        
     }
 
@@ -1563,22 +1479,17 @@ KM.display_archive_ = function () {
 	//
 	// returns:
 	//
+    
+    var select_width = 98 / 3;
 
-	backdrop_width = KM.browser.main_display_width * 0.8;
-	backdrop_height = KM.browser.main_display_height - 6 - 151;
-
-	var left_offset = (KM.browser.main_display_width - backdrop_width) / 2;
-	var dropdown_width = backdrop_width / 4;
-	var button_width =   backdrop_width / 5;
-
-	document.getElementById('main_display').innerHTML = '\
+    document.getElementById('main_display').innerHTML = '\
     <div class="title">Kmotion: Archive-><span id="playback_info"></span></div>\
     <div id="arch_display">\
 		<div id="config_bar">\
 			<form name="config" action="" onsubmit="return false">\
-				<select id="date_select" onchange="KM.arch_change_date();"> </select> \
-				<select id="camera_select" onchange="KM.arch_change_camera();"> </select> \
-				<select id="view_select" onchange="KM.arch_change_view();"> </select> \
+				<select id="date_select" onchange="KM.arch_change_date();" style="width:'+select_width+'%"> </select> \
+				<select id="camera_select" onchange="KM.arch_change_camera();" style="width:'+select_width+'%"> </select> \
+				<select id="view_select" onchange="KM.arch_change_view();" style="width:'+select_width+'%"> </select> \
 			</form>\
 		</div>\
 		<div id="arch_display_html">\
@@ -1798,7 +1709,7 @@ KM.display_archive_ = function () {
         var html = '', span_html = '', duration = 0;
         var start, end;
         
-        var view = document.getElementById('view_select').value;
+        var view = parseInt(document.getElementById('view_select').value);
         var date = document.getElementById('date_select').value;
         var camera = document.getElementById('camera_select').value;
         
@@ -1827,6 +1738,8 @@ KM.display_archive_ = function () {
                 html += '<br>';
                 html += '</span>';
             }
+        } else {
+            html = '';
         }
 
         document.getElementById('arch_playlist').innerHTML = html;
@@ -1946,7 +1859,7 @@ KM.display_archive_ = function () {
     };
 
     function event_clicked(id) {
-        var view = document.getElementById('view_select').value;
+        var view = parseInt(document.getElementById('view_select').value);
 
         if (view == 0) {	    
             play_movie(id);
@@ -2012,7 +1925,7 @@ KM.display_archive_ = function () {
         var html5player = document.getElementById('html5player');
 
         if (!html5player) {
-            document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
+            document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
         }
 		
 		KM.videoPlayer.set_movie_duration(end-start);
@@ -2025,13 +1938,13 @@ KM.display_archive_ = function () {
 		switch (file_ext) {
                     
 		case '.swf':
-			document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
+			document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
 			document.getElementById('player_obj').innerHTML = "<p><a href=\""+document.URL+name+"\" target='_blank'>DOWNLOAD: "+name.split(/(\\|\/)/g).pop()+"</a></p>";
 
 			var flashvars = {};
 			var fparams = {allowFullScreen:'true', allowscriptaccess: 'always', quality:'best', bgcolor:'#000000', scale:'exactfit'};
 			var fattributes = {id: 'player_obj', name: 'player_obj'};
-			swfobject.embedSWF(name, 'player_obj', backdrop_width - 5, backdrop_height - 5, '9.124.0', 'expressInstall.swf', flashvars, fparams, fattributes);
+			swfobject.embedSWF(name, 'player_obj', '100%', '100%', '9.124.0', 'expressInstall.swf', flashvars, fparams, fattributes);
 			movie_id = document.getElementById('player_obj');
 			break;
 			
@@ -2211,39 +2124,41 @@ KM.display_logs_ = function () {
     
     function init() {    
         set_logs_html();
+        window.onresize=null;
         get_kmotion_logs();
     }
     
     function set_logs_html() {        
         KM.session_id.current++;
-        KM.set_main_display_size();
         session_id = KM.session_id.current;      
         
-        
-        var backdrop_width = KM.browser.main_display_width * 0.8;
-        var backdrop_height = KM.browser.main_display_height - 75;
-        var button_width = backdrop_width / 2;
-        var config_height = backdrop_height-30; 
-        
+        var button_width = 100 / 2;
+
+
         document.getElementById('main_display').innerHTML = '' +
 
-        '<div class="title" style="width:'+backdrop_width+'px;">' +
-        'kmotion: Logs' +
+        '<div class="title">' +
+        'kmotion: Logs' +        
         '</div>' +
 
         '<div class="divider" >' +
-            '<img src="images/logs_divider_color.png" alt="" style="width:'+backdrop_width+'px;">' +
+            '<img src="images/config_divider_color.png" alt="" style="width:100%;">' +
         '</div>' +
-        '<div class="config_backdrop" id="logs_html" style="width:'+backdrop_width+'px;height:'+backdrop_height+'px;padding-left:10px">' +
-        '<div class="config_button_bar" style="height:30px;overflow:hidden;" >' +
+
+        '<div class="config_backdrop">' +
+        '<div class="config_button_bar">' +
+
             '<input type="button" value="Kmotion logs" onclick="KM.get_kmotion_logs()" '+
-            'style="width:' + button_width + 'px;"/>' +
+            'style="width:' + button_width + '%;"/>' +
             '<input type="button" value="Motion logs" id="feed_button" onclick="KM.get_motion_logs()" '+
-            'style="width:' + button_width + 'px;"/>' +		           
+            'style="width:' + button_width + '%;"/>' +		                            
         '</div>' +
         
-        '<div id="config_html" style="height:'+config_height+'px;"></div>' +
+        '<div id="config_html"></div>' +
+
         '</div>';
+        
+
     }
 
     function show_logs() {
@@ -2350,7 +2265,6 @@ KM.display_config_ = function () {
     
     function init() {
         KM.session_id.current++;
-        KM.set_main_display_size();
         conf_config_track.init();
         conf_backdrop_html();        
     }
@@ -2436,35 +2350,33 @@ KM.display_config_ = function () {
             cur_camera = feed;
             break;
         };
-        var backdrop_width = KM.browser.main_display_width * 0.8;
-        var backdrop_height = KM.browser.main_display_height - 60;
-        var config_height = backdrop_height-30; 
-        var button_width = backdrop_width / 3;
+        
+        var button_width = 100 / 3;
 
 
         document.getElementById('main_display').innerHTML = '' +
 
-        '<div class="title" style="width:'+backdrop_width+'px;">' +
+        '<div class="title">' +
         'kmotion: Config' +        
         '</div>' +
 
-        '<div class="divider" >' +
-            '<img src="images/config_divider_color.png" alt="" style="width:'+backdrop_width+'px;">' +
+        '<div class="divider">' +
+            '<img src="images/config_divider_color.png" alt="" style="width:100%;">' +
         '</div>' +
 
-        '<div class="config_backdrop" style="width:'+backdrop_width+'px;height:'+backdrop_height+'px;">' +
-        '<div class="config_button_bar" style="height:30px;overflow:hidden;" >' +
+        '<div class="config_backdrop">' +
+        '<div class="config_button_bar">' +
 
             '<input type="button" value="Misc" id="misc_button" onclick="KM.conf_misc_html()" '+
-            'style="width:' + button_width + 'px;"/>' +
+            'style="width:' + button_width + '%;"/>' +
             '<input type="button" value="Cameras" id="feed_button" onclick="KM.conf_feed_html()" '+
-            'style="width:' + button_width + 'px;"/>' +		                
+            'style="width:' + button_width + '%;"/>' +		                
             '<input type="button" value="Server Load" onclick="KM.conf_select_load();" ' +
-            'style="width:' + button_width + 'px;"/>' +
+            'style="width:' + button_width + '%;"/>' +
 
         '</div>' +
 
-        '<div id="config_html" style="height:'+config_height+'px;"></div>' +
+        '<div id="config_html"></div>' +
 
         '</div>';
         
@@ -3167,7 +3079,7 @@ KM.display_config_ = function () {
         function create_bar(text, bar_number) {
             if (KM.browser.browser_IE) { // ugly hack as a workaround for IE
                 return '' +
-                '<div class="bar_bground" style="margin-top:9px;width:'+MAX_PX+'px;">' +
+                '<div class="bar_bground" style="margin-top:9px;">' +
                     '<div id="bar_fground' + bar_number + '" class="bar_fground" style="background-color:' + BAR_OK + ';">' +
                     '</div>' +
                     '<span id="bar_text' + bar_number + '" class="bar_text_IE">' +
@@ -3178,7 +3090,7 @@ KM.display_config_ = function () {
                 '</div>';
             } else {
                 return '' +
-                '<div class="bar_bground" style="margin-top:9px;width:'+MAX_PX+'px;">' +
+                '<div class="bar_bground" style="margin-top:9px;">' +
                     '<span id="bar_text' + bar_number + '" class="bar_text">' +
                     text +
                     '</span>' +
@@ -3203,12 +3115,12 @@ KM.display_config_ = function () {
             // load average 1 min
             document.getElementById('bar_value1').innerHTML = dbase.l1;
             var tmp = Math.min(dbase.l1, coef);
-            document.getElementById('bar_fground1').style.width = (tmp * (MAX_PX / coef)) + 'px';
+            document.getElementById('bar_fground1').style.width = 100*(tmp / coef) + '%';
 
             // load average 5 min
             document.getElementById('bar_value2').innerHTML = dbase.l2;
             tmp = Math.min(dbase.l2, coef);
-            document.getElementById('bar_fground2').style.width = (tmp * (MAX_PX / coef)) + 'px';
+            document.getElementById('bar_fground2').style.width = 100*(tmp / coef) + '%';
             if (tmp >= dbase.cpu) {
                 document.getElementById('bar_fground2').style.backgroundColor = BAR_ALERT;
             } else {
@@ -3218,7 +3130,7 @@ KM.display_config_ = function () {
             // load average 15 min
             document.getElementById('bar_value3').innerHTML = dbase.l3;
             tmp = Math.min(dbase.l3, coef);
-            document.getElementById('bar_fground3').style.width = (tmp * (MAX_PX / coef)) + 'px';
+            document.getElementById('bar_fground3').style.width = 100*(tmp / coef) + '%';
             if (tmp >= dbase.cpu) {
                 document.getElementById('bar_fground3').style.backgroundColor = BAR_ALERT;
             } else {
@@ -3227,41 +3139,41 @@ KM.display_config_ = function () {
 
             // CPU user
             document.getElementById('bar_value4').innerHTML = dbase.cu + '%';
-            tmp = (dbase.cu / 100) * MAX_PX;
-            document.getElementById('bar_fground4').style.width = tmp + 'px';
+            tmp = dbase.cu;
+            document.getElementById('bar_fground4').style.width = tmp + '%';
 
             // CPU system
             document.getElementById('bar_value5').innerHTML = dbase.cs + '%';
-            tmp = (dbase.cs / 100) * MAX_PX;
-            document.getElementById('bar_fground5').style.width = tmp + 'px';
+            tmp = dbase.cs;
+            document.getElementById('bar_fground5').style.width = tmp + '%';
 
             // CPU IO wait
             document.getElementById('bar_value6').innerHTML = dbase.ci + '%';
-            tmp = (dbase.ci / 100) * MAX_PX;
-            document.getElementById('bar_fground6').style.width = tmp + 'px';
+            tmp = dbase.ci;
+            document.getElementById('bar_fground6').style.width = tmp + '%';
 
             // memory system
             var non_app = parseInt(dbase.mf) + parseInt(dbase.mb) + parseInt(dbase.mc);
             var app = dbase.mt - non_app;
             document.getElementById('bar_value7').innerHTML = app + 'k';
-            tmp = (app / dbase.mt) * MAX_PX;
-            document.getElementById('bar_fground7').style.width = tmp + 'px';
+            tmp = (app / dbase.mt) * 100;
+            document.getElementById('bar_fground7').style.width = tmp + '%';
 
             // memory buffers
             document.getElementById('bar_value8').innerHTML = dbase.mb + 'k';
-            tmp = (dbase.mb / dbase.mt) * MAX_PX;
-            document.getElementById('bar_fground8').style.width = tmp + 'px';
+            tmp = (dbase.mb / dbase.mt) * 100;
+            document.getElementById('bar_fground8').style.width = tmp + '%';
 
             // memory cached
             document.getElementById('bar_value9').innerHTML = dbase.mc + 'k';
-            tmp = (dbase.mc / dbase.mt) * MAX_PX;
-            document.getElementById('bar_fground9').style.width = tmp + 'px';
+            tmp = (dbase.mc / dbase.mt) * 100;
+            document.getElementById('bar_fground9').style.width = tmp + '%';
 
             // swap
             document.getElementById('bar_value10').innerHTML = dbase.su + 'k';
             dbase.st = Math.max(dbase.st, 1);  // if no swap, avoids div 0
-            tmp = (dbase.su / dbase.st);
-            document.getElementById('bar_fground10').style.width = (tmp * MAX_PX) + 'px';
+            tmp = (dbase.su / dbase.st) * 100;
+            document.getElementById('bar_fground10').style.width = tmp + '%';
             if (tmp >= 0.1) {
                 document.getElementById('bar_fground10').style.backgroundColor = BAR_ALERT;
             } else {
