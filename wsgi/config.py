@@ -47,10 +47,11 @@ class Config():
         return config
 
     def write(self, jdata):
-        config = json.loads(jdata)
-        config['user'] = self.username
-        with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'wb') as pipeout:
-            pipeout.write(json.dumps(config))
+        if self.config['misc']['config_enabled']:
+            config = json.loads(jdata)
+            config['user'] = self.username
+            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'wb') as pipeout:
+                pipeout.write(json.dumps(config))
 
         return ''
 

@@ -72,7 +72,7 @@ class rtsp2mp4(sample.sample):
             audio = "-an"
 
         if self.recode:
-            vcodec = "-c:v libx264 -preset ultrafast -profile:v baseline -b:v %sk -qp 30" % self.feed_kbs
+            vcodec = "-c:v libx264 -preset ultrafast -profile:v baseline -b:v {feed_kbs}k -qp 30".format(feed_kbs=self.feed_kbs)
         else:
             vcodec = '-c:v copy'
 

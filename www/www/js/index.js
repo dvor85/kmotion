@@ -567,8 +567,8 @@ KM.enable_function_buttons = function (button) {
     // returns :
     //
 
-    var buttons = ['pad', 'pad', 'archive_button_enabled',
-    'logs_button_enabled', 'config_button_enabled'];
+    var buttons = ['pad', 'pad', 'archive_enabled',
+    'logs_enabled', 'config_enabled'];
 
 	var misc_function_display="none";
 
@@ -707,8 +707,8 @@ KM.function_button_valid = function (button) {
     // 'bool' ...   button valid
     //
 
-    var buttons = ['pad', 'pad', 'archive_button_enabled',
-        'logs_button_enabled', 'config_button_enabled'];
+    var buttons = ['pad', 'pad', 'archive_enabled',
+        'logs_enabled', 'config_enabled'];
     return (button < 2 || KM.config.misc[buttons[button]]);
 };
 
@@ -2411,11 +2411,11 @@ KM.display_config_ = function () {
         document.getElementById('config_html').innerHTML = '<br />\
                 <div class="config_group_margin">\
                     <div class="config_tick_margin">\
-                      <input type="checkbox" id="logs_button_enabled" onclick="KM.conf_misc_highlight();" />Logs button enabled.<br>\
-                      <input type="checkbox" id="archive_button_enabled" onclick="KM.conf_misc_highlight();" />Archive button enabled.<br>\
+                      <input type="checkbox" id="logs_enabled" onclick="KM.conf_misc_highlight();" />Logs button enabled.<br>\
+                      <input type="checkbox" id="archive_enabled" onclick="KM.conf_misc_highlight();" />Archive button enabled.<br>\
                     </div>\
                     <div class="config_tick_margin">\
-                        <input type="checkbox" id="config_button_enabled" onclick="KM.conf_misc_highlight();" />Config button enabled.<br>\
+                        <input type="checkbox" id="config_enabled" onclick="KM.conf_misc_highlight();" />Config button enabled.<br>\
                         <input type="checkbox" id="hide_button_bar" onclick="KM.conf_misc_highlight();" />Hide button bar.<br>\
                     </div>\
                 </div>\

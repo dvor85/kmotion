@@ -63,8 +63,8 @@ NameVirtualHost *:${port}
     # Possible values include: debug, info, notice, warn, error, crit,
     LogLevel notice
 
-    ErrorLog ${logs_dir}/error_kmotion.log
-    #TransferLog ${logs_dir}/access_kmotion.log
+	ErrorLog "${APACHE_LOG_DIR}/error_kmotion.log"
+	TransferLog "${APACHE_LOG_DIR}/access_kmotion.log"
     #CustomLog ${logs_dir}/access_kmotion.log combined
     
 </VirtualHost>

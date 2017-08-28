@@ -23,13 +23,14 @@ class Archive():
         self.config = cfg.get(www_rc)
 
     def __call__(self, *args, **kwargs):
-        func = utils.safe_str(kwargs.get('func'))
-        if func == 'dates':
-            return self.get_dates()
-        elif func == 'movies':
-            return self.journal_data(utils.safe_str(kwargs['date']), int(kwargs['feed']))
-        elif func == 'feeds':
-            return self.get_feeds(utils.safe_str(kwargs['date']))
+        if self.config['misc']['archive_enabled']:
+            func = utils.safe_str(kwargs.get('func'))
+            if func == 'dates':
+                return self.get_dates()
+            elif func == 'movies':
+                return self.journal_data(utils.safe_str(kwargs['date']), int(kwargs['feed']))
+            elif func == 'feeds':
+                return self.get_feeds(utils.safe_str(kwargs['date']))
 
     def get_feeds(self, date):
         feeds_list = {}
@@ -64,29 +65,30 @@ class Archive():
     def journal_data(self, date, feed):
 
         journal = {}
-        movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)
-        if os.path.isdir(movies_dir):
-            movies = os.listdir(movies_dir)
-            movies.sort()
-            journal['movies'] = []
-            for m in movies:
-                mf = os.path.join(movies_dir, m)
-                movie = {}
-                movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
-                movie['end'] = self.hhmmss_secs(datetime.fromtimestamp(os.path.getmtime(mf)).strftime('%H%M%S'))
-                movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
-                journal['movies'].append(movie)
+        if feed in self.config['feeds'].keys():
+            movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)
+            if os.path.isdir(movies_dir):
+                movies = os.listdir(movies_dir)
+                movies.sort()
+                journal['movies'] = []
+                for m in movies:
+                    mf = os.path.join(movies_dir, m)
+                    movie = {}
+                    movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
+                    movie['end'] = self.hhmmss_secs(datetime.fromtimestamp(os.path.getmtime(mf)).strftime('%H%M%S'))
+                    movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
+                    journal['movies'].append(movie)
 
-        snaps_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, feed)
-        if os.path.isdir(snaps_dir):
-            snaps = os.listdir(snaps_dir)
-            snaps.sort()
-            journal['snaps'] = []
-            for m in snaps:
-                mf = os.path.join(snaps_dir, m)
-                snap = {}
-                snap['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
-                snap['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
-                journal['snaps'].append(snap)
+            snaps_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, feed)
+            if os.path.isdir(snaps_dir):
+                snaps = os.listdir(snaps_dir)
+                snaps.sort()
+                journal['snaps'] = []
+                for m in snaps:
+                    mf = os.path.join(snaps_dir, m)
+                    snap = {}
+                    snap['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
+                    snap['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
+                    journal['snaps'].append(snap)
 
         return journal

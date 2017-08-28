@@ -1,7 +1,8 @@
 [misc]
-archive_button_enabled = True
+archive_enabled = True
+logs_enabled = True
+config_enabled = True
 color_select = 0
-config_button_enabled = True
 display_feeds_01 = 1
 display_feeds_02 = 1,2,3,4
 display_feeds_03 = 1,2,3,4,5,6,7,8,9
@@ -16,7 +17,7 @@ display_feeds_11 = 1,2
 display_feeds_12 = 1,2
 display_select = 4
 hide_button_bar = False
-logs_button_enabled = True
+
 
 [motion_feed01]
 feed_actions = rtsp2mp4 first_snap

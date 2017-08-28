@@ -42,6 +42,7 @@ class first_snap(sample.sample):
                 log.info('copy {src} to {dst}'.format(**p))
                 if not os.path.isdir(os.path.dirname(p['dst'])):
                     os.makedirs(os.path.dirname(p['dst']))
+                time.sleep(1)
                 shutil.copy(**p)
             except Exception:
                 log.exception('error while copy jpg to snap dir.')

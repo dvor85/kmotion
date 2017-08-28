@@ -9,6 +9,7 @@
 # Description: 
 ### END INIT INFO
 
+PATH=$PATH:/usr/local/bin:/usr/local/sbin
 DAEMON=/usr/local/kmotion3/kmotion.py
 NAME=kmotion
 PIDFILE=/run/$NAME/$NAME.pid
