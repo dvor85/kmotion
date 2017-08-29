@@ -192,25 +192,41 @@ KM.json_request = function(url, json, callback, onerror){
                     if (jres.id != jreq.id){
                         console.log("Invalid ID");
                         if (onerror)
-                            onerror();
+                            try {
+                                onerror();
+                            } catch (e) {
+                                console.log(e);
+                            }
                         return false;
                     }
                     if (jres.error) {
                         console.log(jres.error.message);
-                        if (onerror) 
-                            onerror();
+                        if (onerror)
+                            try {
+                                onerror();
+                            } catch (e) {
+                                console.log(e);
+                            }
                         return false;                        
                     }
                     if (callback) 
-                        callback(jres.result);
-                
+                        try {
+                            callback(jres.result);
+                        } catch (e) {
+                            console.log(e);
+                            return false;
+                        }
+                        
                     return true;
 				} catch (e) {
-                    console.log("Request error");
+                    console.log(e);
                     if (onerror) 
-                        onerror();
+                        try {
+                            onerror();
+                        } catch (e) {
+                            console.log(e);
+                        }
                     return false;
-                    
                 }    
 			}
 		}
@@ -1564,6 +1580,7 @@ KM.display_archive_ = function () {
         function callback(obj_data) {
             movies = obj_data;
             populate_view_dropdown();
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(retry, 60000));
         }
     
         if (KM.session_id.current === session_id) {
@@ -1732,8 +1749,7 @@ KM.display_archive_ = function () {
         } else if (view == 1) { //snap events
             for (var i=0; i<movies['snaps'].length; i++) {
                 start = movies['snaps'][i]['start'];
-                span_html = 'onclick="KM.arch_event_clicked(' + i + ')"';
-                html += '<span ' + span_html + '>';
+                html += '<span ' + 'onclick="KM.arch_event_clicked(' + i + ')">';
                 html += KM.secs_hh_mm_ss(start);
                 html += '<br>';
                 html += '</span>';
@@ -1819,6 +1835,7 @@ KM.display_archive_ = function () {
                 lines[i].classList.remove('playlist_hlight');
             } else {
                 lines[i].classList.add('playlist_hlight');
+                lines[i].scrollIntoView(false);
             }
         }
     }
@@ -1867,7 +1884,7 @@ KM.display_archive_ = function () {
         } else if (view == 1) {
             play_snap(id);
         }
-        playlist_hlight(id);
+        
     }
     
     function play_movie(movie_id) {
@@ -1885,7 +1902,8 @@ KM.display_archive_ = function () {
         KM.session_id.current++;
         KM.kill_timeout_ids(KM.ARCH_LOOP);
 
-        if (movies['movies'][movie_id] !== undefined) {
+        if (movies['movies'][movie_id]) {
+            playlist_hlight(movie_id);
             display_secs = movies['movies'][movie_id]['start'];
             if (!document.getElementById('html5player')) {
                 reset_display_html(); 
@@ -1999,6 +2017,7 @@ KM.display_archive_ = function () {
             snap.style.height = params.height;
             add_events();
             snap.onload = function() {reload()};
+            snap.onerror = function() {reload()};
             snap.onclick = playpause;
             player.appendChild(snap);
             snap_id = params.snap_id;            
@@ -2006,8 +2025,10 @@ KM.display_archive_ = function () {
         }              
         
         function reload() {            
-            if (KM.session_id.current === session_id) {                
-                KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, delay-get_delta()));
+            if (KM.session_id.current === session_id) { 
+                if (movies['snaps'][snap_id]) {             
+                    KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, delay-get_delta()));
+                }
             }
         }
         
@@ -2037,16 +2058,14 @@ KM.display_archive_ = function () {
         }
         
         function play() {
-            KM.kill_timeout_ids(KM.ARCH_LOOP);            
-            if (movies['snaps'][snap_id+direct]) {  
-                playlist_hlight(snap_id);
-                snap.src = movies['snaps'][snap_id]['file'];            
-                snap_id+=direct;                
-                time = new Date().getTime();
-                display_secs = movies['snaps'][snap_id]['start'];
-                update_playback_info(display_secs); 
-                progress();
-            }            
+            KM.kill_timeout_ids(KM.ARCH_LOOP);
+            playlist_hlight(snap_id);     
+            snap.src = movies['snaps'][snap_id]['file'];
+            time = new Date().getTime();
+            display_secs = movies['snaps'][snap_id]['start'];
+            update_playback_info(display_secs); 
+            progress();            
+            snap_id+=direct;               
         }
         
         function progress() {
