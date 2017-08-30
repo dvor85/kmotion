@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime
+import datetime
 from core.config import Settings
 from core import utils
 
@@ -73,11 +73,14 @@ class Archive():
                 journal['movies'] = []
                 for m in movies:
                     mf = os.path.join(movies_dir, m)
-                    movie = {}
-                    movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
-                    movie['end'] = self.hhmmss_secs(datetime.fromtimestamp(os.path.getmtime(mf)).strftime('%H%M%S'))
-                    movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
-                    journal['movies'].append(movie)
+                    end = datetime.datetime.fromtimestamp(os.path.getmtime(mf))
+                    dt = datetime.datetime.now() - end
+                    if dt.total_seconds() > 10:
+                        movie = {}
+                        movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
+                        movie['end'] = self.hhmmss_secs(end.strftime('%H%M%S'))
+                        movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
+                        journal['movies'].append(movie)
 
             snaps_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, feed)
             if os.path.isdir(snaps_dir):
