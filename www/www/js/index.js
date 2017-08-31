@@ -75,8 +75,8 @@ KM.toggle_button_bar=function () {
 	var h_button_bar=document.getElementById('toggle_button_bar');
 	if (button_bar.style.display=='none') {
 		button_bar.style.display='block';
-		h_button_bar.style.right='165px';
-		document.getElementById('main_display').style.right='165px';
+		h_button_bar.style.right='175px';
+		document.getElementById('main_display').style.right='178px';
 	} else {
 		button_bar.style.display='none';
 		h_button_bar.style.right='0px';
@@ -495,7 +495,6 @@ KM.enable_camera_buttons = function () {
     for (var f=1;f<=KM.max_feed();f++) {
         try {
             document.getElementById('ct' + f).innerHTML = f;
-            document.getElementById('cb' + f).style.background = 'url(images/temp1.png) no-repeat bottom left';            
             if (KM.config.feeds[f] && KM.config.feeds[f].feed_enabled) {
                 document.getElementById('ct' + f).style.color = KM.BLUE;
             } else {
@@ -1502,11 +1501,9 @@ KM.display_archive_ = function () {
     <div class="title">Kmotion: Archive-><span id="playback_info"></span></div>\
     <div id="arch_display">\
 		<div id="config_bar">\
-			<form name="config" action="" onsubmit="return false">\
-				<select id="date_select" onchange="KM.arch_change_date();" style="width:'+select_width+'%"> </select> \
-				<select id="camera_select" onchange="KM.arch_change_camera();" style="width:'+select_width+'%"> </select> \
-				<select id="view_select" onchange="KM.arch_change_view();" style="width:'+select_width+'%"> </select> \
-			</form>\
+            <select id="date_select" onchange="KM.arch_change_date();" > </select> \
+            <select id="camera_select" onchange="KM.arch_change_camera();" > </select> \
+            <select id="view_select" onchange="KM.arch_change_view();" > </select> \
 		</div>\
 		<div id="arch_display_html">\
 			<div id="arch_playlist"></div>\
@@ -2150,34 +2147,19 @@ KM.display_logs_ = function () {
     function set_logs_html() {        
         KM.session_id.current++;
         session_id = KM.session_id.current;      
-        
-        var button_width = 100 / 2;
 
-
-        document.getElementById('main_display').innerHTML = '' +
-
-        '<div class="title">' +
-        'kmotion: Logs' +        
-        '</div>' +
-
-        '<div class="divider" >' +
-            '<img src="images/config_divider_color.png" alt="" style="width:100%;">' +
-        '</div>' +
-
-        '<div class="config_backdrop">' +
-        '<div class="config_button_bar">' +
-
-            '<input type="button" value="Kmotion logs" onclick="KM.get_kmotion_logs()" '+
-            'style="width:' + button_width + '%;"/>' +
-            '<input type="button" value="Motion logs" id="feed_button" onclick="KM.get_motion_logs()" '+
-            'style="width:' + button_width + '%;"/>' +		                            
-        '</div>' +
-        
-        '<div id="config_html"></div>' +
-
-        '</div>';
-        
-
+        document.getElementById('main_display').innerHTML = '\
+        <div class="title">kmotion: Logs</div>\
+        <div class="divider" >\
+           <img src="images/config_divider_color.png" alt="" style="width:100%;">\
+        </div>\
+            <div class="config_backdrop">\
+            <div id="config_bar">\
+               <input type="button" value="Kmotion logs" onclick="KM.get_kmotion_logs()" />\
+               <input type="button" value="Motion logs" id="feed_button" onclick="KM.get_motion_logs()" />\
+            </div>\
+            <div id="config_html"></div>\
+        </div>';
     }
 
     function show_logs() {
@@ -2370,34 +2352,19 @@ KM.display_config_ = function () {
             break;
         };
         
-        var button_width = 100 / 3;
-
-
-        document.getElementById('main_display').innerHTML = '' +
-
-        '<div class="title">' +
-        'kmotion: Config' +        
-        '</div>' +
-
-        '<div class="divider">' +
-            '<img src="images/config_divider_color.png" alt="" style="width:100%;">' +
-        '</div>' +
-
-        '<div class="config_backdrop">' +
-        '<div class="config_button_bar">' +
-
-            '<input type="button" value="Misc" id="misc_button" onclick="KM.conf_misc_html()" '+
-            'style="width:' + button_width + '%;"/>' +
-            '<input type="button" value="Cameras" id="feed_button" onclick="KM.conf_feed_html()" '+
-            'style="width:' + button_width + '%;"/>' +		                
-            '<input type="button" value="Server Load" onclick="KM.conf_select_load();" ' +
-            'style="width:' + button_width + '%;"/>' +
-
-        '</div>' +
-
-        '<div id="config_html"></div>' +
-
-        '</div>';
+        document.getElementById('main_display').innerHTML = '\
+        <div class="title">kmotion: Config</div>\
+        <div class="divider">\
+           <img src="images/config_divider_color.png" alt="" style="width:100%;">\
+        </div>\
+        <div class="config_backdrop">\
+            <div id="config_bar">\
+               <input type="button" value="Misc" id="misc_button" onclick="KM.conf_misc_html()" />\
+               <input type="button" value="Cameras" id="feed_button" onclick="KM.conf_feed_html()" />\
+               <input type="button" value="Server Load" onclick="KM.conf_select_load();" />\
+            </div>\
+            <div id="config_html"></div>\
+        </div>';
         
         
         conf_misc_html();
@@ -2438,16 +2405,16 @@ KM.display_config_ = function () {
                         <input type="checkbox" id="hide_button_bar" onclick="KM.conf_misc_highlight();" />Hide button bar.<br>\
                     </div>\
                 </div>\
-                <br /><hr style="margin:10px;clear:both" />\
+                <br /><hr/>\
                 <div class="config_group_margin">\
-                    <div style="height:50px;line-height:50px;background-color:#000000;color:#c1c1c1;margin:10px;padding-left:10px"><input type="radio" name="color_select" value="0" onchange="KM.background_button_clicked(0);KM.conf_misc_highlight();">Dark theme</div>\
-                    <div style="height:50px;line-height:50px;background-color:#ffffff;color:#505050;margin:10px;padding-left:10px"><input type="radio" name="color_select" value="1" onchange="KM.background_button_clicked(1);KM.conf_misc_highlight();">Light theme</div>\
+                    <div class="theme_dark"><input type="radio" name="color_select" value="0" onchange="KM.background_button_clicked(0);KM.conf_misc_highlight();">Dark theme</div>\
+                    <div class="theme_white"><input type="radio" name="color_select" value="1" onchange="KM.background_button_clicked(1);KM.conf_misc_highlight();">Light theme</div>\
                 </div>\
-                <br /><hr style="margin:10px;clear:both" />\
+                <br /><hr/>\
                 <div class="config_group_margin">\
                 <input type="checkbox" id="save_display" onclick="KM.conf_misc_highlight();" />Save the current "Display Select" configuration as default.<br>\
                 </div>\
-                <br /><hr style="margin:10px;clear:both" />\
+                <br /><hr/>\
                 <div class="config_text_margin" id="conf_text" >\
                   <input type="button" id="conf_apply" onclick="KM.conf_apply();" value="Apply" />&nbsp;all changes to the local browser configuration and sync with the remote server.\
                </div>';
@@ -2590,7 +2557,7 @@ KM.display_config_ = function () {
                         <input type="checkbox" id="reboot_camera" onclick="KM.conf_reboot_camera('+cur_camera+');" />Reboot camera \
                         <br> \<br>\
                   </div></div><div class="config_tick_margin"> \
-                <br /><hr style="margin:10px" class="clear_float"/> \
+                <br /><hr/> \
                 <div class="config_tick_margin">\
                 <div class="config_tick_margin">\
                   <div class="config_text">Device:</div>\
@@ -2644,16 +2611,16 @@ KM.display_config_ = function () {
                   <div class="config_text"><input type="text" id="feed_height" size="4" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;">px</span></div>\
                   <div class="config_text"><input type="text" id="feed_fps" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
                 </div></div>\
-                <br /><hr style="margin:10px" class="clear_float"/>\
+                <br /><hr />\
                 <div class="config_tick_margin">\
                   <div class="config_text">Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onchange="KM.conf_feed_highlight();" value="'+cur_camera+'"/></div>\
                 </div>\
                 </div>\
-                <br /><hr style="margin:10px" class="clear_float"/>\
+                <br /><hr/>\
                 <div class="config_text_margin">\
                   <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight();" />Enable motion highlighting. (Draw box around detected motion)\
                 </div>\
-                <br /><hr style="margin:10px" class="clear_float"/>\
+                <br /><hr/>\
                 <div class="config_text_margin">\
                   <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight();" />Enable snapshot mode. Record an image in time lapse mode with a pause between images.\
                 </div>\
@@ -2661,7 +2628,7 @@ KM.display_config_ = function () {
                   of : <input type="text" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight();" />Seconds, (300 Seconds recommended)\
                 </div>\
                 <div class="config_text">Quality of snapshots: <input type="text" id="feed_quality" size="3" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;">%</span></div>\
-                <br /><hr style="margin:10px" class="clear_float"/>\
+                <br /><hr/>\
                 </div><br />';
         
 
@@ -3056,7 +3023,7 @@ KM.display_config_ = function () {
             'Please wait - Downloading server data.' +
         '</div>' +
 
-        '<br /><hr style="margin:10px" class="clear_float"/>'+
+        '<br />'+
 
         '<div id="load_av_title" class="config_text_center">' +
             'Load Averages' +
@@ -3066,7 +3033,7 @@ KM.display_config_ = function () {
         create_bar('5 min', 2) +
         create_bar('15 min', 3) +
 
-        '<br /><hr style="margin:10px" class="clear_float"/>' +
+        '<br />' +
 
         '<div id="cpu_title" class="config_text_center">' +
             'Central Processing Unit' +
@@ -3076,7 +3043,7 @@ KM.display_config_ = function () {
         create_bar('System', 5) +
         create_bar('IO Wait', 6) +
 
-        '<br /><hr style="margin:10px" class="clear_float"/>' +
+        '<br />' +
 
         '<div id="memory_title" class="config_text_center">' +
             'Memory' +
@@ -3086,14 +3053,14 @@ KM.display_config_ = function () {
         create_bar('Buffered', 8) +
         create_bar('Cached', 9) +
 
-        '<br /><hr style="margin:10px" class="clear_float"/>' +
+        '<br />' +
 
         '<div id="swap_title" class="config_text_center">' +
             'Swap' +
         '</div>' +	
 
         create_bar('Swap', 10) +
-        '<br /><hr style="margin:10px" class="clear_float"/>';
+        '<br />';
 
         function create_bar(text, bar_number) {
             if (KM.browser.browser_IE) { // ugly hack as a workaround for IE
