@@ -224,12 +224,11 @@ ARCHIVE
 *******************************************************************************/
 
 #arch_display {
-	border: 2px solid #C1C1C1;
 	color: #C1C1C1;
 	bottom: 0px;
 	left: 0px;
 	top: 40px;
-	right: 0px;
+	right: 8px;
 	padding: 0px;
 	position: absolute;
 }
@@ -244,7 +243,6 @@ ARCHIVE
 	margin: auto;
     display: flex;
     justify-content: space-between;
-	#border-bottom: 2px solid #C1C1C1;
 }
 
 #config_bar  select, #config_bar  input {
@@ -281,19 +279,28 @@ ARCHIVE
 
 #arch_player {
 	position: absolute;
-	padding: 10px;
-	left: 200px;
+	padding: 0px;
+	left: 202px;
     margin: auto;
-	right: 5px;
+	right: 0px;
 	top: 0px;
 	bottom: 40px;
 }
 
+#player_obj {
+	position: absolute;
+	padding: 3px;
+	top: 0px;
+	bottom:0px;
+	left: 0px;
+	right: 0px;
+}
+
 #playback_form {
 	position: absolute;
-	padding: 10px;
-	left: 200px;
-	right: 5px;
+	padding: 3px;
+	left: 202px;
+	right: 0px;
 	#top: 0px;
 	bottom: 0px;  
 }
@@ -303,15 +310,6 @@ ARCHIVE
     height:20px;
     cursor: pointer;
 }
-
-#player_obj {
-	position: absolute;
-	padding: 10px;
-	top: 0px;
-	bottom:0px;
-	left: 0px;
-	right: 0px;
-} 
 
 #arch_playlist span {
 	cursor: pointer;

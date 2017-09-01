@@ -1413,7 +1413,7 @@ KM.display_live_ = function () {
     
     return {
         init: init,
-        set_last_camera: set_last_camera
+        set_last_camera: set_last_camera,
     }
 }();
 
@@ -1597,6 +1597,7 @@ KM.display_archive_ = function () {
 	//
 
 	// remove all 'date_select' options
+    
         var date_select = document.getElementById('date_select');
         for (var i = date_select.options.length - 1; i > -1; i--) {
             date_select.remove(i);
@@ -1635,7 +1636,8 @@ KM.display_archive_ = function () {
         var camera_select = document.getElementById('camera_select');
         var selected_index = camera_select.selectedIndex;
         var selected_feed = parseInt(camera_select.value);
-        
+        if (isNaN(selected_feed)) 
+            selected_feed = KM.config.display_feeds[KM.config.misc.display_select][0];      
         
         for (var i = camera_select.options.length - 1; i > -1; i--) {
             camera_select.remove(i);
