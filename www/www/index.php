@@ -2,13 +2,13 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<link href="css/base.css?ver=7.0.6" rel="stylesheet" type="text/css" media="screen"/> 
+<link href="css/base.css?ver=7.0.7" rel="stylesheet" type="text/css" media="screen"/> 
 <meta name="keywords" content="" />
 <meta name="description" content="" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <meta http-equiv="cache-control" content="no-cache">
 <meta name="robots" content="none">
-<title>&nbsp;</title>
+<title></title>
 <script type="text/javascript" src="js/swfobject.js"></script>
 <script type="text/javascript" >
 
@@ -89,8 +89,6 @@ function hidehint() {
 <body onload="kmotion_preload_images();">
 <div id="hint"></div>
 
-<div id="whole_display">
-
 <!-- ***************************************************************************
 'main_display' section.
 *****************************************************************************-->
@@ -168,13 +166,12 @@ function hidehint() {
 <?php
 $debug = false;
 $user=!empty($_SERVER["PHP_AUTH_USER"])?$_SERVER["PHP_AUTH_USER"]:"";
-$version='7.0.6';
+$version='7.0.7';
 $script=($debug and $user=='admin')?"js/index.js?ver='.$version.'":"js/index-min.js?ver='.$version.'";
 echo '<script type="text/javascript" src="'.$script.'"></script>';
 
 ?>
 
 	
-</div>
 </body>
 </html>

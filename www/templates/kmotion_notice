@@ -19,8 +19,8 @@ NameVirtualHost *:${port_notice}
 		Allow from all
     </Directory>
 
-	ErrorLog "${APACHE_LOG_DIR}/error_kmotion.log"
-	TransferLog "${APACHE_LOG_DIR}/access_kmotion.log"
+	ErrorLog "${APACHE_LOG_DIR}/kmotion_error.log"
+	TransferLog "${APACHE_LOG_DIR}/kmotion_access.log"
 
 </VirtualHost>
 

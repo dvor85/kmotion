@@ -8,15 +8,9 @@ body {
 	color: #C1C1C1;	
 }
 
-
 #main_display .archive_backdrop {
 	background-color: #505050;
 	color: #C1C1C1;	
-}
-
-#main_display img[id^='image_'] {
-    position:  absolute;
-    border: 3px solid #000000;
 }
 
 #main_display .config_backdrop {

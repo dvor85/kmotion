@@ -29,8 +29,6 @@ KM.browser = {
     browser_IE: false,      // browser is internet explorer
     browser_OP:	false,	    // browser is opera
     browser_SP:	false,	    // browser is on a smartphone
-    main_display_width:  0, // px
-    main_display_height: 0  // px
 };
 
 KM.session_id = {
@@ -42,7 +40,7 @@ KM.config = {};
 KM.menu_bar_buttons = {
     function_selected:   0,     // the function selected
     display_sec_enabled: false, // enabled sections ...
-    camera_sec_enabled:  false    
+    camera_sec_enabled:  false
 };
 
 KM.max_feed = function () {
@@ -70,17 +68,17 @@ System - Misc code
 Miscellaneous code that provides general closures and functions for kmotion
 **************************************************************************** */
 
-KM.toggle_button_bar=function () {     
+KM.toggle_button_bar=function () {
 	var button_bar=document.getElementById('button_bar');
 	var h_button_bar=document.getElementById('toggle_button_bar');
 	if (button_bar.style.display=='none') {
 		button_bar.style.display='block';
 		h_button_bar.style.right='175px';
-		document.getElementById('main_display').style.right='178px';
+		document.getElementById('main_display').style.right='185px';
 	} else {
 		button_bar.style.display='none';
 		h_button_bar.style.right='0px';
-		document.getElementById('main_display').style.right='2px';
+		document.getElementById('main_display').style.right='10px';
 	}
 
 	//KM.function_button_clicked(KM.menu_bar_buttons.function_selected);
@@ -141,7 +139,7 @@ KM.timeout_ids = function () {
 	    //
 	    // 'group' ...	group
 	    //
-        
+
 	    if (timeout_ids[group] !== undefined && timeout_ids[group].length > 0) {
             for (var i = 0; i < timeout_ids[group].length; i++) {
                 clearTimeout(timeout_ids[group][i]);
@@ -207,34 +205,34 @@ KM.json_request = function(url, json, callback, onerror){
                             } catch (e) {
                                 console.log(e);
                             }
-                        return false;                        
+                        return false;
                     }
-                    if (callback) 
+                    if (callback)
                         try {
                             callback(jres.result);
                         } catch (e) {
                             console.log(e);
                             return false;
                         }
-                        
+
                     return true;
 				} catch (e) {
                     console.log(e);
-                    if (onerror) 
+                    if (onerror)
                         try {
                             onerror();
                         } catch (e) {
                             console.log(e);
                         }
                     return false;
-                }    
+                }
 			}
 		}
-	}	
+	}
 	xmlHttp.send(json);
 }
 
-KM.load_settings = function () { 
+KM.load_settings = function () {
     function init_interface() {
         KM.browser.set_title();
         KM.background_button_clicked(KM.config.misc.color_select);
@@ -243,27 +241,27 @@ KM.load_settings = function () {
         KM.enable_camera_buttons();
         if (KM.config.misc.hide_button_bar) {
             KM.toggle_button_bar();
-        }            
+        }
         KM.enable_function_buttons(1); // select 'live' mode
         KM.function_button_clicked(1); // start 'live' mode
-        
+
     }
-    
-    function get_settings() {        
+
+    function get_settings() {
         function retry() {
             KM.kill_timeout_ids(KM.GET_DATA);
             KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {get_settings(); }, 5000));
         }
-        
+
         function callback(obj_data) {
             KM.config = obj_data;
             set_settings();
             init_interface();
         }
-    
+
         var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {read: '1'} };
         KM.json_request("/ajax/config", jreq, callback, onerror=retry);
-    }    
+    }
 
     function set_settings() {
         var user_agent = navigator.userAgent.toLowerCase();
@@ -276,9 +274,9 @@ KM.load_settings = function () {
         user_agent.search('ipod') > -1 || user_agent.search('android') > -1 || user_agent.search('ipad') > -1 ||
         user_agent.search('iemobile') > -1 ||  user_agent.search('blackberry') > -1);
     };
-    
+
     get_settings();
-    
+
     return {
         init: get_settings
     }
@@ -469,14 +467,14 @@ KM.menu_bar_buttons.construct_camera_sec = function() {
     //for (var f in KM.config.feeds) {
     for (var f=1;f<=KM.max_feed();f++) {
         if ((f % 4) == 0)
-            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n</div>';							
+            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n</div>';
         else if 	((f % 4) == 1)
-            camsel+='<div class="button_line">\n<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>';							
+            camsel+='<div class="button_line">\n<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>';
         else
-            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n';							
-    }			
-    f=f-1;			
-    if ((f % 4) != 0) 
+            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n';
+    }
+    f=f-1;
+    if ((f % 4) != 0)
         camsel+='</div>';
     document.getElementById('camera_sec').innerHTML = camsel;
 };
@@ -506,7 +504,7 @@ KM.enable_camera_buttons = function () {
 };
 
 KM.update_camera_buttons = KM.enable_camera_buttons;
-    
+
 KM.disable_camera_buttons = function () {
 
     // A function that disables the 16 camera buttons
@@ -567,7 +565,7 @@ KM.blink_camera_func_button = function (button) {
 
     if (KM.menu_bar_buttons.camera_sec_enabled) {
         KM.blink_button(document.getElementById('ct' + button));
-        document.getElementById('ct' + button).style.color = KM.RED;        
+        document.getElementById('ct' + button).style.color = KM.RED;
     }
 };
 
@@ -656,12 +654,12 @@ KM.camera_func_button_clicked = function (button) {
             KM.display_live.set_last_camera(button)
             KM.config.display_feeds[1][0] =  button;
             if (KM.config.misc.display_select == 1) {
-                // if '1' change view directly as a special case               
+                // if '1' change view directly as a special case
                 KM.display_live.set_last_camera(0)
                 KM.display_live();
-               
+
             }
-        
+
         }
     }
 };
@@ -685,7 +683,7 @@ KM.function_button_clicked = function (button) {
             case 1: // 'live button'
                 document.onkeydown=null; //stop memory leak
                 KM.enable_display_buttons(KM.config.misc.display_select);
-                KM.enable_camera_buttons();	    
+                KM.enable_camera_buttons();
                 KM.display_live();
                 break;
 
@@ -790,7 +788,7 @@ KM.display_live_ = function () {
     //
     // returns:
     //
-    
+
     var last_camera_select = 0; // the last camera selected
     var latest_events = [];
     var max_streams = 10;
@@ -814,40 +812,40 @@ KM.display_live_ = function () {
             } catch (e) {}
         }
         if (no_feeds) return; // no feeds
-        refresh(KM.session_id.current); 
+        refresh(KM.session_id.current);
     }
-    
+
     function refresh(session_id) {
-        KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls            
-        if (KM.session_id.current === session_id) {              
+        KM.kill_timeout_ids(KM.DISPLAY_LOOP); // free up memory from 'setTimeout' calls
+        if (KM.session_id.current === session_id) {
             update_latest_events(session_id);
             KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {refresh(session_id); }, 1000));
         }
     }
-    
+
     image_loads = function() {
         var loads = {};
-        
+
         function onload(feed) {
             loads[feed] = true;
         }
-        
+
         function onerror(feed) {
             loads[feed] = false;
         }
-        
+
         function is_loaded(feed) {
-            return (loads[feed] === true); 
+            return (loads[feed] === true);
         }
-        
+
         function is_error(feed) {
-            return (loads[feed] === false); 
+            return (loads[feed] === false);
         }
-        
+
         function reset(feed) {
             delete loads[feed];
         }
-        
+
         return {
             onload: onload,
             onerror: onerror,
@@ -856,7 +854,7 @@ KM.display_live_ = function () {
             reset: reset
         }
     }();
-    
+
     function camera_jpeg_clicked(camera) {
 
         // A function that intelligently porcesses a click on camera jpeg 'camera'
@@ -883,12 +881,12 @@ KM.display_live_ = function () {
             KM.config.display_feeds[1][0] = KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
             KM.config.misc.display_select = 1;
             KM.update_display_buttons(1);
-            
+
         }
-       
+
         init();
     };
-    
+
     function init_display_grid(display_select) {
 
         // a closure that calculates and generates the HTML for a display grid of
@@ -902,7 +900,7 @@ KM.display_live_ = function () {
         var total_height = 0;
 
         var html = '';
-        var html_count = 0;
+        var feed_index = 0;
 
         clear_html();
         construct_grid_html(display_select);
@@ -912,7 +910,7 @@ KM.display_live_ = function () {
         function clear_html() {
             // reset the constructed html string and counter
             html = '';
-            html_count = 0;
+            feed_index = 0;
         }
 
 
@@ -931,10 +929,10 @@ KM.display_live_ = function () {
         //
         // expects :
         // 'display_num' ... the cell number
-        // 'left'        ... cells left px
-        // 'right'       ... cells right px
-        // 'width'       ... cells width px
-        // 'height'      ... cells height px
+        // 'left'        ... cells left %
+        // 'right'       ... cells right %
+        // 'width'       ... cells width %
+        // 'height'      ... cells height %
         // 'alt_jpeg'    ... bool, use alt jpegs in P in P mode
         // 'text_left'   ... offset left for text
         // 'text_top'    ... offset top for text
@@ -942,8 +940,8 @@ KM.display_live_ = function () {
         // returns :
         //
 
-        
-        
+
+
         var gcam_jpeg = 'images/gcam.png';
         var bcam_jpeg = 'images/bcam.png';
         if (alt_jpeg === true) {
@@ -960,44 +958,43 @@ KM.display_live_ = function () {
         var jpeg = gcam_jpeg;
         var text = 'No Video';
         var text_color = KM.WHITE;
-        
+
         try {
-            var feed = KM.config.display_feeds[display_num][html_count++];
+            var feed = KM.config.display_feeds[display_num][feed_index++];
             if (!feed || feed>KM.max_feed()) {
                 return;
             }
             if (KM.config.feeds[feed].feed_enabled) {
-                jpeg = KM.get_jpeg(feed);	    
-                text_color = KM.BLUE;	 
+                jpeg = KM.get_jpeg(feed);
+                text_color = KM.BLUE;
                 if (KM.config.feeds[feed].feed_name) {
-                    text = KM.config.feeds[feed].feed_name;                
-                } else {                
+                    text = KM.config.feeds[feed].feed_name;
+                } else {
                     text = 'Cam ' + feed;
                     KM.config.feeds[feed].feed_name = text;
                 }
             }
         } catch (e) {}
-        
+
         text = feed + ' : ' + text;
-        
-        var l = [];        
+
+        var l = [];
+
         l.push('<img id="image_' + feed + '" ');
         l.push('style="left:' + left + '%; ');
         l.push('top:' + top + '%; ');
         l.push('width:' + width + '%; ');
         l.push('height:' + height + '%;" ');
-        l.push('src="' + jpeg + '"; ');        
+        l.push('src="' + jpeg + '"; ');
         l.push('alt="">');
-        
-        l.push('<span id="text_' + feed + '"; ');
-        l.push('style="position:absolute; ');
-        l.push('left:' + (left + text_left) + '%; ');
+
+        l.push('<span id="text_' + feed + '"');
+        l.push('style="left:' + (left + text_left) + '%; ');
         l.push('top:' +  (top + text_top) + '%;');
-        l.push('font-weight: bold;');
         l.push('color:' + text_color  + ';');
         l.push('">' + text + '</span>');
         html += l.join(' ');
-        
+
         }
 
         function construct_grid_html(display_select) {
@@ -1010,7 +1007,7 @@ KM.display_live_ = function () {
             // 1 ... symetrical    1 grid
             // 2 ... symetrical    4 grid
             // 3 ... symetrical    9 grid
-            // 4 ... symetrical   16 grid
+            // 4 ... symetrical   all grid
             // 5 ... asymmetrical  6 grid
             // 6 ... asymmetrical 13 grid
             // 7 ... asymmetrical  8 grid
@@ -1024,15 +1021,18 @@ KM.display_live_ = function () {
         //
 
         var row, col, rows, cols, inner_jpeg_width, inner_jpeg_height,
-        jpeg_width, jpeg_height;
+        jpeg_width, jpeg_height, total_width, total_height;
+
+        total_width = 100;
+        total_height = 100;
 
         switch (display_select) {
         case 1:  // symetrical 1 grid
             rows = 1;
             cols = 1;
 
-            jpeg_width = 99 / cols;
-            jpeg_height = 99 / rows;
+            jpeg_width = total_width / cols;
+            jpeg_height = total_height / rows;
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
                 construct_cell_html(display_select,
@@ -1047,8 +1047,8 @@ KM.display_live_ = function () {
             rows = 2;
             cols = 2;
 
-            jpeg_width = 99 / cols;
-            jpeg_height = 99 / rows;
+            jpeg_width = total_width / cols;
+            jpeg_height = total_height / rows;
 
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
@@ -1064,8 +1064,8 @@ KM.display_live_ = function () {
             rows = 3;
             cols = 3;
 
-            jpeg_width = 99 / cols;
-            jpeg_height = 99 / rows;
+            jpeg_width = total_width / cols;
+            jpeg_height = total_height / rows;
 
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
@@ -1082,8 +1082,8 @@ KM.display_live_ = function () {
             cols = Math.ceil(Math.sqrt(KM.max_feed()));//5;//
             rows = Math.ceil((KM.max_feed())/cols);
 
-            jpeg_width = 99 / cols;
-            jpeg_height = 99 / rows;
+            jpeg_width = total_width / cols;
+            jpeg_height = total_height / rows;
 
             for (row = 0; row < rows; row++) {
             for (col = 0; col < cols; col++) {
@@ -1099,8 +1099,8 @@ KM.display_live_ = function () {
             rows = [0, 1, 2, 2, 2];
             cols = [2, 2, 0, 1, 2];
 
-            jpeg_width = 99 / 3;
-            jpeg_height = 99 / 3;
+            jpeg_width = total_width / 3;
+            jpeg_height = total_height / 3;
 
             construct_cell_html(display_select, left_margin, top_margin,
             (jpeg_width * 2), (jpeg_height * 2));
@@ -1119,8 +1119,8 @@ KM.display_live_ = function () {
             rows = [0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
             cols = [2, 3, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3];
 
-            jpeg_width = 99 / 4;
-            jpeg_height = 99 / 4;
+            jpeg_width = total_width / 4;
+            jpeg_height = total_height / 4;
 
             construct_cell_html(display_select, left_margin, top_margin,
             (jpeg_width * 2), (jpeg_height * 2));
@@ -1139,8 +1139,8 @@ KM.display_live_ = function () {
             rows = [0, 1, 2, 3, 3, 3, 3];
             cols = [3, 3, 3, 0, 1, 2, 3];
 
-            jpeg_width = 99 / 4;
-            jpeg_height = 99 / 4;
+            jpeg_width = total_width / 4;
+            jpeg_height = total_height / 4;
 
             construct_cell_html(display_select, left_margin, top_margin,
             (jpeg_width * 3), (jpeg_height * 3));
@@ -1159,11 +1159,12 @@ KM.display_live_ = function () {
             rows = [0, 0, 1, 1, 2, 2, 3, 3];
             cols = [2, 3, 2, 3, 0, 1, 0, 1];
 
-            jpeg_width = 99 / 4;
-            jpeg_height = 99 / 4;
-            
+            jpeg_width = total_width / 4;
+            jpeg_height = total_height / 4;
+
+
             construct_cell_html(display_select, left_margin, top_margin,
-             (jpeg_width * 2) , (jpeg_height * 2) );
+             (jpeg_width * 2), (jpeg_height * 2) );
 
             for (i = 0; i < 8; i++) {
             row = rows[i];
@@ -1177,12 +1178,12 @@ KM.display_live_ = function () {
             construct_cell_html(display_select,
             left_margin + (jpeg_width * 2),
             top_margin + (jpeg_height * 2),
-            (jpeg_width * 2) , (jpeg_height * 2));
+            (jpeg_width * 2)-left_margin , (jpeg_height * 2)-top_margin);
             break;
 
         case 9:  // P in P 2 grid
-            jpeg_width = 99;
-            jpeg_height = 99;
+            jpeg_width = total_width;
+            jpeg_height = total_height;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
@@ -1199,8 +1200,8 @@ KM.display_live_ = function () {
             break;
 
         case 10:  // P in P 2 grid
-            jpeg_width = 99;
-            jpeg_height = 99;
+            jpeg_width = total_width;
+            jpeg_height = total_height;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
@@ -1217,8 +1218,8 @@ KM.display_live_ = function () {
             break;
 
         case 11:  // P in P 2 grid
-            jpeg_width = 99;
-            jpeg_height = 99;
+            jpeg_width = total_width;
+            jpeg_height = total_height;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
@@ -1235,8 +1236,8 @@ KM.display_live_ = function () {
             break;
 
         case 12:  // P in P 2 grid
-            jpeg_width = 99;
-            jpeg_height = 99;
+            jpeg_width = total_width;
+            jpeg_height = total_height;
 
             inner_jpeg_width = jpeg_width * 0.28;
             inner_jpeg_height = jpeg_height * 0.28;
@@ -1254,27 +1255,27 @@ KM.display_live_ = function () {
         }
         }
     };
-    
-    function update_latest_events(session_id) {        
-        function retry() {            
+
+    function update_latest_events(session_id) {
+        function retry() {
             KM.kill_timeout_ids(KM.DISPLAY_LOOP);
             if (KM.session_id.current === session_id) {
                 KM.add_timeout_id(KM.DISPLAY_LOOP, setTimeout(function () {update_latest_events(); }, 100));
             }
         }
-        
+
         function callback(obj_data) {
             latest_events = obj_data;
             text_refresh();
             update_feeds();
         }
-        
+
         if (KM.session_id.current === session_id) {
             var jreq = {jsonrpc: '2.0', method: 'feeds', id: Math.random()};
             KM.json_request("/ajax/feeds", jreq, callback, onerror=retry);
         }
-    }  
-    
+    }
+
     function text_refresh() {
 
         // A function that refresh the display text colors, 'white' for feed
@@ -1289,7 +1290,7 @@ KM.display_live_ = function () {
         for (var i=0;i<KM.config.display_feeds[KM.config.misc.display_select].length;i++) {
             try {
                 feed = KM.config.display_feeds[KM.config.misc.display_select][i]
-                text_color = KM.WHITE;           
+                text_color = KM.WHITE;
                 if (KM.config.feeds[feed].feed_enabled) {
                     text_color = KM.BLUE;
                     border_color = KM.BLACK;
@@ -1303,11 +1304,11 @@ KM.display_live_ = function () {
             } catch (e) {}
         }
     };
-    
+
     function display_feeds_compare_by_counter(a, b) {
         return update_counter[b] - update_counter[a];
     }
-    
+
     function display_feeds_compare_by_latest(a, b) {
         var a_in = KM.item_in_array(a, latest_events);
         var b_in = KM.item_in_array(b, latest_events);
@@ -1319,37 +1320,37 @@ KM.display_live_ = function () {
             return 1;
         }
     }
-    
+
     function update_feed(feed, feeds_length) {
         var image_feed;
         var fps=KM.config['feeds'][feed].feed_fps;
         var timeout_id=KM.DISPLAY_LOOP+feed;
-        
-        KM.kill_timeout_ids(timeout_id);        
+
+        KM.kill_timeout_ids(timeout_id);
         try {
             image_feed = document.getElementById('image_'+feed);
             if (image_feed === null)
                 return false;
             if (image_feed.onclick === null)
                 image_feed.onclick = function(feed) {return function() {camera_jpeg_clicked(feed)}}(feed);
-                
-            if (KM.config.feeds[feed].feed_enabled){                    
+
+            if (KM.config.feeds[feed].feed_enabled){
                 if (image_feed.onload === null)
                     image_feed.onload = function(feed) {return function() {image_loads.onload(feed)}}(feed);
                 if (image_feed.onerror === null)
                     image_feed.onerror = function(feed) {return function() {image_loads.onerror(feed)}}(feed);
-                
-                
+
+
                /* console.log('error = ' + image_loads.is_error(feed));
                 console.log('update_counter = ' + (update_counter[feed]>=KM.getRandomInt(5,10)));
                 console.log('length = ' + display_feeds_sorted.length);
                 console.log('in_latest = ' + KM.item_in_array(feed, latest_events));
                 console.log('is_loaded = ' + image_loads.is_loaded(feed));
                 console.log('max_counter = ' + (max_counter<1));*/
-                
+
                 /*  Обновление с приоритетами
                     Обновить если:
-                    1) Произошла ошибка загрузки 
+                    1) Произошла ошибка загрузки
                         или
                     2)  а) счетчик обновлений каждой камеры больше случайного значения между 5 и 10 или
                         б) выбран вид одной камеры или
@@ -1358,59 +1359,59 @@ KM.display_live_ = function () {
                     3)  а) изображение загружено и
                         б) счетчик одновременных обновлений меньше 10
                 */
-                if (image_loads.is_error(feed) || 
-                
+                if (image_loads.is_error(feed) ||
+
                    ((update_counter[feed]>=KM.getRandomInt(5,10)) ||
-                   (feeds_length == 1) || 
-                   (KM.item_in_array(feed, latest_events))) && 
-                   
+                   (feeds_length == 1) ||
+                   (KM.item_in_array(feed, latest_events))) &&
+
                    (image_loads.is_loaded(feed) && (stream_counter<max_streams)))  {
-                   
+
                         /*console.log('\n');
                         console.log('UPDATE FEED ' + feed);
                         console.log('\n');*/
                         update_counter[feed] = 0;
                         stream_counter++;
                         image_loads.reset(feed);
-                        image_feed.src=KM.get_jpeg(feed);  
+                        image_feed.src=KM.get_jpeg(feed);
                         if (KM.item_in_array(feed, latest_events))    {
                             KM.add_timeout_id(timeout_id, setTimeout(function () {update_feed(feed, feeds_length); }, 1000/fps));
                         }
-                        
+
                 } else {
                     if (update_counter[feed] !== undefined) {
                         update_counter[feed]++;
                     } else {
                         update_counter[feed] = 1;
                     }
-                    
+
                 }
             }
         } catch (e) {
             console.log(e);
         }
     }
-    
-    function update_feeds() { 
+
+    function update_feeds() {
         var display_feeds_sorted = KM.config.display_feeds[KM.config.misc.display_select].slice(0);
-        
+
         display_feeds_sorted.sort(display_feeds_compare_by_counter).sort(display_feeds_compare_by_latest);
         stream_counter = 0;
-        
+
         /*console.log('display_feeds_b = ' + KM.config.display_feeds[KM.config.misc.display_select]);
         console.log('display_feeds_sorted = ' + display_feeds_sorted);
         console.log('display_feeds_a = ' + KM.config.display_feeds[KM.config.misc.display_select]);*/
-                
-        for (var i=0;i<display_feeds_sorted.length;i++) {    
+
+        for (var i=0;i<display_feeds_sorted.length;i++) {
             var feed = display_feeds_sorted[i];
-            update_feed(feed, display_feeds_sorted.length);    
-        }       
+            update_feed(feed, display_feeds_sorted.length);
+        }
     };
-    
+
     function set_last_camera(last_camera) {
         last_camera_select = last_camera
     }
-    
+
     return {
         init: init,
         set_last_camera: set_last_camera,
@@ -1444,8 +1445,8 @@ KM.display_archive_ = function () {
     var movies =        {};
 
     var display_secs =   0; // the current secs count
-    
-    
+
+
 	function init() {
 
 	// A function that initialises that sets the archive backdrop HTML,
@@ -1460,10 +1461,10 @@ KM.display_archive_ = function () {
         var session_id = KM.session_id.current;
         init_backdrop_html();
         window.onresize=null;
-        update_dates_dbase(session_id);        
+        update_dates_dbase(session_id);
     }
 
-    
+
 
     function init_main_menus(session_id) {
 
@@ -1476,7 +1477,7 @@ KM.display_archive_ = function () {
         //
         // returns:
         //
-        set_null_playback_info();        
+        set_null_playback_info();
 
         document.getElementById('date_select').disabled =   false;
         document.getElementById('camera_select').disabled = false;
@@ -1494,8 +1495,6 @@ KM.display_archive_ = function () {
 	//
 	// returns:
 	//
-    
-    var select_width = 98 / 3;
 
     document.getElementById('main_display').innerHTML = '\
     <div class="title">Kmotion: Archive-><span id="playback_info"></span></div>\
@@ -1527,59 +1526,59 @@ KM.display_archive_ = function () {
 		</div>\
 	</div>';
 
-    }   
-    
-    function update_cams_dbase(date, session_id) {        
+    }
+
+    function update_cams_dbase(date, session_id) {
         function retry() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_cams_dbase(date, session_id); }, 5000));
         }
-        
+
         function callback(obj_data) {
             cameras = obj_data;
             if (cameras !== {}) {
-                populate_camera_dropdown();            
+                populate_camera_dropdown();
                 init_main_menus(session_id);
             }
         }
-    
+
         if (KM.session_id.current === session_id) {
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"feeds", date:date} };
             KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
         }
-    } 
-    
-    function update_dates_dbase(session_id) {        
+    }
+
+    function update_dates_dbase(session_id) {
         function retry() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_dates_dbase(session_id); }, 5000));
         }
-        
+
         function callback(obj_data) {
             dates = obj_data;
             if (dates !== {}) {
-                populate_date_dropdown();            
+                populate_date_dropdown();
             }
         }
-    
+
         if (KM.session_id.current === session_id) {
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"dates"} };
             KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
         }
-    } 
-    
-    function update_movies_dbase(date, camera, session_id) {        
+    }
+
+    function update_movies_dbase(date, camera, session_id) {
         function retry() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_movies_dbase(date, camera, session_id); }, 5000));
         }
-        
+
         function callback(obj_data) {
             movies = obj_data;
             populate_view_dropdown();
             KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(retry, 60000));
         }
-    
+
         if (KM.session_id.current === session_id) {
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {date: date, feed: camera, func:"movies"} };
             KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
@@ -1597,7 +1596,7 @@ KM.display_archive_ = function () {
 	//
 
 	// remove all 'date_select' options
-    
+
         var date_select = document.getElementById('date_select');
         for (var i = date_select.options.length - 1; i > -1; i--) {
             date_select.remove(i);
@@ -1607,7 +1606,7 @@ KM.display_archive_ = function () {
         var new_opt = '', date = '';
         for (var i=0; i<dates.length; i++) {
             var date = dates[i];
-            new_opt = document.createElement('option');	    
+            new_opt = document.createElement('option');
             new_opt.text = date.slice(0, 4) + ' / ' + date.slice(4, 6) + ' / ' + date.slice(6);
             new_opt.value = date;
             try {
@@ -1616,10 +1615,10 @@ KM.display_archive_ = function () {
             catch(ex) {
               date_select.add(new_opt); // IE only
             }
-        }    
+        }
         document.getElementById('date_select').selectedIndex = 0;
         change_date();
-	
+
     }
 
     function populate_camera_dropdown() {
@@ -1636,9 +1635,9 @@ KM.display_archive_ = function () {
         var camera_select = document.getElementById('camera_select');
         var selected_index = camera_select.selectedIndex;
         var selected_feed = parseInt(camera_select.value);
-        if (isNaN(selected_feed)) 
-            selected_feed = KM.config.display_feeds[KM.config.misc.display_select][0];      
-        
+        if (isNaN(selected_feed))
+            selected_feed = KM.config.display_feeds[KM.config.misc.display_select][0];
+
         for (var i = camera_select.options.length - 1; i > -1; i--) {
             camera_select.remove(i);
         }
@@ -1649,13 +1648,13 @@ KM.display_archive_ = function () {
         for (var feed in cameras) {
             new_opt = document.createElement('option');
             new_opt.text = KM.pad_out2(feed) + ' : ' + cameras[feed]['title'];
-            new_opt.value = feed;		
+            new_opt.value = feed;
             try {
               camera_select.add(new_opt, null); // standards compliant; doesn't work in IE
             }
             catch(ex) {
               camera_select.add(new_opt); // IE only
-            }        
+            }
         }
         if (!isNaN(selected_feed)) {
             camera_select.value = selected_feed;
@@ -1678,8 +1677,8 @@ KM.display_archive_ = function () {
         var view_select = document.getElementById('view_select');
         var selected_index = view_select.selectedIndex;
         var selected_value = parseInt(view_select.value);
-        
-        
+
+
         for (var i = view_select.options.length - 1; i > -1; i--) {
             view_select.remove(i);
         }
@@ -1687,11 +1686,11 @@ KM.display_archive_ = function () {
         var movie_enabled =  cameras[document.getElementById('camera_select').value]['movie_flag'];
         var snap_enabled =   cameras[document.getElementById('camera_select').value]['snap_flag'];
         var drop_opts = [];
-        if (movie_enabled) 
+        if (movie_enabled)
             drop_opts.push('Movies');
-        if (snap_enabled) 
+        if (snap_enabled)
             drop_opts.push('Snapshots');
-        
+
 
         for (var i = 0; i < drop_opts.length; i++) {
             var new_opt = document.createElement('option');
@@ -1701,7 +1700,7 @@ KM.display_archive_ = function () {
             try { view_select.add(new_opt, null); } // standards compliant; doesn't work in IE
             catch(e) { view_select.add(new_opt); } // IE only
         }
-        
+
         if (!isNaN(selected_value)) {
             view_select.value = selected_value;
         } else {
@@ -1724,11 +1723,11 @@ KM.display_archive_ = function () {
 
         var html = '', span_html = '', duration = 0;
         var start, end;
-        
+
         var view = parseInt(document.getElementById('view_select').value);
         var date = document.getElementById('date_select').value;
         var camera = document.getElementById('camera_select').value;
-        
+
         if (view == 0) { // movie events
             var hlight = top_10pc();
             for (var i=0; i<movies['movies'].length; i++) {
@@ -1736,7 +1735,7 @@ KM.display_archive_ = function () {
                 end = movies['movies'][i]['end'];
                 span_html = 'onclick="KM.arch_event_clicked(' + i + ')"';
                 duration = end - start;
-                if (KM.item_in_array(duration, hlight)) 
+                if (KM.item_in_array(duration, hlight))
                     span_html += ' style="color:#D90000"';
                 html += '<span ' + span_html + '>';
                 html += KM.secs_hh_mm_ss(start);
@@ -1760,10 +1759,10 @@ KM.display_archive_ = function () {
         document.getElementById('arch_playlist').innerHTML = html;
 
         function top_10pc() {
-            // return a list of the top 10% event durations        
+            // return a list of the top 10% event durations
             var top = [];
             var start, end;
-            
+
             for (var i=0; i<movies['movies'].length; i++) {
                 start = movies['movies'][i]['start'];
                 end = movies['movies'][i]['end'];
@@ -1789,7 +1788,7 @@ KM.display_archive_ = function () {
         var session_id = KM.session_id.current;
         display_secs = 0;
         update_cams_dbase(document.getElementById('date_select').value, session_id);
-		reset_display_html();	
+		reset_display_html();
     };
 
     function change_camera() {
@@ -1817,7 +1816,7 @@ KM.display_archive_ = function () {
         //
         // returns:
         //
-        
+
         fill_events();
         reset_display_html();
     };
@@ -1877,15 +1876,15 @@ KM.display_archive_ = function () {
     function event_clicked(id) {
         var view = parseInt(document.getElementById('view_select').value);
 
-        if (view == 0) {	    
+        if (view == 0) {
             play_movie(id);
 
         } else if (view == 1) {
             play_snap(id);
         }
-        
+
     }
-    
+
     function play_movie(movie_id) {
 
         // A function that plays the archive forward. If 'from_secs' is
@@ -1905,12 +1904,12 @@ KM.display_archive_ = function () {
             playlist_hlight(movie_id);
             display_secs = movies['movies'][movie_id]['start'];
             if (!document.getElementById('html5player')) {
-                reset_display_html(); 
+                reset_display_html();
             }
-            build_video_player(movie_id);        	    
+            build_video_player(movie_id);
         }
     }
-    
+
     function play_snap(snap_id) {
         KM.session_id.current++;
         reset_display_html();
@@ -1930,10 +1929,10 @@ KM.display_archive_ = function () {
         //
         // returns :
         //
-    
+
 	    // generate the troublesome movie object
 	    var date = document.getElementById('date_select').value;
-	    var camera = document.getElementById('camera_select').value;	    
+	    var camera = document.getElementById('camera_select').value;
 	    var name = movies['movies'][movie_id]['file'];
         var file_ext = name.substr(name.lastIndexOf('.'));
         var start = movies['movies'][movie_id]['start'];
@@ -1944,16 +1943,16 @@ KM.display_archive_ = function () {
         if (!html5player) {
             document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
         }
-		
+
 		KM.videoPlayer.set_movie_duration(end-start);
 		KM.videoPlayer.set_cur_event_secs(start);
 		KM.videoPlayer.set_next_movie(next_id);
-		
+
 		update_playback_info(start);
 
-		
+
 		switch (file_ext) {
-                    
+
 		case '.swf':
 			document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
 			document.getElementById('player_obj').innerHTML = "<p><a href=\""+document.URL+name+"\" target='_blank'>DOWNLOAD: "+name.split(/(\\|\/)/g).pop()+"</a></p>";
@@ -1964,54 +1963,54 @@ KM.display_archive_ = function () {
 			swfobject.embedSWF(name, 'player_obj', '100%', '100%', '9.124.0', 'expressInstall.swf', flashvars, fparams, fattributes);
 			movie_id = document.getElementById('player_obj');
 			break;
-			
-		default:              
+
+		default:
             if (!html5player) {
                 var rate = document.getElementById('playback_rate').value;
                 KM.videoPlayer.set_video_player({
-                    id:'player_obj', 
-                    src: name, 
-                    width: '100%', 
-                    height: '100%', 
+                    id:'player_obj',
+                    src: name,
+                    width: '100%',
+                    height: '100%',
                     config: {
-                        autoplay:true, 
-                        controls:true, 
-                        muted:true, 
+                        autoplay:true,
+                        controls:true,
+                        muted:true,
                         playbackRate:rate
                     }
                 });
                 html5player = document.getElementById('html5player');
-                if (html5player) {                    
-                    html5player.onloadeddata=html5VideoLoaded;				
+                if (html5player) {
+                    html5player.onloadeddata=html5VideoLoaded;
                     html5player.onseeked=html5VideoScrolled;
                     html5player.ontimeupdate=html5VideoProgress;
                     html5player.onended=html5VideoFinished;
                     html5player.onclick=html5playerPlayPause;
                     html5player = null;
-                } 			
+                }
             } else {
                 html5player.src = name;
             }
-            
-			break;		
+
+			break;
 		}
     }
-    
+
     snap_player = function() {
-    
-        var session_id;        
+
+        var session_id;
         var fps = 1;
         var player;
         var snap = new Image();
         var snap_id = -1;
         var direct = 1;
         var delay = 1000;
-        var time = 0;      
-        
-        
+        var time = 0;
+
+
         function set_player(params) {
             KM.session_id.current++;
-            player = document.getElementById(params.id);            
+            player = document.getElementById(params.id);
             snap.style.width = params.width;
             snap.style.height = params.height;
             add_events();
@@ -2019,20 +2018,20 @@ KM.display_archive_ = function () {
             snap.onerror = function() {reload()};
             snap.onclick = playpause;
             player.appendChild(snap);
-            snap_id = params.snap_id;            
+            snap_id = params.snap_id;
             playpause();
-        }              
-        
-        function reload() {            
-            if (KM.session_id.current === session_id) { 
-                if (movies['snaps'][snap_id]) {             
+        }
+
+        function reload() {
+            if (KM.session_id.current === session_id) {
+                if (movies['snaps'][snap_id]) {
                     KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, delay-get_delta()));
                 }
             }
         }
-        
+
         function add_events() {
-            document.onkeydown = function(e) {              
+            document.onkeydown = function(e) {
                     switch (e.which) {
                     case 39:
                         snap_id+=1;
@@ -2048,47 +2047,47 @@ KM.display_archive_ = function () {
                     }
                 return false;
                 }
-                
+
             }
-        
-        
+
+
         function get_delta() {
             return Math.min(100, new Date().getTime()-time);
         }
-        
+
         function play() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
-            playlist_hlight(snap_id);     
+            playlist_hlight(snap_id);
             snap.src = movies['snaps'][snap_id]['file'];
             time = new Date().getTime();
             display_secs = movies['snaps'][snap_id]['start'];
-            update_playback_info(display_secs); 
-            progress();            
-            snap_id+=direct;               
+            update_playback_info(display_secs);
+            progress();
+            snap_id+=direct;
         }
-        
+
         function progress() {
-            var rate = document.getElementById('playback_rate');            
+            var rate = document.getElementById('playback_rate');
             if (rate !== null) {
                 direct = Math.sign(rate.value);
                 fps = Math.abs(rate.value);
             }
-            delay = 1000/fps;           
+            delay = 1000/fps;
         }
-        
+
         function playpause() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             if (KM.session_id.current === session_id) {
-                KM.session_id.current++;                
+                KM.session_id.current++;
             } else {
                 session_id = KM.session_id.current;
                 play();
             }
-        }        
-        
-      
+        }
+
+
         return {
-            set_player: set_player,            
+            set_player: set_player,
             playpause: playpause,
             play: play,
             progress: progress
@@ -2098,7 +2097,7 @@ KM.display_archive_ = function () {
     function reset_display_html() {
         document.getElementById('arch_player').innerHTML = '';
     }
-        
+
     return {
 	init: init,
 	change_date: change_date,
@@ -2134,21 +2133,21 @@ KM.display_logs_ = function () {
     // returns:
     //
 
-    
+
     var events;
     var session_id;
     var downloading_message = '<p style="text-align: center">Downloading Logs ...</p>';
-	
-    
-    function init() {    
+
+
+    function init() {
         set_logs_html();
         window.onresize=null;
         get_kmotion_logs();
     }
-    
-    function set_logs_html() {        
+
+    function set_logs_html() {
         KM.session_id.current++;
-        session_id = KM.session_id.current;      
+        session_id = KM.session_id.current;
 
         document.getElementById('main_display').innerHTML = '\
         <div class="title">kmotion: Logs</div>\
@@ -2191,43 +2190,43 @@ KM.display_logs_ = function () {
             return event+'<br>';
         }
     }
-    
+
     function callback(obj_data) {
-        events = obj_data;            
+        events = obj_data;
         show_logs();
     }
-    
-    function get_kmotion_logs() {        
+
+    function get_kmotion_logs() {
         function retry() {
             KM.kill_timeout_ids(KM.LOGS);
             if (session_id === KM.session_id.current) {
                 KM.add_timeout_id(KM.LOGS, setTimeout(function () {get_kmotion_logs(); }, 5000));
             }
         }
-        
+
         if (session_id === KM.session_id.current) {
             document.getElementById('config_html').innerHTML = downloading_message;
             document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Kmotion logs";
             events = null;
-    
+
             var jreq = {jsonrpc: '2.0', method: 'logs', id: Math.random()};
             KM.json_request("/ajax/logs", jreq, callback, onerror=retry);
         }
-    }  
-    
-    function get_motion_logs() {        
+    }
+
+    function get_motion_logs() {
         function retry() {
             KM.kill_timeout_ids(KM.LOGS);
             if (session_id === KM.session_id.current) {
                 KM.add_timeout_id(KM.LOGS, setTimeout(function () {get_kmotion_outs(); }, 5000));
             }
         }
-        
+
         if (session_id === KM.session_id.current) {
             document.getElementById('config_html').innerHTML = downloading_message;
             document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Motion logs";
             events = null;
-    
+
             var jreq = {jsonrpc: '2.0', method: 'outs', id: Math.random()};
             KM.json_request("/ajax/outs", jreq, callback, onerror=retry);
         }
@@ -2265,25 +2264,25 @@ KM.display_config_ = function () {
     var cur_mask = ''; // the current expanded mask string
     var error_lines = []; // the error string
     var error_search_str = /failed|error/i;
-    
+
     function init() {
         KM.session_id.current++;
         conf_config_track.init();
-        conf_backdrop_html();        
+        conf_backdrop_html();
     }
-    
+
     conf_config_track = function() {
 
         // A closure that tracks changes to the local config and when needed
         // synchronises these changes with 'www_rc' and requests config reloads.
-        
-        var config = {};    
+
+        var config = {};
         var save_display = false;
-        
+
         function init() {
             config = JSON.parse(JSON.stringify(KM.config));
         }
-        
+
         function reset() {
             save_display = false;
             for (var f in KM.config.feeds) {
@@ -2291,15 +2290,15 @@ KM.display_config_ = function () {
             }
             init();
         }
-        
+
         function saveDisplay(state) {
             save_display = state;
         }
-        
+
         function get_saveDisplay() {
             return save_display;
         }
-        
+
         function sync(conf) {
             if (save_display) {
                 delete(config['display_feeds']);
@@ -2318,27 +2317,27 @@ KM.display_config_ = function () {
                         var tk = diffObjects(obj1[key], obj2[key]);
                         if (tk !== null)
                             temp[key] = tk;
-                    }                          
+                    }
                 } else {
-                    var temp = JSON.parse(JSON.stringify(obj1)); 
+                    var temp = JSON.parse(JSON.stringify(obj1));
                 }
                 return temp;
             };
-            
+
             var diff = diffObjects(KM.config, config);
-            var jdata = JSON.stringify(diff);            
+            var jdata = JSON.stringify(diff);
             var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {write: 1, jdata: jdata}};
-            KM.json_request("/ajax/config", jreq, reset);            
+            KM.json_request("/ajax/config", jreq, reset);
         }
-        
+
         return {
-            init: init,   
+            init: init,
             saveDisplay: saveDisplay,
             get_saveDisplay: get_saveDisplay,
             sync: sync
         }
     }();
-    
+
     function conf_backdrop_html() {
 
         // A function that generates the config backdrop HTML including the top
@@ -2353,7 +2352,7 @@ KM.display_config_ = function () {
             cur_camera = feed;
             break;
         };
-        
+
         document.getElementById('main_display').innerHTML = '\
         <div class="title">kmotion: Config</div>\
         <div class="divider">\
@@ -2367,12 +2366,12 @@ KM.display_config_ = function () {
             </div>\
             <div id="config_html"></div>\
         </div>';
-        
-        
+
+
         conf_misc_html();
     };
-    
-    
+
+
     /* ****************************************************************************
     Config display - Misc config screen
 
@@ -2395,7 +2394,7 @@ KM.display_config_ = function () {
         //
         // returns:
         //
-        
+
         document.getElementById('config_html').innerHTML = '<br />\
                 <div class="config_group_margin">\
                     <div class="config_tick_margin">\
@@ -2423,7 +2422,7 @@ KM.display_config_ = function () {
 
         for (var s in KM.config.misc) {
             try {
-                if (typeof(KM.config.misc[s]) === "boolean") {                
+                if (typeof(KM.config.misc[s]) === "boolean") {
                     document.getElementById(s).checked = KM.config.misc[s];
                 } else {
                     document.getElementById(s).value = KM.config.misc[s];
@@ -2434,18 +2433,18 @@ KM.display_config_ = function () {
         document.getElementById('save_display').checked = conf_config_track.get_saveDisplay();
         document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Misc";
     };
-    
-    function conf_save_display() {		
-		
-        // A function that saves the display select and color select		
-        //		
-        // expects:		
-        //		
-        // returns:		
-        //		
-            
-            
-        conf_misc_highlight();		
+
+    function conf_save_display() {
+
+        // A function that saves the display select and color select
+        //
+        // expects:
+        //
+        // returns:
+        //
+
+
+        conf_misc_highlight();
     };
 
     function conf_misc_highlight() {
@@ -2458,10 +2457,10 @@ KM.display_config_ = function () {
         //
         document.getElementById('misc_button').style.fontWeight = 'bold';
         document.getElementById('misc_button').style.color = KM.BLUE;
-        
+
         conf_misc_update();
     };
-    
+
     function conf_misc_update() {
         for (var s in KM.config.misc) {
             try {
@@ -2481,7 +2480,7 @@ KM.display_config_ = function () {
         }
         conf_config_track.saveDisplay(document.getElementById('save_display').checked);
     };
-    
+
     function conf_apply() {
 
         // A function that checks and applys the changes
@@ -2490,8 +2489,8 @@ KM.display_config_ = function () {
         //
         // returns:
         //
-          
-        conf_config_track.sync();    
+
+        conf_config_track.sync();
         KM.blink_button(document.getElementById('conf_apply'), conf_backdrop_html);
         //KM.conf_backdrop_html();
     };
@@ -2572,7 +2571,7 @@ KM.display_config_ = function () {
                 <div class="config_text">\
                   <select style="width:190px" id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
                     for (var i=0;i<KM.max_feed();i++) {
-                        html_str+='<option value="'+i+'">/dev/video'+i+'</option>';			
+                        html_str+='<option value="'+i+'">/dev/video'+i+'</option>';
                     };
                     html_str+='<option value="-1">Network Cam</option></select>\
                   </select>\
@@ -2632,11 +2631,11 @@ KM.display_config_ = function () {
                 <div class="config_text">Quality of snapshots: <input type="text" id="feed_quality" size="3" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;">%</span></div>\
                 <br /><hr/>\
                 </div><br />';
-        
+
 
         if (KM.config.feeds[cur_camera].feed_enabled) {
             html_str = html_str.replace(/disabled/g, '');
-            html_str = html_str.replace(/gcam.png/, 'bcam.png');            
+            html_str = html_str.replace(/gcam.png/, 'bcam.png');
         }
         document.getElementById('config_html').innerHTML = html_str;
 
@@ -2669,10 +2668,10 @@ KM.display_config_ = function () {
                 } else {
                     document.getElementById(s).value = KM.config.feeds[cur_camera][s];
                 }
-                
+
             } catch (e) {}
         }
-        
+
 
         // reposition the masks
         var origin_y = document.getElementById('image').offsetTop;
@@ -2802,7 +2801,7 @@ KM.display_config_ = function () {
         }
         // have to generate new mask on feed enabled
     };
-    
+
     function conf_reboot_camera(camera) {
         conf_feed_highlight();
         KM.config.feeds[camera]['reboot_camera'] = document.getElementById('reboot_camera').checked;
@@ -2828,7 +2827,7 @@ KM.display_config_ = function () {
             document.getElementById('feed_url').disabled = true;
             document.getElementById('feed_proxy').disabled = true;
             document.getElementById('feed_lgn_name').disabled = true;
-            document.getElementById('feed_lgn_pw').disabled = true;    
+            document.getElementById('feed_lgn_pw').disabled = true;
         }
         conf_feed_highlight()
     };
@@ -2844,23 +2843,23 @@ KM.display_config_ = function () {
 
         KM.session_id.current++; // needed to kill updates
         for (var s in KM.config.feeds[cur_camera]) {
-            try {   
+            try {
                 if (s != 'feed_enabled')
                     document.getElementById(s).disabled = true;
             } catch (e) {}
         }
 
-        var ids = ['mask_all' , 'mask_invert', 'mask_none'];       
+        var ids = ['mask_all' , 'mask_invert', 'mask_none'];
         for (var i = 0; i < ids.length; i++) {
              try {
                  document.getElementById(ids[i]).disabled = true;
              } catch (e) {}
         }
-        
+
         for (var i = 1; i < 226; i++) {
             try {
                 document.getElementById('mask_img_' + (i)).src = 'images/mask_trans.png'
-            } catch (e) {}		
+            } catch (e) {}
         }
         try {
             document.getElementById('image').src = 'images/gcam.png';
@@ -2877,22 +2876,22 @@ KM.display_config_ = function () {
         //
 
         conf_live_feed_daemon(KM.session_id.current, cur_camera);
-        
+
         for (var s in KM.config.feeds[cur_camera]) {
-            try {  
+            try {
                 if (s != 'feed_enabled')
                     document.getElementById(s).disabled = false;
             } catch (e) {}
         }
 
-        var ids = ['mask_all' , 'mask_invert', 'mask_none'];       
+        var ids = ['mask_all' , 'mask_invert', 'mask_none'];
         for (var i = 0; i < ids.length; i++) {
              try {
                  document.getElementById(ids[i]).disabled = false;
              } catch (e) {}
         }
-        
-        conf_feed_net_highlight();	
+
+        conf_feed_net_highlight();
         document.getElementById('image').src = 'images/bcam.png';
         // if enabled show the mask
         for (var i = 0; i < 225; i++) {
@@ -2912,7 +2911,7 @@ KM.display_config_ = function () {
         //
 
         document.getElementById('feed_button').style.fontWeight = 'bold';
-        document.getElementById('feed_button').style.color = KM.BLUE;    
+        document.getElementById('feed_button').style.color = KM.BLUE;
 
         conf_feed_update();
     };
@@ -2933,7 +2932,7 @@ KM.display_config_ = function () {
                     KM.config.feeds[cur_camera][s] = document.getElementById(s).value;
                 }
             } catch (e) {}
-        }	
+        }
 
         if (KM.config.feeds[cur_camera].feed_mask) {
             var tmp = '';
@@ -2958,11 +2957,11 @@ KM.display_config_ = function () {
         if (isNaN(height)) height = 0;
         height = parseInt(height / 16) * 16;
         if (KM.config.feeds[cur_camera].feed_height !== height) {
-            // if the image size changes, change the mask        
+            // if the image size changes, change the mask
             KM.config.feeds[cur_camera].feed_height = height;
         }
         // feed value back to gui in case parseInt changes it
-        document.getElementById('feed_height').value = height;      
+        document.getElementById('feed_height').value = height;
     };
 
     function conf_live_feed_daemon(session_id, feed) {
@@ -2978,17 +2977,17 @@ KM.display_config_ = function () {
 
         refresh(session_id, feed);
 
-        function refresh(session_id, feed) {      
+        function refresh(session_id, feed) {
             KM.kill_timeout_ids(KM.CONFIG_LOOP); // free up memory from 'setTimeout' calls
             if (KM.session_id.current === session_id) {
                 try {
                     document.getElementById('image').src = KM.get_jpeg(feed);
                     KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {refresh(session_id, feed); }, 1000));
-                } catch (e) {}                      
+                } catch (e) {}
             }
         }
     };
-    
+
 
     /* ****************************************************************************
     Config display - Load screen
@@ -3011,11 +3010,11 @@ KM.display_config_ = function () {
         // returns:
         //
 
-        var session_id = KM.session_id.current;	    
+        var session_id = KM.session_id.current;
         var BAR_OK    = '#00FF00';
         var BAR_ALERT = '#FF0000';
-        
-        var config_html = document.getElementById('config_html');	
+
+        var config_html = document.getElementById('config_html');
         var MAX_PX = config_html.clientWidth*0.9;
         var dbase = {}
 
@@ -3059,7 +3058,7 @@ KM.display_config_ = function () {
 
         '<div id="swap_title" class="config_text_center">' +
             'Swap' +
-        '</div>' +	
+        '</div>' +
 
         create_bar('Swap', 10) +
         '<br />';
@@ -3087,7 +3086,7 @@ KM.display_config_ = function () {
                     '<div id="bar_fground' + bar_number + '" class="bar_fground" style="background-color:' + BAR_OK + ';">' +
                     '</div>' +
                 '</div>';
-            }            
+            }
         }
 
 
@@ -3168,27 +3167,27 @@ KM.display_config_ = function () {
                 document.getElementById('bar_fground10').style.backgroundColor = BAR_OK;
             }
         }
-        
-        function rolling_update() {        
+
+        function rolling_update() {
             function callback(obj_data) {
                 dbase = obj_data;
                 update_text();
                 update_bars();
                 reload();
             }
-            
+
             function reload() {
                 KM.kill_timeout_ids(KM.CONFIG_LOOP);
-                dbase = null;                
+                dbase = null;
                 KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {rolling_update(); }, 2000));
             }
-            
-            if (KM.session_id.current === session_id) { 
+
+            if (KM.session_id.current === session_id) {
                 var jreq = {jsonrpc: '2.0', method: 'loads', id: Math.random()};
                 KM.json_request("/ajax/loads", jreq, callback);
             }
-            
-        } 
+
+        }
 
         rolling_update();
     };
@@ -3201,8 +3200,8 @@ KM.display_config_ = function () {
         //
         // returns:
         //
-        
-       
+
+
         KM.session_id.current++;
         conf_load_html();
         document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Server load";
@@ -3216,14 +3215,14 @@ KM.display_config_ = function () {
         conf_feed_html: conf_feed_html,
         conf_apply: conf_apply,
         conf_feed_change: conf_feed_change,
-        conf_feed_enabled: conf_feed_enabled,   
-        conf_reboot_camera: conf_reboot_camera, 
+        conf_feed_enabled: conf_feed_enabled,
+        conf_reboot_camera: conf_reboot_camera,
         conf_feed_highlight: conf_feed_highlight,
-        conf_feed_net_highlight: conf_feed_net_highlight,        
+        conf_feed_net_highlight: conf_feed_net_highlight,
         conf_toggle_feed_mask: conf_toggle_feed_mask,
         conf_feed_mask_button: conf_feed_mask_button,
     }
-    
+
 
 }();
 
@@ -3257,10 +3256,10 @@ KM.blink_button = function(button, callback) {
         button.style.color = c;
         if (callback !== undefined) {
             callback();
-        }        
+        }
     }
     KM.add_timeout_id(KM.BUTTON_BLINK, setTimeout(function() {restore_button();}, 250));
-    
+
 };
 
 
@@ -3272,27 +3271,27 @@ KM.videoPlayer = function() {
     var next_movie=0;
     var cur_event_secs=0;
     var current_play_accel=1;
-    
+
     function set_cur_event_secs(secs) {
         cur_event_secs = secs;
     }
-    
+
     function set_next_movie(movie_id) {
         next_movie = movie_id;
     }
-    
+
     function set_movie_duration(dur) {
         movie_duration = dur;
     }
-    
+
     function get_time() {
         return tm;
     }
-    
+
     function set_play_accel(accel) {
         current_play_accel = accel;
     }
-    
+
     function ktVideoProgress(time) {
     // вызывается каждую секунду проигрывания видео
         tm=parseInt(time,10);
@@ -3303,37 +3302,37 @@ KM.videoPlayer = function() {
         }
         KM.update_playback_info(cur_event_secs);
     }
-    
+
     function ktVideoFinished() {
         tm=0;
         KM.arch_event_clicked(next_movie);
     }
-    
+
     function ktVideoScrolled(time) {
     // вызовется при перемотке видео
         tm=parseInt(time,10);
         KM.update_playback_info(cur_event_secs);
     }
-    
+
     function ktVideoStarted() {
     // вызовется при нажатии на кнопку play
         paused=false;
     }
-    
+
     function ktVideoPaused() {
     // вызовется при нажатии на кнопку pause
         paused=true;
     }
-    
+
     function ktVideoStopped() {
     // вызовется при нажатии на кнопку stop
         paused=true;
-    }   
+    }
 
     function ktPlayerLoaded() {
         tm=0;
         document.onkeydown = function(e) {
-            if (document.getElementById('flashplayer')) {			
+            if (document.getElementById('flashplayer')) {
                 var flashplayer=document.getElementById('flashplayer');
                 switch (e.which) {
                 case 39:
@@ -3345,7 +3344,7 @@ KM.videoPlayer = function() {
                     break;
                 case 37:
                     if (flashplayer['jsScroll']) {
-                        tm-=1;	
+                        tm-=1;
                         if (tm>=1)
                             flashplayer.jsScroll(tm);
                     }
@@ -3371,19 +3370,19 @@ KM.videoPlayer = function() {
             return false;
         }
     }
-    
+
     function html5VideoProgress() {
         if (document.getElementById('html5player')) {
             var html5player=document.getElementById('html5player');
-            
+
             var rate = document.getElementById('playback_rate').value;
             html5player.playbackRate=rate;
             tm=html5player.currentTime;
             KM.update_playback_info(cur_event_secs);
             html5player=null;
-        }	
+        }
     }
-    
+
     function html5VideoScrolled() {
         if (document.getElementById('html5player')) {
             var html5player=document.getElementById('html5player');
@@ -3392,12 +3391,12 @@ KM.videoPlayer = function() {
             html5player=null;
         }
     }
-    
+
     function html5VideoFinished() {
         tm=0;
-        KM.arch_event_clicked(next_movie);        
+        KM.arch_event_clicked(next_movie);
     }
-    
+
     function html5playerPlayPause() {
         if (document.getElementById('html5player')) {
             var html5player=document.getElementById('html5player');
@@ -3406,13 +3405,13 @@ KM.videoPlayer = function() {
             else
                 html5player.pause();
             html5player=null;
-        }	
+        }
     }
-    
+
     function html5VideoLoaded() {
         document.onkeydown = function(e) {
             if (document.getElementById('html5player')) {
-                var html5player=document.getElementById('html5player'); 
+                var html5player=document.getElementById('html5player');
                 switch (e.which) {
                 case 39:
                     tm+=1;
@@ -3435,7 +3434,7 @@ KM.videoPlayer = function() {
             return false;
         }
     }
-    
+
     function set_video_player(params) {
 		function getFileExtension(filename) {
 			var ext = /^.+\.([^.]+)$/.exec(filename);
@@ -3517,7 +3516,7 @@ KM.videoPlayer = function() {
 					+ '" height="'
 					+ params.height
                     + '"</video>';
-            
+
 			var html5player = document.getElementById('html5player');
             for (var key in params.config) {
                 if (params.config.hasOwnProperty(key))
@@ -3568,9 +3567,9 @@ KM.videoPlayer = function() {
 					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
 		}
 	}
-    
+
     ///////////////////EXPORT METHODS//////////////////////////////
-    
+
     return {
         set_video_player: set_video_player,
         set_cur_event_secs: set_cur_event_secs,
@@ -3578,7 +3577,7 @@ KM.videoPlayer = function() {
         set_movie_duration: set_movie_duration,
         get_time: get_time,
         set_play_accel: set_play_accel,
-        
+
         ///////////////////FLASHPLAYER EVENTS//////////////////////////////
 
         ktVideoProgress: ktVideoProgress,
@@ -3595,7 +3594,7 @@ KM.videoPlayer = function() {
         html5VideoScrolled: html5VideoScrolled,
         html5VideoFinished: html5VideoFinished,
         html5playerPlayPause: html5playerPlayPause,
-        html5VideoLoaded: html5VideoLoaded 
+        html5VideoLoaded: html5VideoLoaded
     }
 }();
 

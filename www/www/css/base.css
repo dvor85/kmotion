@@ -113,15 +113,14 @@ Button bar section
 
 #button_bar {
 	position: absolute; 
-	top: 0px;
-	right: 0px;
-	bottom: 0px; 
-	width: 163px;	
-	margin: 6px;	
+	top: 6px;
+	right: 6px;
+	bottom: 6px; 
+	width: 167px;	
 	border: 2px solid;
 	border-left: 0px;
 	border-color: #C1C1C1;
-	padding: 2px;
+	padding: 0px;
 	border-bottom:2px solid #C1C1C1;
 	overflow-y:auto;
     overflow-x: hidden;
@@ -228,7 +227,7 @@ ARCHIVE
 	bottom: 0px;
 	left: 0px;
 	top: 40px;
-	right: 8px;
+	right: 0px;
 	padding: 0px;
 	position: absolute;
 }
@@ -332,22 +331,27 @@ Main display section
 
 #main_display {
 	position: absolute; 
-	left: 0px; 
-	top: 0px; 
-	right: 178px; 
-	bottom: 0px;	
-	margin: 6px;	
+	left: 6px; 
+	top: 6px; 
+	right: 185px; 
+	bottom: 6px;	
 	margin-right: 0px;	
 	border: 2px solid #C1C1C1;
 	border-right: 0px;	
-	padding: 2px;	
+	padding: 0px;	
 	color: #C1C1C1;	
-    cursor: default;
+    cursor: default;    
 }
 
 #main_display img[id^='image_'] {
     position:  absolute;
-    border: 3px solid #000;
+    box-sizing: border-box;
+    padding: 1px;    
+}
+
+#main_display span[id^='text_'] {
+    position:  absolute;    
+    font-weight: bold;   
 }
 
 #main_display .title { 
@@ -445,9 +449,9 @@ Main display section - CSS specific to 'config' - General
 	overflow-y:auto;
 	overflow-x:hidden;
 	position:absolute;
-    top: 30px;
-    bottom: 5px;
-    right: 10px;
+    top: 20px;
+    bottom: 0px;
+    right: 0px;
     left: 0px;
 	
 }
