@@ -127,12 +127,6 @@ class InitMotion:
     def gen_motion_conf(self):
         """
         Generates the motion.conf file from www_rc and the virtual motion conf files
-
-        args    : kmotion_dir ... the 'root' directory of kmotion
-                  feed_list ...   a list of enabled feeds
-                  ramdisk_dir ... the ramdisk directory
-        excepts :
-        return  : none
         """
 
         with open('%s/core/motion_conf/motion.conf' % self.kmotion_dir, 'w') as f_obj1:
@@ -146,7 +140,17 @@ class InitMotion:
 # 'default' section
 # ------------------------------------------------------------------------------
 
+daemon off
 quiet on
+control_port 8080
+control_localhost on
+text_right %Y-%m-%d\\n%T
+text_left CAMERA %t
+max_mpeg_time 0
+noise_level 32
+noise_tune off
+despeckle EedDl
+
 
 # ------------------------------------------------------------------------------
 # 'user' section from 'virtual_motion_conf/motion.conf'
@@ -162,16 +166,6 @@ quiet on
             else:
                 print >> f_obj1, user_conf
 
-            print >> f_obj1, '''
-# ------------------------------------------------------------------------------
-# 'override' section
-# ------------------------------------------------------------------------------
-
-daemon off
-control_port 8080
-control_localhost on
-'''
-
             for feed in self.feed_list:
                 print >> f_obj1, 'thread %s/core/motion_conf/thread%02i.conf\n' % (self.kmotion_dir, feed)
 
@@ -179,13 +173,6 @@ control_localhost on
         """
         Generates the thread??.conf files from www_rc and the virtual motion conf
         files
-
-        args    : kmotion_dir ...      the 'root' directory of kmotion
-                  feed_list ...        a list of enabled feeds
-                  ramdisk_dir ...      the ram disk directory
-                  images_dbase_dir ... the images dbase directory
-        excepts :
-        return  : none
         """
 
         for feed in self.feed_list:
@@ -202,7 +189,6 @@ control_localhost on
 gap 2
 pre_capture 1
 post_capture 10
-quality 85
 webcam_localhost off
 '''
                 # pal or ntsc,
@@ -229,16 +215,8 @@ webcam_localhost off
                 else:
                     print >> f_obj1, user_conf
 
-                print >> f_obj1, '''
-# ------------------------------------------------------------------------------
-# 'override' section
-# ------------------------------------------------------------------------------
-
-
-webcam_localhost off
-'''
                 # framerate,
-                fps = self.config['feeds'][feed]['feed_fps']
+                fps = self.config['feeds'][feed].get('feed_fps', 1)
                 if fps < 2:
                     print >> f_obj1, 'minimum_frame_time 1'
                 else:
@@ -248,7 +226,7 @@ webcam_localhost off
                 print >> f_obj1, 'target_dir %s' % self.ramdisk_dir
 
                 # device and input
-                feed_device = self.config['feeds'][feed]['feed_device']
+                feed_device = self.config['feeds'][feed].get('feed_device', -1)
                 if feed_device > -1:  # /dev/video? device
                     print >> f_obj1, 'videodevice /dev/video%s' % feed_device
                     print >> f_obj1, 'input %s' % self.config['feeds'][feed]['feed_input']
@@ -262,8 +240,9 @@ webcam_localhost off
                 print >> f_obj1, 'width %s' % self.config['feeds'][feed]['feed_width']
                 print >> f_obj1, 'height %s' % self.config['feeds'][feed]['feed_height']
 
-                print >> f_obj1, 'threshold %s' % self.config['feeds'][feed]['feed_threshold']
-                print >> f_obj1, 'quality %s' % self.config['feeds'][feed]['feed_quality']
+                print >> f_obj1, 'noise_level %s' % self.config['feeds'][feed].get('feed_noise_level', 32)
+                print >> f_obj1, 'threshold %s' % self.config['feeds'][feed].get('feed_threshold', 300)
+                print >> f_obj1, 'quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
 
                 # show motion box
                 if self.config['feeds'][feed]['feed_show_box']:
@@ -271,7 +250,7 @@ webcam_localhost off
 
                 # always on for feed updates
                 print >> f_obj1, 'output_normal on'
-                print >> f_obj1, 'jpeg_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % (feed)
+                print >> f_obj1, 'jpeg_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % feed
                 print >> f_obj1, 'snapshot_interval 1'
                 print >> f_obj1, 'snapshot_filename %0.2i/%%Y%%m%%d%%H%%M%%S' % feed
 

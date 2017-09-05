@@ -1497,7 +1497,7 @@ KM.display_archive_ = function () {
 	//
 
     document.getElementById('main_display').innerHTML = '\
-    <div class="title">Kmotion: Archive-><span id="playback_info"></span></div>\
+    <div class="title">kmotion: Archive-><span id="playback_info"></span></div>\
     <div id="arch_display">\
 		<div id="config_bar">\
             <select id="date_select" onchange="KM.arch_change_date();" > </select> \
@@ -2348,10 +2348,8 @@ KM.display_config_ = function () {
         // returns:
         //
         KM.session_id.current++;
-        for (var feed in KM.config.feeds) {
-            cur_camera = feed;
-            break;
-        };
+
+        cur_camera = KM.config.display_feeds[KM.config.misc.display_select][0];
 
         document.getElementById('main_display').innerHTML = '\
         <div class="title">kmotion: Config</div>\
@@ -2398,11 +2396,11 @@ KM.display_config_ = function () {
         document.getElementById('config_html').innerHTML = '<br />\
                 <div class="config_group_margin">\
                     <div class="config_tick_margin">\
-                      <input type="checkbox" id="logs_enabled" onclick="KM.conf_misc_highlight();" />Logs button enabled.<br>\
-                      <input type="checkbox" id="archive_enabled" onclick="KM.conf_misc_highlight();" />Archive button enabled.<br>\
+                      <input type="checkbox" id="logs_enabled" onclick="KM.conf_misc_highlight();" />Logs enabled.<br>\
+                      <input type="checkbox" id="archive_enabled" onclick="KM.conf_misc_highlight();" />Archive enabled.<br>\
                     </div>\
                     <div class="config_tick_margin">\
-                        <input type="checkbox" id="config_enabled" onclick="KM.conf_misc_highlight();" />Config button enabled.<br>\
+                        <input type="checkbox" id="config_enabled" onclick="KM.conf_misc_highlight();" />Config enabled.<br>\
                         <input type="checkbox" id="hide_button_bar" onclick="KM.conf_misc_highlight();" />Hide button bar.<br>\
                     </div>\
                 </div>\
@@ -2419,6 +2417,12 @@ KM.display_config_ = function () {
                 <div class="config_text_margin" id="conf_text" >\
                   <input type="button" id="conf_apply" onclick="KM.conf_apply();" value="Apply" />&nbsp;all changes to the local browser configuration and sync with the remote server.\
                </div>';
+               
+        if ((document.getElementById("feed_button").style.color) || 
+            (document.getElementById('misc_button').style.color)) {
+                document.getElementById("conf_apply").style.color = KM.BLUE;
+                document.getElementById("conf_apply").style.fontWeight = 'bold';
+            } 
 
         for (var s in KM.config.misc) {
             try {
@@ -2457,6 +2461,9 @@ KM.display_config_ = function () {
         //
         document.getElementById('misc_button').style.fontWeight = 'bold';
         document.getElementById('misc_button').style.color = KM.BLUE;
+        
+        document.getElementById("conf_apply").style.fontWeight = 'bold';
+        document.getElementById("conf_apply").style.color = KM.BLUE;
 
         conf_misc_update();
     };
@@ -2531,12 +2538,9 @@ KM.display_config_ = function () {
 
         html_str += '<br>' +
 
-        '<div style="float:left; width:370px;">' +
-            '<div class="config_margin_left_20px">' +
-                '<img id="image" ' +
-                'style="width: ' + image_width + 'px; height: ' + image_height +
-                'px;" src="images/gcam.png" alt=""> ' +
-
+        '<div style="float:left; width:370px;">' +  
+                '<div class="config_margin_left_20px">' +        
+                '<img id="feedimage" src="images/gcam.png" alt=""> ' +
                 '<input type="button" id="mask_all" style="width:115px;"' +
                 'OnClick="KM.conf_feed_mask_button(1);" value="Mask All" disabled>' +
                 '<input type="button" id="mask_invert" style="width:115px;" ' +
@@ -2548,15 +2552,17 @@ KM.display_config_ = function () {
         '</div>' +
 
          '<div class="config_tick_margin">' +
-         '<div  class="config_text_margin">' +
-            '<select style="width:190px;" id="feed_camera" onchange="KM.conf_feed_change();">';
+         '<div  class="config_tick_margin">' +
+            '<select  id="feed_camera" onchange="KM.conf_feed_change();">';
             for (var f in KM.config.feeds) {
                 html_str+='<option value="'+f+'">'+KM.config.feeds[f].feed_name+'</option>';
             };
             html_str+='</select>\
-                        <input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />Enable camera&nbsp; \
-                        <input type="checkbox" id="reboot_camera" onclick="KM.conf_reboot_camera('+cur_camera+');" />Reboot camera \
-                        <br> \<br>\
+                    <input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />Enable camera&nbsp; \
+                    <input type="checkbox" id="reboot_camera" onclick="KM.conf_reboot_camera('+cur_camera+');" />Reboot camera \
+                    <br>\
+                    Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onchange="KM.conf_feed_highlight();" value="'+cur_camera+'"/>\
+                </div>\
                   </div></div><div class="config_tick_margin"> \
                 <br /><hr/> \
                 <div class="config_tick_margin">\
@@ -2569,7 +2575,7 @@ KM.display_config_ = function () {
                 </div>\
                 <div class="config_tick_margin">\
                 <div class="config_text">\
-                  <select style="width:190px" id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
+                  <select  id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
                     for (var i=0;i<KM.max_feed();i++) {
                         html_str+='<option value="'+i+'">/dev/video'+i+'</option>';
                     };
@@ -2609,36 +2615,37 @@ KM.display_config_ = function () {
             </div> \
                   <div class="config_text"><input type="text" id="feed_proxy" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
                   <div class="config_text"><input type="password" id="feed_lgn_pw" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
-                  <div class="config_text"><input type="text" id="feed_height" size="4" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;">px</span></div>\
+                  <div class="config_text"><input type="text" id="feed_height" size="4" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" />px</div>\
                   <div class="config_text"><input type="text" id="feed_fps" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
                 </div></div>\
                 <br /><hr />\
+                </div>\
+                \
                 <div class="config_tick_margin">\
-                  <div class="config_text">Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onchange="KM.conf_feed_highlight();" value="'+cur_camera+'"/></div>\
-                </div>\
-                </div>\
-                <br /><hr/>\
-                <div class="config_text_margin">\
                   <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight();" />Enable motion highlighting. (Draw box around detected motion)\
                 </div>\
                 <br /><hr/>\
-                <div class="config_text_margin">\
+                <div class="config_tick_margin">\
                   <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight();" />Enable snapshot mode. Record an image in time lapse mode with a pause between images.\
-                </div>\
-                <div class="config_text_margin" style="width:412px;">\
-                  of : <input type="text" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight();" />Seconds, (300 Seconds recommended)\
-                </div>\
-                <div class="config_text">Quality of snapshots: <input type="text" id="feed_quality" size="3" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" /><span style="color:#818181;font-size: 17px;font-weight: bold;margin-left: 0px;">%</span></div>\
+                </div><br>\
+                <div class="config_tick_margin">\
+                  Sanpshot interval: <input type="text" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight();" />Seconds, (300 Seconds recommended)\
+                </div><br>\
+                <div class="config_tick_margin">Quality of snapshots: <input type="text" id="feed_quality" size="3" onchange="KM.conf_feed_highlight();" />%</div>\
                 <br /><hr/>\
                 </div><br />';
 
-
+        
         if (KM.config.feeds[cur_camera].feed_enabled) {
             html_str = html_str.replace(/disabled/g, '');
             html_str = html_str.replace(/gcam.png/, 'bcam.png');
         }
         document.getElementById('config_html').innerHTML = html_str;
-
+        
+        var feedimage = document.getElementById('feedimage');
+        feedimage.width = image_width;
+        feedimage.height = image_height;
+        
         // has to be this messy way to avoid flicker
         //console.log(KM.config.feed_device[cur_camera]);
         if (KM.config.feeds[cur_camera].feed_enabled) {
@@ -2674,8 +2681,8 @@ KM.display_config_ = function () {
 
 
         // reposition the masks
-        var origin_y = document.getElementById('image').offsetTop;
-        var origin_x = document.getElementById('image').offsetLeft;
+        var origin_y = feedimage.offsetTop;
+        var origin_x = feedimage.offsetLeft;
 
         // awkward hacks to keep consistant interface across browsers
         var addit_offset = 0;
@@ -2862,7 +2869,7 @@ KM.display_config_ = function () {
             } catch (e) {}
         }
         try {
-            document.getElementById('image').src = 'images/gcam.png';
+            document.getElementById('feedimage').src = 'images/gcam.png';
         } catch (e) {}
     };
 
@@ -2892,7 +2899,7 @@ KM.display_config_ = function () {
         }
 
         conf_feed_net_highlight();
-        document.getElementById('image').src = 'images/bcam.png';
+        document.getElementById('feedimage').src = 'images/bcam.png';
         // if enabled show the mask
         for (var i = 0; i < 225; i++) {
             if (cur_mask.charAt(i) === '1') {
@@ -2981,7 +2988,7 @@ KM.display_config_ = function () {
             KM.kill_timeout_ids(KM.CONFIG_LOOP); // free up memory from 'setTimeout' calls
             if (KM.session_id.current === session_id) {
                 try {
-                    document.getElementById('image').src = KM.get_jpeg(feed);
+                    document.getElementById('feedimage').src = KM.get_jpeg(feed);
                     KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {refresh(session_id, feed); }, 1000));
                 } catch (e) {}
             }
