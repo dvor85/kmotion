@@ -22,3 +22,8 @@ body {
 	background-color: #505050;
 	color: #C1C1C1; 
 }
+
+#main_display .config_form { 	
+	background-color: #404040;
+	color: #C1C1C1;
+}

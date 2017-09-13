@@ -324,7 +324,6 @@ ARCHIVE
 	background-color: #00ff00;
 }
 
-
 /* *****************************************************************************
 Main display section
 ***************************************************************************** */
@@ -460,8 +459,6 @@ Main display section - CSS specific to 'config' - General
 	margin-left: 20px;
 }
 
-
-
 #main_display .config_divider{
 	text-align: center;
 }
@@ -471,6 +468,20 @@ Main display section - CSS specific to 'config' - General
 	font-weight: bold;
 	margin-left: 16px;
     display: inline-block; 
+}
+
+#main_display .config_form { 
+	font-size: 17px;
+	font-weight: bold;
+    margin-top: 2px;
+    display: flex;
+    justify-content: space-between;
+    background-color: #404040;
+}
+
+#main_display .config_form  select,
+#main_display .config_form  input {
+    width: 600px;
 }
 
 #main_display .config_group_margin { 
@@ -511,8 +522,11 @@ Main display section - CSS specific to 'config' - General
 	font-weight: bold;
 	margin: 10px;
 	height:17px;
-	
-	
+}
+
+
+div.stand_in_row {
+    display: flex;
 }
 
 #main_display .config_text_center {

@@ -232,58 +232,6 @@ KM.json_request = function(url, json, callback, onerror){
 	xmlHttp.send(json);
 }
 
-KM.load_settings = function () {
-    function init_interface() {
-        KM.browser.set_title();
-        KM.background_button_clicked(KM.config.misc.color_select);
-        KM.enable_display_buttons(KM.config.misc.display_select);
-        KM.menu_bar_buttons.construct_camera_sec();
-        KM.enable_camera_buttons();
-        if (KM.config.misc.hide_button_bar) {
-            KM.toggle_button_bar();
-        }
-        KM.enable_function_buttons(1); // select 'live' mode
-        KM.function_button_clicked(1); // start 'live' mode
-
-    }
-
-    function get_settings() {
-        function retry() {
-            KM.kill_timeout_ids(KM.GET_DATA);
-            KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {get_settings(); }, 5000));
-        }
-
-        function callback(obj_data) {
-            KM.config = obj_data;
-            set_settings();
-            init_interface();
-        }
-
-        var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {read: '1'} };
-        KM.json_request("/ajax/config", jreq, callback, onerror=retry);
-    }
-
-    function set_settings() {
-        var user_agent = navigator.userAgent.toLowerCase();
-
-        KM.browser.browser_IE = user_agent.search('msie') > -1;
-        KM.browser.browser_FF = user_agent.search('firefox') > -1;
-        KM.browser.browser_OP = user_agent.search('opera') > -1;
-
-        KM.browser.browser_SP = (user_agent.search('iphone') > -1 ||
-        user_agent.search('ipod') > -1 || user_agent.search('android') > -1 || user_agent.search('ipad') > -1 ||
-        user_agent.search('iemobile') > -1 ||  user_agent.search('blackberry') > -1);
-    };
-
-    get_settings();
-
-    return {
-        init: get_settings
-    }
-}();
-
-KM.init = KM.load_settings.init;
-
 KM.secs_hhmmss = function (secs) {
 
     // A function that convers a seconds count to a 'HHMMSS' string
@@ -422,6 +370,23 @@ The clever stuff is in the next section :)
 There are several 'aliases', these are just to make the code more readable
 **************************************************************************** */
 
+
+KM.blink_button = function(button, callback) {
+    var fw = button.style.fontWeight;
+    var c = KM.BLUE;
+    button.style.fontWeight = 'bold';
+    button.style.color = KM.RED;
+    restore_button = function() {
+        KM.kill_timeout_ids(KM.BUTTON_BLINK);
+        button.style.fontWeight = fw;
+        button.style.color = c;
+        if (callback !== undefined) {
+            callback();
+        }
+    }
+    KM.add_timeout_id(KM.BUTTON_BLINK, setTimeout(function() {restore_button();}, 250));
+
+};
 
 KM.enable_display_buttons = function (button) {
 
@@ -678,10 +643,10 @@ KM.function_button_clicked = function (button) {
     if (KM.function_button_valid(button)) {
         KM.update_function_buttons(button);
         KM.menu_bar_buttons.function_selected = button;
-
+        document.onkeydown=function(e){}; //stop memory leak
+        
         switch (button) {
-            case 1: // 'live button'
-                document.onkeydown=null; //stop memory leak
+            case 1: // 'live button'                
                 KM.enable_display_buttons(KM.config.misc.display_select);
                 KM.enable_camera_buttons();
                 KM.display_live();
@@ -756,19 +721,67 @@ KM.background_button_clicked = function (color) {
     KM.config.misc.color_select = color;
 };
 
-
-/* ****************************************************************************
-Live display - Misc code
-
-Miscellaneous code that provides general closures and functions for kmotions
-live display
-**************************************************************************** */
-
-
 KM.get_jpeg = function (feed) {
     return  '/kmotion_ramdisk/'+KM.pad_out2(feed)+'/last.jpg?'+Math.random();
 }
 
+
+/* ****************************************************************************
+load settings
+**************************************************************************** */
+
+
+KM.load_settings = function () {
+    function init_interface() {
+        KM.browser.set_title();
+        KM.background_button_clicked(KM.config.misc.color_select);
+        KM.enable_display_buttons(KM.config.misc.display_select);
+        KM.menu_bar_buttons.construct_camera_sec();
+        KM.enable_camera_buttons();
+        if (KM.config.misc.hide_button_bar) {
+            KM.toggle_button_bar();
+        }
+        KM.enable_function_buttons(1); // select 'live' mode
+        KM.function_button_clicked(1); // start 'live' mode
+
+    }
+
+    function get_settings() {
+        function retry() {
+            KM.kill_timeout_ids(KM.GET_DATA);
+            KM.add_timeout_id(KM.GET_DATA, setTimeout(function () {get_settings(); }, 5000));
+        }
+
+        function callback(obj_data) {
+            KM.config = obj_data;
+            set_settings();
+            init_interface();
+        }
+
+        var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {read: '1'} };
+        KM.json_request("/ajax/config", jreq, callback, onerror=retry);
+    }
+
+    function set_settings() {
+        var user_agent = navigator.userAgent.toLowerCase();
+
+        KM.browser.browser_IE = user_agent.search('msie') > -1;
+        KM.browser.browser_FF = user_agent.search('firefox') > -1;
+        KM.browser.browser_OP = user_agent.search('opera') > -1;
+
+        KM.browser.browser_SP = (user_agent.search('iphone') > -1 ||
+        user_agent.search('ipod') > -1 || user_agent.search('android') > -1 || user_agent.search('ipad') > -1 ||
+        user_agent.search('iemobile') > -1 ||  user_agent.search('blackberry') > -1);
+    };
+
+    get_settings();
+
+    return {
+        init: get_settings
+    }
+}();
+
+KM.init = KM.load_settings.init;
 
 /* ****************************************************************************
 Live display - Live code
@@ -2096,6 +2109,7 @@ KM.display_archive_ = function () {
 
     function reset_display_html() {
         document.getElementById('arch_player').innerHTML = '';
+        set_null_playback_info();
     }
 
     return {
@@ -2244,7 +2258,6 @@ KM.get_kmotion_logs = KM.display_logs_.get_kmotion_logs;
 KM.get_motion_logs = KM.display_logs_.get_motion_logs;
 
 
-
 /* ****************************************************************************
 Main display - Config - Misc code
 
@@ -2262,8 +2275,6 @@ KM.display_config_ = function () {
     //
     var cur_camera = 1; // the current camera
     var cur_mask = ''; // the current expanded mask string
-    var error_lines = []; // the error string
-    var error_search_str = /failed|error/i;
 
     function init() {
         KM.session_id.current++;
@@ -2536,104 +2547,122 @@ KM.display_config_ = function () {
             '</div>';
         }
 
-        html_str += '<br>' +
+        html_str += '<br>\
+        <div style="float:left; width:370px;">\
+            <div class="config_margin_left_20px">\
+                <img id="feedimage" src="images/gcam.png" alt="">\
+                <div class="config_form">\
+                    <input type="button" id="mask_all" style="width:100%;" OnClick="KM.conf_feed_mask_button(1);" value="Mask All" disabled>\
+                    <input type="button" id="mask_invert" style="width:100%;" OnClick="KM.conf_feed_mask_button(2);" value="Mask Invert" disabled>\
+                    <input type="button" id="mask_none" style="width:100%;" OnClick="KM.conf_feed_mask_button(3);" value="Mask None" disabled>\
+                </div>\
+            </div>\
+            <div class="config_margin_left_20px" style="font-weight:bold;padding:10px;text-align:center">Click on the image or buttons to edit the motion mask.</div>\
+        </div>';
 
-        '<div style="float:left; width:370px;">' +  
-                '<div class="config_margin_left_20px">' +        
-                '<img id="feedimage" src="images/gcam.png" alt=""> ' +
-                '<input type="button" id="mask_all" style="width:115px;"' +
-                'OnClick="KM.conf_feed_mask_button(1);" value="Mask All" disabled>' +
-                '<input type="button" id="mask_invert" style="width:115px;" ' +
-                'OnClick="KM.conf_feed_mask_button(2);" value="Mask Invert" disabled>' +
-                '<input type="button" id="mask_none" style="width:115px;" ' +
-                'OnClick="KM.conf_feed_mask_button(3);" value="Mask None" disabled>' +
-            '</div>' +
-            '<div class="config_margin_left_20px" style="font-weight:bold;padding:10px;text-align:center">Click on the image or buttons to edit the motion mask.</div>' +
-        '</div>' +
-
-         '<div class="config_tick_margin">' +
-         '<div  class="config_tick_margin">' +
-            '<select  id="feed_camera" onchange="KM.conf_feed_change();">';
-            for (var f in KM.config.feeds) {
-                html_str+='<option value="'+f+'">'+KM.config.feeds[f].feed_name+'</option>';
-            };
+        
+        html_str += '<div  class="config_form">\
+            Select camera:\
+            <select  id="feed_camera" onchange="KM.conf_feed_change();">';
+                for (var f in KM.config.feeds) {
+                    html_str+='<option value="'+f+'">'+KM.config.feeds[f].feed_name+'</option>';
+                };
             html_str+='</select>\
-                    <input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />Enable camera&nbsp; \
-                    <input type="checkbox" id="reboot_camera" onclick="KM.conf_reboot_camera('+cur_camera+');" />Reboot camera \
-                    <br>\
-                    Camera name: <input style="width:190px" type="text" id="feed_name" size="15" onchange="KM.conf_feed_highlight();" value="'+cur_camera+'"/>\
-                </div>\
-                  </div></div><div class="config_tick_margin"> \
-                <br /><hr/> \
-                <div class="config_tick_margin">\
-                <div class="config_tick_margin">\
-                  <div class="config_text">Device:</div>\
-                  <div class="config_text">URL:</div>\
-                  <div class="config_text">Name:</div>\
-                  <div class="config_text">Width:</div>\
-                  <div class="config_text">Threshold:</div>\
-                </div>\
-                <div class="config_tick_margin">\
-                <div class="config_text">\
-                  <select  id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
-                    for (var i=0;i<KM.max_feed();i++) {
-                        html_str+='<option value="'+i+'">/dev/video'+i+'</option>';
-                    };
-                    html_str+='<option value="-1">Network Cam</option></select>\
-                  </select>\
+            </div>\
+                <hr/> \
+                  <div class="config_form">Camera title:\
+                    <input type="text" id="feed_name" onchange="KM.conf_feed_highlight();" />\
                   </div>\
-                    <div class="config_text">\
-                  <input type="text" id="feed_url" style="width: 190px; margin-left: 1px;" onchange="KM.conf_feed_highlight();" /></div>\
-                  <div class="config_text">\
-                  <input type="text" id="feed_lgn_name" style="width: 190px;  margin-left: 1px;" onchange="KM.conf_feed_highlight();" /></div>\
-                  <div class="config_text">\
-                  <input type="text" id="feed_width" size="4" onchange="KM.conf_feed_highlight();" /><span>px</span></div>\
-                  <div class="config_text">\
-                  <input type="text" id="feed_threshold" size="3" onchange="KM.conf_feed_highlight();" /><span>px</span></div>\
-                </div></div>\
-                <div class="config_tick_margin">\
-                <div class="config_tick_margin">\
-                  <div class="config_text">Input:</div>\
-                  <div class="config_text">Proxy:</div>\
-                  <div class="config_text">Password:</div>\
-                  <div class="config_text">Height:</div>\
-                  <div class="config_text">FPS:</div>\
-                </div>\
-                <div class="config_tick_margin">\
-                <div class="config_text">\
-                <select style="width:190px" id="feed_input" onchange="KM.conf_feed_highlight();" disabled>\
-                    <option value="0">0</option>\
-                    <option value="1">1</option>\
-                    <option value="2">2</option>\
-                    <option value="3">3</option>\
-                    <option value="4">4</option>\
-                    <option value="5">5</option>\
-                    <option value="6">6</option>\
-                    <option value="7">7</option>\
-                    <option value="8">N/A</option>\
-                </select>\
-            </div> \
-                  <div class="config_text"><input type="text" id="feed_proxy" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
-                  <div class="config_text"><input type="password" id="feed_lgn_pw" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
-                  <div class="config_text"><input type="text" id="feed_height" size="4" style="margin-top:1px;" onchange="KM.conf_feed_highlight();" />px</div>\
-                  <div class="config_text"><input type="text" id="feed_fps" style="width: 190px; height: 15px; margin-left: 1px; margin-top:1px;"\ onchange="KM.conf_feed_highlight();" /></div>\
-                </div></div>\
-                <br /><hr />\
-                </div>\
-                \
-                <div class="config_tick_margin">\
-                  <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight();" />Enable motion highlighting. (Draw box around detected motion)\
-                </div>\
-                <br /><hr/>\
-                <div class="config_tick_margin">\
-                  <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight();" />Enable snapshot mode. Record an image in time lapse mode with a pause between images.\
-                </div><br>\
-                <div class="config_tick_margin">\
-                  Sanpshot interval: <input type="text" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight();" />Seconds, (300 Seconds recommended)\
-                </div><br>\
-                <div class="config_tick_margin">Quality of snapshots: <input type="text" id="feed_quality" size="3" onchange="KM.conf_feed_highlight();" />%</div>\
-                <br /><hr/>\
-                </div><br />';
+                  <div class="config_form">Enable camera:\
+                    <input type="checkbox" id="feed_enabled" onclick="KM.conf_feed_enabled();" />\
+                  </div>\
+                  <div class="config_form">Reboot camera:\
+                    <input type="checkbox" id="reboot_camera" onclick="KM.conf_reboot_camera('+cur_camera+');" />\
+                  </div>\
+                  <hr/> \
+                  <div class="config_form">Device:\
+                    <select  id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
+                        for (var i=0;i<KM.max_feed();i++) {
+                            html_str+='<option value="'+i+'">/dev/video'+i+'</option>';
+                        };
+                        html_str+='<option value="-1">Network Cam</option></select>\
+                        </select>\
+                  </div>\
+                  <div class="config_form">Input:\
+                    <select id="feed_input" onchange="KM.conf_feed_highlight();" disabled>\
+                        <option value="0">0</option>\
+                        <option value="1">1</option>\
+                        <option value="2">2</option>\
+                        <option value="3">3</option>\
+                        <option value="4">4</option>\
+                        <option value="5">5</option>\
+                        <option value="6">6</option>\
+                        <option value="7">7</option>\
+                        <option value="8">N/A</option>\
+                    </select>\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">Name:\
+                    <input type="text" id="feed_lgn_name" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <div class="config_form">Password:\
+                    <input type="password" id="feed_lgn_pw" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">Proxy:\
+                    <input type="text" id="feed_proxy" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <div class="config_form">MJPEG URL:\
+                    <input type="text" id="feed_url" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">RTSP URL:\
+                    <input type="text" id="rtsp2mp4_grab_url" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <div class="config_form">RTSP Recode:\
+                    <input type="checkbox" id="rtsp2mp4_recode" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <div class="config_form">RTSP Sound:\
+                    <input type="checkbox" id="rtsp2mp4_sound" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">Width:\
+                    <input type="text" id="feed_width" size="4" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <div class="config_form">Height:\
+                    <input type="text" id="feed_height" size="4" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">FPS:\
+                    <input type="text" id="feed_fps" onchange="KM.conf_feed_highlight();" value="1"/>\
+                  </div>\
+                  <div class="config_form">Bitrate:\
+                    <input type="text" id="feed_kbs" onchange="KM.conf_feed_highlight();" value="1024"/>\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">Threshold:\
+                    <input type="text" id="feed_threshold" size="4" onchange="KM.conf_feed_highlight();" value="300" />\
+                  </div>\
+                  <div class="config_form">Noise level:\
+                    <input type="text" id="feed_noise_level" size="4" onchange="KM.conf_feed_highlight();" value="32" />\
+                  </div>\
+                  <div class="config_form">Noise tune:\
+                    <input type="checkbox" id="feed_noise_tune" onchange="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">Enable motion highlighting:\
+                    <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <div class="config_form">Enable snapshot mode:\
+                    <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight();" />\
+                  </div>\
+                  <hr/>\
+                  <div class="config_form">Snapshot interval:\
+                    <input type="text" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight();" value="300"/>\
+                  </div>\
+                  <div class="config_form">Quality of snapshots:\
+                    <input type="text" id="feed_quality" size="3" onchange="KM.conf_feed_highlight();" value="85"/>\
+                  </div>';
 
         
         if (KM.config.feeds[cur_camera].feed_enabled) {
@@ -2849,18 +2878,15 @@ KM.display_config_ = function () {
         //
 
         KM.session_id.current++; // needed to kill updates
-        for (var s in KM.config.feeds[cur_camera]) {
-            try {
-                if (s != 'feed_enabled')
-                    document.getElementById(s).disabled = true;
-            } catch (e) {}
-        }
-
-        var ids = ['mask_all' , 'mask_invert', 'mask_none'];
-        for (var i = 0; i < ids.length; i++) {
-             try {
-                 document.getElementById(ids[i]).disabled = true;
-             } catch (e) {}
+        var configs = document.getElementsByClassName('config_form');
+        for (var i=0;i<configs.length;i++) {
+            elem = configs[i];
+            for (var j=0; j<elem.children.length; j++) {
+                var el = elem.children[j];
+                if (el.id && !KM.item_in_array(el.id, ['feed_enabled', 'feed_camera'])) {
+                    el.disabled = true;
+                }
+            }
         }
 
         for (var i = 1; i < 226; i++) {
@@ -2883,19 +2909,12 @@ KM.display_config_ = function () {
         //
 
         conf_live_feed_daemon(KM.session_id.current, cur_camera);
-
-        for (var s in KM.config.feeds[cur_camera]) {
-            try {
-                if (s != 'feed_enabled')
-                    document.getElementById(s).disabled = false;
-            } catch (e) {}
-        }
-
-        var ids = ['mask_all' , 'mask_invert', 'mask_none'];
-        for (var i = 0; i < ids.length; i++) {
-             try {
-                 document.getElementById(ids[i]).disabled = false;
-             } catch (e) {}
+        var configs = document.getElementsByClassName('config_form');
+        for (var i=0;i<configs.length;i++) {
+            elem = configs[i];
+            for (var j=0; j<elem.children.length; j++) {
+                elem.children[j].disabled = false;
+            }
         }
 
         conf_feed_net_highlight();
@@ -3248,26 +3267,6 @@ KM.conf_feed_highlight = KM.display_config_.conf_feed_highlight;
 KM.conf_feed_net_highlight = KM.display_config_.conf_feed_net_highlight;
 KM.conf_toggle_feed_mask = KM.display_config_.conf_toggle_feed_mask;
 KM.conf_feed_mask_button = KM.display_config_.conf_feed_mask_button;
-
-
-
-
-KM.blink_button = function(button, callback) {
-    var fw = button.style.fontWeight;
-    var c = KM.BLUE;
-    button.style.fontWeight = 'bold';
-    button.style.color = KM.RED;
-    restore_button = function() {
-        KM.kill_timeout_ids(KM.BUTTON_BLINK);
-        button.style.fontWeight = fw;
-        button.style.color = c;
-        if (callback !== undefined) {
-            callback();
-        }
-    }
-    KM.add_timeout_id(KM.BUTTON_BLINK, setTimeout(function() {restore_button();}, 250));
-
-};
 
 
 KM.videoPlayer = function() {

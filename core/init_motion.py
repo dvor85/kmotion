@@ -147,8 +147,6 @@ control_localhost on
 text_right %Y-%m-%d\\n%T
 text_left CAMERA %t
 max_mpeg_time 0
-noise_level 32
-noise_tune off
 despeckle EedDl
 
 
@@ -241,12 +239,12 @@ webcam_localhost off
                 print >> f_obj1, 'height %s' % self.config['feeds'][feed]['feed_height']
 
                 print >> f_obj1, 'noise_level %s' % self.config['feeds'][feed].get('feed_noise_level', 32)
+                print >> f_obj1, 'noise_tune {0}'.format('on' if self.config['feeds'][feed].get('feed_noise_tune') else 'off')
                 print >> f_obj1, 'threshold %s' % self.config['feeds'][feed].get('feed_threshold', 300)
                 print >> f_obj1, 'quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
 
                 # show motion box
-                if self.config['feeds'][feed]['feed_show_box']:
-                    print >> f_obj1, 'locate on'
+                print >> f_obj1, 'locate {0}'.format('on' if self.config['feeds'][feed].get('feed_show_box') else 'off')
 
                 # always on for feed updates
                 print >> f_obj1, 'output_normal on'
