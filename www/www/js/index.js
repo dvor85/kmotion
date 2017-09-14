@@ -2679,19 +2679,7 @@ KM.display_config_ = function () {
         //console.log(KM.config.feed_device[cur_camera]);
         if (KM.config.feeds[cur_camera].feed_enabled) {
             conf_live_feed_daemon(KM.session_id.current, cur_camera);
-            if (KM.config.feeds[cur_camera].feed_device == -1) {
-                document.getElementById('feed_input').disabled = true;
-                document.getElementById('feed_url').disabled = false;
-                document.getElementById('feed_proxy').disabled = false;
-                document.getElementById('feed_lgn_name').disabled = false;
-                document.getElementById('feed_lgn_pw').disabled = false;
-            } else {
-                document.getElementById('feed_input').disabled = false;
-                document.getElementById('feed_url').disabled = true;
-                document.getElementById('feed_proxy').disabled = true;
-                document.getElementById('feed_lgn_name').disabled = true;
-                document.getElementById('feed_lgn_pw').disabled = true;
-            }
+            conf_feed_net_update();
         }
         document.getElementById('feed_camera').value = cur_camera;
         try {
@@ -2742,9 +2730,10 @@ KM.display_config_ = function () {
                         document.getElementById('mask_img_' + (i + 1)).src = 'images/mask.png'
                     }
                 }
-            }
+            } 
         }
         document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Cameras";
+        conf_feed_enable_update();
     };
 
     function conf_toggle_feed_mask(mask_num) {
@@ -2819,6 +2808,14 @@ KM.display_config_ = function () {
         cur_camera = document.getElementById('feed_camera').value;
         KM.add_timeout_id(KM.MISC_JUMP, setTimeout(function () {conf_feed_html(); }, 1));
     };
+    
+    function conf_feed_enable_update() {
+        if (document.getElementById('feed_enabled').checked) {
+            conf_feed_ungrey();
+        } else {
+            conf_feed_grey();
+        }
+    }
 
     function conf_feed_enabled() {
 
@@ -2830,11 +2827,7 @@ KM.display_config_ = function () {
         //
 
         conf_feed_highlight();
-        if (document.getElementById('feed_enabled').checked) {
-            conf_feed_ungrey();
-        } else {
-            conf_feed_grey();
-        }
+        conf_feed_enable_update();
         // have to generate new mask on feed enabled
     };
 
@@ -2843,15 +2836,7 @@ KM.display_config_ = function () {
         KM.config.feeds[camera]['reboot_camera'] = document.getElementById('reboot_camera').checked;
     };
 
-    function conf_feed_net_highlight() {
-
-        // A function that enables/disables user inputs for net cams
-        //
-        // expects:
-        //
-        // returns:
-        //
-
+    function conf_feed_net_update() {
         if (document.getElementById('feed_device').value == -1) {
             document.getElementById('feed_input').disabled = true;
             document.getElementById('feed_url').disabled = false;
@@ -2865,6 +2850,18 @@ KM.display_config_ = function () {
             document.getElementById('feed_lgn_name').disabled = true;
             document.getElementById('feed_lgn_pw').disabled = true;
         }
+    }
+    
+    function conf_feed_net_highlight() {
+
+        // A function that enables/disables user inputs for net cams
+        //
+        // expects:
+        //
+        // returns:
+        //
+
+        conf_feed_net_update();
         conf_feed_highlight()
     };
 
@@ -2917,7 +2914,7 @@ KM.display_config_ = function () {
             }
         }
 
-        conf_feed_net_highlight();
+        conf_feed_net_update();
         document.getElementById('feedimage').src = 'images/bcam.png';
         // if enabled show the mask
         for (var i = 0; i < 225; i++) {
@@ -3007,7 +3004,9 @@ KM.display_config_ = function () {
             KM.kill_timeout_ids(KM.CONFIG_LOOP); // free up memory from 'setTimeout' calls
             if (KM.session_id.current === session_id) {
                 try {
-                    document.getElementById('feedimage').src = KM.get_jpeg(feed);
+                    var feedimage = document.getElementById('feedimage')
+                    feedimage.onerror = function() {this.src = 'images/gcam.png'};
+                    feedimage.src = KM.get_jpeg(feed);
                     KM.add_timeout_id(KM.CONFIG_LOOP, setTimeout(function () {refresh(session_id, feed); }, 1000));
                 } catch (e) {}
             }
