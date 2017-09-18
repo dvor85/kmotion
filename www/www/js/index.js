@@ -1861,13 +1861,15 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	var feed = document.getElementById('camera_select').value;
-	var title = cameras[feed]['title'];
-	var time = KM.secs_hh_mm_ss(secs+KM.videoPlayer.get_time());
-    var rate = document.getElementById('playback_rate').value;
-	document.getElementById('playback_info').innerHTML = title + ' <' + time + '> [' + rate + ']';
-	feed = null; // stop memory leak
-	title = null;
+        var feed = document.getElementById('camera_select').value;
+        var title = feed;
+        if (cameras) 
+            title = cameras[feed]['title'];    
+        var time = KM.secs_hh_mm_ss(secs+KM.videoPlayer.get_time());
+        var rate = document.getElementById('playback_rate').value;
+        document.getElementById('playback_info').innerHTML = title + ' <' + time + '> [' + rate + ']';
+        feed = null; // stop memory leak
+        title = null;
     };
 
     function set_null_playback_info() {
@@ -1879,11 +1881,13 @@ KM.display_archive_ = function () {
 	// returns:
 	//
 
-	var feed = document.getElementById('camera_select').value;
-	var title = cameras[feed]['title'];
-	document.getElementById('playback_info').innerHTML = title;
-	feed = null; // stop memory leak
-	title = null;
+        var feed = document.getElementById('camera_select').value;
+        var title = feed;
+        if (cameras) 
+            title = cameras[feed]['title'];  
+        document.getElementById('playback_info').innerHTML = title;
+        feed = null; // stop memory leak
+        title = null;
     };
 
     function event_clicked(id) {
