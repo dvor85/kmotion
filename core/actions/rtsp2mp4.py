@@ -50,7 +50,7 @@ class rtsp2mp4(sample.sample):
     def get_grabber_pids(self):
         try:
             p_obj = subprocess.Popen(
-                'pgrep -f "^avconv.+{src}.*"'.format(src=self.feed_grab_url), stdout=subprocess.PIPE, shell=True)
+                'pgrep -f "^ffmpeg.+{src}.*"'.format(src=self.feed_grab_url), stdout=subprocess.PIPE, shell=True)
             stdout = p_obj.communicate()[0]
             return stdout.splitlines()
         except Exception:
@@ -65,19 +65,21 @@ class rtsp2mp4(sample.sample):
         else:
             return ''
 
-    def start_grab(self, src, dst):
+    def start_grab(self, src, dst, dtime=datetime.datetime.now()):
         if self.sound:
             audio = "-c:a libfaac -ac 1 -ar 22050 -b:a 64k"
         else:
             audio = "-an"
+
+        metadata = '-metadata creation_time="{dtime}"'.format(dtime=dtime.strftime("%Y-%m-%d %H:%M:%S"))
 
         if self.recode:
             vcodec = "-c:v libx264 -preset ultrafast -profile:v baseline -b:v {feed_kbs}k -qp 30".format(feed_kbs=self.feed_kbs)
         else:
             vcodec = '-c:v copy'
 
-        grab = 'avconv -threads auto -rtsp_transport tcp -n -i {src} {vcodec} {audio} {dst}'.format(
-            src=src, dst=dst, vcodec=vcodec, audio=audio)
+        grab = 'ffmpeg -threads auto -rtsp_transport tcp -n -i {src} {vcodec} {audio} {metadata} {dst}'.format(
+            src=src, dst=dst, vcodec=vcodec, audio=audio, metadata=metadata)
 
         try:
             from subprocess import DEVNULL  # py3k
@@ -92,7 +94,7 @@ class rtsp2mp4(sample.sample):
     def start(self):
         sample.sample.start(self)
         try:
-            dt = datetime.datetime.fromtimestamp(time.time())
+            dt = datetime.datetime.now()
             event_date = dt.strftime("%Y%m%d")
             event_time = dt.strftime("%H%M%S")
             movie_dir = os.path.join(self.images_dbase_dir, event_date, '%0.2i' % self.feed, 'movie')
@@ -104,7 +106,7 @@ class rtsp2mp4(sample.sample):
 
                 dst = os.path.join(movie_dir, '%s.mp4' % event_time)
 
-                self.start_grab(self.feed_grab_url, dst)
+                self.start_grab(self.feed_grab_url, dst, dt)
 
                 if len(self.get_grabber_pids()) == 0 and os.path.isfile(dst):
                     os.unlink(dst)
