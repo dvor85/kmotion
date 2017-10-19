@@ -61,7 +61,7 @@ class CameraLost:
             if need_reboot:
                 if self.reboot_camera():
                     time.sleep(60)
-                    self.restart_thread(self.feed_thread)
+            self.restart_thread(self.feed_thread)
 
         else:
             log.error('{file} {feed} already running'.format(**{'file': os.path.basename(__file__), 'feed': self.feed}))
