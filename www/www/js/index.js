@@ -401,7 +401,9 @@ KM.enable_display_buttons = function (button) {
 
     KM.kill_timeout_ids(KM.BUTTON_BLINK);
     for (var i = 1; i < 13; i++) {
-        if (i == button) {
+        if (i == KM.default_display_select) {
+            document.getElementById('d' + i).src = 'images/z' + i + '.png';
+        } else if (i == button) {
             document.getElementById('d' + i).src = 'images/r' + i + '.png';
         } else {
             document.getElementById('d' + i).src = 'images/b' + i + '.png';
@@ -613,7 +615,7 @@ KM.camera_func_button_clicked = function (button) {
     // returns :
     //
 
-    if (KM.menu_bar_buttons.camera_sec_enabled) {
+    if (KM.menu_bar_buttons.camera_sec_enabled && KM.config.feeds[button] && KM.config.feeds[button].feed_enabled) {
         KM.blink_camera_func_button(button);
         if (KM.menu_bar_buttons.camera_sec_enabled) {
             KM.display_live.set_last_camera(button)
@@ -735,6 +737,7 @@ KM.load_settings = function () {
     function init_interface() {
         KM.browser.set_title();
         KM.background_button_clicked(KM.config.misc.color_select);
+        KM.default_display_select = KM.config.misc.display_select;
         KM.enable_display_buttons(KM.config.misc.display_select);
         KM.menu_bar_buttons.construct_camera_sec();
         KM.enable_camera_buttons();
