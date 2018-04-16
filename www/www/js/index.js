@@ -43,13 +43,21 @@ KM.menu_bar_buttons = {
     camera_sec_enabled:  false
 };
 
-KM.max_feed = function () {
-    var max = 0;
-    for (var feed in KM.config.feeds) {
-        max = Math.max(max,feed)
+KM.max_feed = function (only_enabled) {
+    var max = 0;  
+    if (only_enabled) {
+        for (var feed in KM.config.feeds) {
+            if (KM.config.feeds[feed].feed_enabled) {
+                max++;
+            }
+        }
+    } else {
+        Object.keys(KM.config.feeds).length;
     }
     return max;
 };
+
+
 
 // использование Math.round() даст неравномерное распределение!
 KM.getRandomInt = function(min, max) {
@@ -431,17 +439,20 @@ KM.disable_display_buttons = function () {
 
 KM.menu_bar_buttons.construct_camera_sec = function() {
     var camsel='';
-    //for (var f in KM.config.feeds) {
-    for (var f=1;f<=KM.max_feed();f++) {
-        if ((f % 4) == 0)
-            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n</div>';
-        else if 	((f % 4) == 1)
-            camsel+='<div class="button_line">\n<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>';
-        else
-            camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n';
+    var p=0;
+    for (var f in KM.config.feeds) {
+        if (KM.config.feeds[f].feed_enabled) {
+            p++;
+            if ((p % 4) == 0)
+                camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n</div>';
+            else if 	((p % 4) == 1)
+                camsel+='<div class="button_line">\n<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>';
+            else
+                camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n';
+        }
     }
-    f=f-1;
-    if ((f % 4) != 0)
+    p--;
+    if ((p % 4) != 0)
         camsel+='</div>';
     document.getElementById('camera_sec').innerHTML = camsel;
 };
@@ -456,16 +467,17 @@ KM.enable_camera_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Camera Select';
-    //for (var f in KM.config.feeds) {
-    for (var f=1;f<=KM.max_feed();f++) {
-        try {
-            document.getElementById('ct' + f).innerHTML = f;
-            if (KM.config.feeds[f] && KM.config.feeds[f].feed_enabled) {
-                document.getElementById('ct' + f).style.color = KM.BLUE;
-            } else {
-                document.getElementById('ct' + f).style.color = KM.GREY;
-            }
-        } catch(e) {}
+    for (var f in KM.config.feeds) {
+        if (KM.config.feeds[f].feed_enabled) {
+            try {
+                document.getElementById('ct' + f).innerHTML = f;
+                if (KM.config.feeds[f] && KM.config.feeds[f].feed_enabled) {
+                    document.getElementById('ct' + f).style.color = KM.BLUE;
+                } else {
+                    document.getElementById('ct' + f).style.color = KM.GREY;
+                }
+            } catch(e) {}
+        }
     }
     KM.menu_bar_buttons.camera_sec_enabled = true;
 };
@@ -482,7 +494,7 @@ KM.disable_camera_buttons = function () {
     //
 
     document.getElementById('camera_func_header').innerHTML = 'Camera Select';
-    for (var f=1;f<=KM.max_feed();f++) {
+    for (var f in KM.config.feeds) {
         try {
             document.getElementById('cb' + f).style.background = 'url(images/temp1.png) no-repeat bottom left';
             document.getElementById('ct' + f).innerHTML = f;
@@ -977,7 +989,7 @@ KM.display_live_ = function () {
 
         try {
             var feed = KM.config.display_feeds[display_num][feed_index++];
-            if (!feed || feed>KM.max_feed()) {
+            if (!feed) {
                 return;
             }
             if (KM.config.feeds[feed].feed_enabled) {
@@ -989,7 +1001,7 @@ KM.display_live_ = function () {
                     text = 'Cam ' + feed;
                     KM.config.feeds[feed].feed_name = text;
                 }
-            }
+            };           
         } catch (e) {}
 
         text = feed + ' : ' + text;
@@ -1095,8 +1107,8 @@ KM.display_live_ = function () {
 
         case 4:  // symetrical 16 grid
 
-            cols = Math.ceil(Math.sqrt(KM.max_feed()));//5;//
-            rows = Math.ceil((KM.max_feed())/cols);
+            cols = Math.ceil(Math.sqrt(KM.max_feed(true)));//5;//
+            rows = Math.ceil((KM.max_feed(true))/cols);
 
             jpeg_width = total_width / cols;
             jpeg_height = total_height / rows;
@@ -2589,8 +2601,8 @@ KM.display_config_ = function () {
                   <hr/> \
                   <div class="config_form">Device:\
                     <select  id="feed_device" onchange="KM.conf_feed_net_highlight();" disabled>';
-                        for (var i=0;i<KM.max_feed();i++) {
-                            html_str+='<option value="'+i+'">/dev/video'+i+'</option>';
+                        for (var f in KM.config.feeds) {
+                            html_str+='<option value="'+f+'">/dev/video'+f+'</option>';
                         };
                         html_str+='<option value="-1">Network Cam</option></select>\
                         </select>\

@@ -166,7 +166,7 @@ function hidehint() {
 <?php
 $debug = false;
 $user=!empty($_SERVER["PHP_AUTH_USER"])?$_SERVER["PHP_AUTH_USER"]:"";
-$version='7.0.9';
+$version='7.0.10';
 $script=($debug and $user=='admin')?'js/index.js?ver="'.$version.'"':'js/index-min.js?ver="'.$version.'"';
 echo '<script type="text/javascript" src="'.$script.'"></script>';
 
