@@ -32,6 +32,7 @@ class Settings():
         if cfg == 'kmotion_rc':
             return self._read_kmotion_rc()
         else:
+            self._read_www_rc()
             return self._read_www_rc(cfg)
 
     def _read_kmotion_rc(self):
@@ -56,7 +57,6 @@ class Settings():
                 www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
             except Exception as e:
                 log.exception(e)
-            max_feed = 1
 
             config = {"feeds": {},
                       "display_feeds": {}
@@ -65,7 +65,7 @@ class Settings():
             displays = {1: 1,
                         2: 4,
                         3: 9,
-                        4: max_feed,
+                        4: 1,
                         5: 6,
                         6: 13,
                         7: 8,
@@ -94,7 +94,8 @@ class Settings():
 
                     if 'motion_feed' in section:
                         feed = int(section.replace('motion_feed', ''))
-                        max_feed = max(max_feed, feed)
+                        if 'feed_name' not in conf:
+                            conf['feed_name'] = self.config['www_rc']['feeds'][feed]['feed_name']
                         config['feeds'][feed] = conf
                     elif len(conf) > 0:
                         config[section] = conf

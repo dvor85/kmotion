@@ -67,7 +67,8 @@ class Kmotion_setd(Process):
                                 threading.Thread(target=cam_lost.reboot_camera).start()
                             else:
                                 must_reload = True
-                                www_parser.set(feed_section, k, str(v))
+                                val = utils.utf(v) if isinstance(v, basestring) else str(v)
+                                www_parser.set(feed_section, k, val)
                 elif section == 'display_feeds':
                     misc_section = 'misc'
                     if not www_parser.has_section(misc_section):
