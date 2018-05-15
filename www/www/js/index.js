@@ -1019,6 +1019,7 @@ KM.display_live_ = function () {
         l.push('<span id="text_' + feed + '"');
         l.push('style="left:' + (left + text_left) + '%; ');
         l.push('top:' +  (top + text_top) + '%;');
+        l.push('width:' + (width - text_left) + '%; ');
         l.push('color:' + text_color  + ';');
         l.push('">' + text + '</span>');
         html += l.join(' ');

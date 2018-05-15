@@ -351,6 +351,8 @@ Main display section
 #main_display span[id^='text_'] {
     position:  absolute;    
     font-weight: bold;   
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 #main_display .title { 
