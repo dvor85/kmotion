@@ -2444,6 +2444,9 @@ KM.display_config_ = function () {
                 <div class="config_group_margin">\
                 <input type="checkbox" id="save_display" onclick="KM.conf_misc_highlight();" />Save the current "Display Select" configuration as default.<br>\
                 </div>\
+                <div class="config_group_margin">\
+                <input type="checkbox" id="force_reload" onclick="KM.conf_misc_highlight();" />Force reload kmotion.<br>\
+                </div>\
                 <br /><hr/>\
                 <div class="config_text_margin" id="conf_text" >\
                   <input type="button" id="conf_apply" onclick="KM.conf_apply();" value="Apply" />&nbsp;all changes to the local browser configuration and sync with the remote server.\
@@ -2516,6 +2519,7 @@ KM.display_config_ = function () {
                 }
             } catch (e) {}
         }
+        KM.config['force_reload'] = document.getElementById('force_reload').checked;
         conf_config_track.saveDisplay(document.getElementById('save_display').checked);
     };
 

@@ -48,11 +48,12 @@ class Kmotion_setd(Process):
             self.user = self.config["user"]
             del(self.config["user"])
 
+            must_reload = self.config["force_reload"]
+            del(self.config["force_reload"])
+
             www_rc = 'www_rc_%s' % self.user
             if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
                 www_rc = 'www_rc'
-
-            must_reload = False
 
             www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
             for section in self.config.keys():
