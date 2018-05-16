@@ -3098,14 +3098,16 @@ KM.display_config_ = function () {
         create_bar('System', 7) +
         create_bar('Buffered', 8) +
         create_bar('Cached', 9) +
+        create_bar('Swap', 10) +
 
         '<br />' +
 
-        '<div id="swap_title" class="config_text_center">' +
-            'Swap' +
+        '<div id="fs_title" class="config_text_center">' +
+            'File systems' +
         '</div>' +
 
-        create_bar('Swap', 10) +
+        create_bar('Archive', 11) +
+        create_bar('Ramdisk', 12) +
         '<br />';
 
         function create_bar(text, bar_number) {
@@ -3138,20 +3140,21 @@ KM.display_config_ = function () {
 
         function update_text() {
             document.getElementById('server_info').innerHTML = dbase.uname + ' Uptime ' + dbase.up;
-            document.getElementById('memory_title').innerHTML = 'Memory ' + dbase.mt + 'k';
-            document.getElementById('swap_title').innerHTML = 'Swap ' + dbase.st + 'k';
+            document.getElementById('memory_title').innerHTML = 'Memory ' + dbase.memstat.mt + 'k';
+            document.getElementById('bar_text11').innerHTML = dbase.fsarch[3];
+            document.getElementById('bar_text12').innerHTML = dbase.fsramdisk[3];
         }
 
         function update_bars() {
             var coef = dbase.cpu + 0.5;
             // load average 1 min
-            document.getElementById('bar_value1').innerHTML = dbase.l1;
-            var tmp = Math.min(dbase.l1, coef);
+            document.getElementById('bar_value1').innerHTML = dbase.loadavg[0];
+            var tmp = Math.min(dbase.loadavg[0], coef);
             document.getElementById('bar_fground1').style.width = 100*(tmp / coef) + '%';
 
             // load average 5 min
-            document.getElementById('bar_value2').innerHTML = dbase.l2;
-            tmp = Math.min(dbase.l2, coef);
+            document.getElementById('bar_value2').innerHTML = dbase.loadavg[1];
+            tmp = Math.min(dbase.loadavg[1], coef);
             document.getElementById('bar_fground2').style.width = 100*(tmp / coef) + '%';
             if (tmp >= dbase.cpu) {
                 document.getElementById('bar_fground2').style.backgroundColor = BAR_ALERT;
@@ -3160,8 +3163,8 @@ KM.display_config_ = function () {
             }
 
             // load average 15 min
-            document.getElementById('bar_value3').innerHTML = dbase.l3;
-            tmp = Math.min(dbase.l3, coef);
+            document.getElementById('bar_value3').innerHTML = dbase.loadavg[2];
+            tmp = Math.min(dbase.loadavg[2], coef);
             document.getElementById('bar_fground3').style.width = 100*(tmp / coef) + '%';
             if (tmp >= dbase.cpu) {
                 document.getElementById('bar_fground3').style.backgroundColor = BAR_ALERT;
@@ -3170,46 +3173,65 @@ KM.display_config_ = function () {
             }
 
             // CPU user
-            document.getElementById('bar_value4').innerHTML = dbase.cu + '%';
-            tmp = dbase.cu;
+            document.getElementById('bar_value4').innerHTML = dbase.cpuusage.cu + '%';
+            tmp = dbase.cpuusage.cu;
             document.getElementById('bar_fground4').style.width = tmp + '%';
 
             // CPU system
-            document.getElementById('bar_value5').innerHTML = dbase.cs + '%';
-            tmp = dbase.cs;
+            document.getElementById('bar_value5').innerHTML = dbase.cpuusage.cs + '%';
+            tmp = dbase.cpuusage.cs;
             document.getElementById('bar_fground5').style.width = tmp + '%';
 
             // CPU IO wait
-            document.getElementById('bar_value6').innerHTML = dbase.ci + '%';
-            tmp = dbase.ci;
+            document.getElementById('bar_value6').innerHTML = dbase.cpuusage.ci + '%';
+            tmp = dbase.cpuusage.ci;
             document.getElementById('bar_fground6').style.width = tmp + '%';
 
             // memory system
-            var non_app = parseInt(dbase.mf) + parseInt(dbase.mb) + parseInt(dbase.mc);
-            var app = dbase.mt - non_app;
+            var non_app = parseInt(dbase.memstat.mf) + parseInt(dbase.memstat.mb) + parseInt(dbase.memstat.mc);
+            var app = dbase.memstat.mt - non_app;
             document.getElementById('bar_value7').innerHTML = app + 'k';
-            tmp = (app / dbase.mt) * 100;
+            tmp = (app / dbase.memstat.mt) * 100;
             document.getElementById('bar_fground7').style.width = tmp + '%';
 
             // memory buffers
-            document.getElementById('bar_value8').innerHTML = dbase.mb + 'k';
-            tmp = (dbase.mb / dbase.mt) * 100;
+            document.getElementById('bar_value8').innerHTML = dbase.memstat.mb + 'k';
+            tmp = (dbase.memstat.mb / dbase.memstat.mt) * 100;
             document.getElementById('bar_fground8').style.width = tmp + '%';
 
             // memory cached
-            document.getElementById('bar_value9').innerHTML = dbase.mc + 'k';
-            tmp = (dbase.mc / dbase.mt) * 100;
+            document.getElementById('bar_value9').innerHTML = dbase.memstat.mc + 'k';
+            tmp = (dbase.memstat.mc / dbase.memstat.mt) * 100;
             document.getElementById('bar_fground9').style.width = tmp + '%';
 
             // swap
-            document.getElementById('bar_value10').innerHTML = dbase.su + 'k';
-            dbase.st = Math.max(dbase.st, 1);  // if no swap, avoids div 0
-            tmp = (dbase.su / dbase.st) * 100;
+            document.getElementById('bar_value10').innerHTML = dbase.memstat.su + 'k';
+            dbase.memstat.st = Math.max(dbase.memstat.st, 1);  // if no swap, avoids div 0
+            tmp = (dbase.memstat.su / dbase.memstat.st) * 100;
             document.getElementById('bar_fground10').style.width = tmp + '%';
             if (tmp >= 0.1) {
                 document.getElementById('bar_fground10').style.backgroundColor = BAR_ALERT;
             } else {
                 document.getElementById('bar_fground10').style.backgroundColor = BAR_OK;
+            }
+            
+            // fs
+            document.getElementById('bar_value11').innerHTML = dbase.fsarch[0];
+            tmp = dbase.fsarch[2].substring(0, dbase.fsarch[2].length-1);
+            document.getElementById('bar_fground11').style.width = dbase.fsarch[2];
+            if (tmp >= 95) {
+                document.getElementById('bar_fground11').style.backgroundColor = BAR_ALERT;
+            } else {
+                document.getElementById('bar_fground11').style.backgroundColor = BAR_OK;
+            }
+            
+            document.getElementById('bar_value12').innerHTML = dbase.fsramdisk[0];
+            tmp = dbase.fsramdisk[2].substring(0, dbase.fsramdisk[2].length-1);
+            document.getElementById('bar_fground12').style.width = dbase.fsramdisk[2];
+            if (tmp >= 50) {
+                document.getElementById('bar_fground12').style.backgroundColor = BAR_ALERT;
+            } else {
+                document.getElementById('bar_fground12').style.backgroundColor = BAR_OK;
             }
         }
 

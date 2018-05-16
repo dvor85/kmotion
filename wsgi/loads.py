@@ -40,6 +40,8 @@ class Loads:
     The swap total, used
     st:<total>
     su:<used>
+
+    File system stat
     """
 
     def __init__(self, kmotion_dir, env):
@@ -53,6 +55,7 @@ class Loads:
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
             www_rc = 'www_rc'
         self.config = cfg.get(www_rc)
+        self.config_main = cfg.get('kmotion_rc')
 
     def __call__(self):
         data = {}
@@ -68,10 +71,7 @@ class Loads:
 
             with open('/proc/loadavg', 'rb') as f_obj:
                 loadavg = f_obj.readline()
-                lavg = loadavg.split()
-                data['l1'] = lavg[0]
-                data['l2'] = lavg[1]
-                data['l3'] = lavg[2]
+                data['loadavg'] = loadavg.split()
 
             with open('/proc/uptime', 'rb') as f_obj:
                 uptime_seconds = round(float(f_obj.readline().split()[0]))
@@ -79,16 +79,23 @@ class Loads:
                 data['up'] = uptime
 
             vmstat = subprocess.Popen('vmstat -s', shell=True, stdout=subprocess.PIPE).communicate()[0].split('\n')
-            data['mt'] = vmstat[0].split()[0]
-            data['mf'] = vmstat[4].split()[0]
-            data['mb'] = vmstat[5].split()[0]
-            data['mc'] = vmstat[6].split()[0]
-            data['st'] = vmstat[7].split()[0]
-            data['su'] = vmstat[8].split()[0]
+            data['memstat'] = dict(mt=vmstat[0].split()[0],
+                                   mf=vmstat[4].split()[0],
+                                   mb=vmstat[5].split()[0],
+                                   mc=vmstat[6].split()[0],
+                                   st=vmstat[7].split()[0],
+                                   su=vmstat[8].split()[0])
 
             vmstat = subprocess.Popen('vmstat', shell=True, stdout=subprocess.PIPE).communicate()[0].split('\n')[2].split()
-            data['ci'] = vmstat[-1]
-            data['cu'] = vmstat[-3]
-            data['cs'] = vmstat[-4]
+            data['cpuusage'] = dict(ci=vmstat[-1],
+                                    cu=vmstat[-3],
+                                    cs=vmstat[-4])
+
+            dfout = subprocess.Popen('df -h "{images_dbase_dir}"'.format(
+                images_dbase_dir=self.config_main['images_dbase_dir']), shell=True, stdout=subprocess.PIPE).communicate()[0].split('\n')[1].split()
+            data['fsarch'] = dfout[2:]
+            dfout = subprocess.Popen('df -h "{ramdisk_dir}"'.format(
+                ramdisk_dir=self.config_main['ramdisk_dir']), shell=True, stdout=subprocess.PIPE).communicate()[0].split('\n')[1].split()
+            data['fsramdisk'] = dfout[2:]
 
         return data
