@@ -38,10 +38,11 @@ class rtsp2mp4(sample.sample):
             self.feed_kbs = config['feeds'][self.feed]['feed_kbs']
             self.feed_username = config['feeds'][self.feed]['feed_lgn_name']
             self.feed_password = config['feeds'][self.feed]['feed_lgn_pw']
+            self.feed_url = config['feeds'][self.feed]['feed_url']
 
             from core.utils import add_userinfo
             self.feed_grab_url = add_userinfo(
-                config['feeds'][self.feed]['%s_grab_url' % self.key],
+                config['feeds'][self.feed].get('%s_grab_url' % self.key, self.feed_url),
                 self.feed_username,
                 self.feed_password)
         except Exception:

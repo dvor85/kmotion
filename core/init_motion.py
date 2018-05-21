@@ -142,12 +142,13 @@ class InitMotion:
 
 daemon off
 quiet on
-control_port 8080
-control_localhost on
+webcontrol_port 8080
+webcontrol_localhost on
+webcontrol_interface off
 text_right %Y-%m-%d\\n%T
 text_left CAMERA %t
-max_mpeg_time 0
-despeckle EedDl
+max_movie_time 0
+despeckle_filter EedDl
 
 
 # ------------------------------------------------------------------------------
@@ -165,7 +166,7 @@ despeckle EedDl
                 print >> f_obj1, user_conf
 
             for feed in self.feed_list:
-                print >> f_obj1, 'thread %s/core/motion_conf/thread%02i.conf\n' % (self.kmotion_dir, feed)
+                print >> f_obj1, 'camera %s/core/motion_conf/thread%02i.conf\n' % (self.kmotion_dir, feed)
 
     def gen_threads_conf(self):
         """
@@ -184,10 +185,10 @@ despeckle EedDl
 # ------------------------------------------------------------------------------
 # 'default' section
 # ------------------------------------------------------------------------------
-gap 2
+event_gap 2
 pre_capture 1
 post_capture 10
-webcam_localhost off
+stream_localhost off
 '''
                 # pal or ntsc,
                 print >> f_obj1, 'norm 1'
@@ -229,6 +230,7 @@ webcam_localhost off
                     print >> f_obj1, 'videodevice /dev/video%s' % feed_device
                     print >> f_obj1, 'input %s' % self.config['feeds'][feed]['feed_input']
                 else:  # netcam
+                    print >> f_obj1, 'netcam_keepalive on'
                     print >> f_obj1, 'netcam_url  %s' % self.config['feeds'][feed]['feed_url']
                     print >> f_obj1, 'netcam_proxy %s' % self.config['feeds'][feed]['feed_proxy']
                     print >> f_obj1, 'netcam_userpass %s:%s' % (
@@ -244,11 +246,13 @@ webcam_localhost off
                 print >> f_obj1, 'quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
 
                 # show motion box
-                print >> f_obj1, 'locate {0}'.format('on' if self.config['feeds'][feed].get('feed_show_box') else 'off')
+                print >> f_obj1, 'locate_motion_mode {0}'.format(
+                    'on' if self.config['feeds'][feed].get('feed_show_box') else 'off')
+                print >> f_obj1, 'locate_motion_style box'
 
                 # always on for feed updates
-                print >> f_obj1, 'output_normal on'
-                print >> f_obj1, 'jpeg_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % feed
+                print >> f_obj1, 'output_pictures on'
+                print >> f_obj1, 'picture_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % feed
                 print >> f_obj1, 'snapshot_interval 1'
                 print >> f_obj1, 'snapshot_filename %0.2i/%%Y%%m%%d%%H%%M%%S' % feed
 

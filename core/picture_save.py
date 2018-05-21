@@ -6,11 +6,14 @@ import os
 import sys
 
 
-def image_resize(src, dst, width, height):
+def image_resize(src, dst, scale=1):
     try:
-        os.unlink(dst)
+        if scale == 1:
+            raise Exception('Nothing resize')
+        if os.path.lexists(dst):
+            os.unlink(dst)
         im = Image.open(src)
-        im2 = im.resize((width, height), Image.NEAREST)
+        im2 = im.resize((int(im.width * scale), int(im.height * scale)), Image.NEAREST)
         im2.save(dst)
     except:
         os.symlink(src, dst)
@@ -25,7 +28,7 @@ def main(src):
             os.makedirs(dst_dir)
 
         dst = os.path.join(dst_dir, src_name)
-        image_resize(src, dst, 640, 480)
+        image_resize(src, dst, scale=0.75)
         if os.path.lexists(last_jpg):
             os.unlink(last_jpg)
         os.symlink(dst, last_jpg)
