@@ -264,7 +264,8 @@ stream_localhost off
                     print >> f_obj1, 'on_event_end %s/core/events.py %i end' % (self.kmotion_dir, feed)
 
                 print >> f_obj1, 'on_camera_lost %s/core/camera_lost.py %i' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f' % (self.kmotion_dir)
+                print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f %s' % (
+                    self.kmotion_dir, self.config['feeds'][feed].get('feed_webpicture_scale', 1))
 
 
 # Module test code

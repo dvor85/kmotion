@@ -48,8 +48,9 @@ class Kmotion_setd(Process):
             self.user = self.config["user"]
             del(self.config["user"])
 
-            must_reload = self.config["force_reload"]
-            del(self.config["force_reload"])
+            must_reload = self.config.get("force_reload", False)
+            if "force_reload" in self.config:
+                del(self.config["force_reload"])
 
             www_rc = 'www_rc_%s' % self.user
             if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):

@@ -2467,6 +2467,7 @@ KM.display_config_ = function () {
                 }
             } catch (e) {}
         }
+        KM.config['force_reload'] = document.getElementById('force_reload').checked;
         document.getElementsByName('color_select')[KM.config.misc.color_select].checked = true;
         document.getElementById('save_display').checked = conf_config_track.get_saveDisplay();
         document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Misc";
@@ -2508,7 +2509,7 @@ KM.display_config_ = function () {
                 if (typeof(KM.config.misc[s]) === "boolean") {
                     KM.config.misc[s] = document.getElementById(s).checked;
                 } else if (typeof(KM.config.misc[s]) === "number") {
-                    var val = parseInt(document.getElementById(s).value, 10);
+                    var val = parseFloat(document.getElementById(s).value);
                     if (isNaN(val)) {
                         val = 0;
                         document.getElementById(s).value = val;
@@ -2519,7 +2520,6 @@ KM.display_config_ = function () {
                 }
             } catch (e) {}
         }
-        KM.config['force_reload'] = document.getElementById('force_reload').checked;
         conf_config_track.saveDisplay(document.getElementById('save_display').checked);
     };
 
@@ -2531,7 +2531,7 @@ KM.display_config_ = function () {
         //
         // returns:
         //
-
+        
         conf_config_track.sync();
         KM.blink_button(document.getElementById('conf_apply'), conf_backdrop_html);
         //KM.conf_backdrop_html();
@@ -2656,6 +2656,9 @@ KM.display_config_ = function () {
                   <div class="config_form">Height:\
                     <input type="text" id="feed_height" size="4" onchange="KM.conf_feed_highlight();" />\
                   </div>\
+                  <div class="config_form">Web Scale:\
+                    <input type="text" id="feed_webpicture_scale" onchange="KM.conf_feed_highlight();" value="1"/>\
+                  </div>\
                   <hr/>\
                   <div class="config_form">FPS:\
                     <input type="text" id="feed_fps" onchange="KM.conf_feed_highlight();" value="1"/>\
@@ -2719,7 +2722,7 @@ KM.display_config_ = function () {
 
             } catch (e) {}
         }
-
+        
 
         // reposition the masks
         var origin_y = feedimage.offsetTop;
@@ -2968,8 +2971,8 @@ KM.display_config_ = function () {
             try {
                 if (typeof (KM.config.feeds[cur_camera][s]) === "boolean") {
                     KM.config.feeds[cur_camera][s] = document.getElementById(s).checked;
-                } else if (typeof (KM.config.feeds[cur_camera][s]) === "number") {
-                    var val = parseInt(document.getElementById(s).value, 10);
+                } else if (typeof (KM.config.feeds[cur_camera][s]) === "number") {                    
+                    var val = parseFloat(document.getElementById(s).value);
                     if (isNaN(val)) {
                         val = 0;
                         document.getElementById(s).value = val;

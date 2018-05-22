@@ -7,6 +7,11 @@ import sys
 
 
 def image_resize(src, dst, scale=1):
+    """
+    :src: Path to source image
+    :dst: Path to destination image
+    :scale: Scale for resize source image. If equal 1, then only symlink created
+    """
     try:
         if scale == 1:
             raise Exception('Nothing resize')
@@ -19,7 +24,7 @@ def image_resize(src, dst, scale=1):
         os.symlink(src, dst)
 
 
-def main(src):
+def main(src, scale):
     if os.path.isfile(src):
         src_dir, src_name = os.path.split(src)
         dst_dir = os.path.join(src_dir, 'www')
@@ -28,7 +33,7 @@ def main(src):
             os.makedirs(dst_dir)
 
         dst = os.path.join(dst_dir, src_name)
-        image_resize(src, dst, scale=0.75)
+        image_resize(src, dst, scale)
         if os.path.lexists(last_jpg):
             os.unlink(last_jpg)
         os.symlink(dst, last_jpg)
@@ -38,4 +43,4 @@ def main(src):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], float(sys.argv[2]))

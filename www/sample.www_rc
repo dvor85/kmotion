@@ -43,6 +43,7 @@ feed_url = http://jpegs
 feed_width = 1280
 feed_threshold = 300
 feed_quality = 80
+feed_webpicture_scale = 1
 rtsp2mp4_grab_url = rtsp://h264
 rtsp2mp4_recode = False
 rtsp2mp4_sound = True
