@@ -150,20 +150,7 @@ text_left CAMERA %t
 max_movie_time 0
 despeckle_filter EedDl
 
-
-# ------------------------------------------------------------------------------
-# 'user' section from 'virtual_motion_conf/motion.conf'
-# ------------------------------------------------------------------------------
 '''
-            # this is a user changable file so error trap
-            try:
-                with open('%s/virtual_motion_conf/motion.conf' % self.kmotion_dir, 'r') as f_obj2:
-                    user_conf = f_obj2.read()
-            except IOError:
-                print >> f_obj1, '# virtual_motion_conf/motion.conf not readable - ignored'
-                log.exception('no motion.conf readable in virtual_motion_conf dir - none included in final motion.conf')
-            else:
-                print >> f_obj1, user_conf
 
             for feed in self.feed_list:
                 print >> f_obj1, 'camera %s/core/motion_conf/thread%02i.conf\n' % (self.kmotion_dir, feed)
@@ -197,22 +184,6 @@ stream_localhost off
                 if self.config['feeds'][feed]['feed_mask'] != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
                     self.create_mask(feed)
                     print >> f_obj1, 'mask_file %s/core/masks/mask%0.2i.pgm' % (self.kmotion_dir, feed)
-
-                print >> f_obj1, '''
-# ------------------------------------------------------------------------------
-# 'user' section from 'virtual_motion_conf/thread%02i.conf'
-# ------------------------------------------------------------------------------
-''' % feed
-
-                # this is a user changable file so error trap
-                try:
-                    with open('%s/virtual_motion_conf/thread%02i.conf' % (self.kmotion_dir, feed)) as f_obj2:
-                        user_conf = f_obj2.read()
-                except IOError:
-                    print >> f_obj1, '# virtual_motion_conf/thread%02i.conf not readable - ignored' % feed
-                    log.exception('no feed%02i.conf readable in virtual_motion_conf dir - none included in final motion.conf' % feed)
-                else:
-                    print >> f_obj1, user_conf
 
                 # framerate,
                 fps = self.config['feeds'][feed].get('feed_fps', 1)
@@ -251,7 +222,10 @@ stream_localhost off
                 print >> f_obj1, 'locate_motion_style box'
 
                 # always on for feed updates
-                print >> f_obj1, 'output_pictures on'
+                if fps > 1:
+                    print >> f_obj1, 'output_pictures on'
+                else:
+                    print >> f_obj1, 'output_pictures off'
                 print >> f_obj1, 'picture_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % feed
                 print >> f_obj1, 'snapshot_interval 1'
                 print >> f_obj1, 'snapshot_filename %0.2i/%%Y%%m%%d%%H%%M%%S' % feed

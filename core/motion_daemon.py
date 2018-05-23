@@ -70,7 +70,7 @@ class MotionDaemon(Process):
             #             self.init_motion.init_motion_out()  # clear 'motion_out'
             log.info('starting motion')
             self.motion_daemon = subprocess.Popen(
-                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir), '-d', '5'],
+                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir), '-d', '4'],
                 close_fds=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,

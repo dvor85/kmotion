@@ -46,11 +46,7 @@ class Kmotion_setd(Process):
 
             self.config = json.loads(data)
             self.user = self.config["user"]
-            del(self.config["user"])
-
             must_reload = self.config.get("force_reload", False)
-            if "force_reload" in self.config:
-                del(self.config["force_reload"])
 
             www_rc = 'www_rc_%s' % self.user
             if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
@@ -78,11 +74,12 @@ class Kmotion_setd(Process):
                     for k, v in self.config[section].iteritems():
                         if len(v) > 0:
                             www_parser.set(misc_section, 'display_feeds_%02i' % int(k), ','.join([str(i) for i in v]))
-                else:
+                elif isinstance(self.config[section], dict):
                     if not www_parser.has_section(section):
                         www_parser.add_section(section)
                     for k, v in self.config[section].iteritems():
-                        www_parser.set(section, k, str(v))
+                        val = utils.utf(v) if isinstance(v, basestring) else str(v)
+                        www_parser.set(section, k, val)
             mutex_www_parser_wr(self.kmotion_dir, www_parser, www_rc)
 
             if must_reload and www_rc == 'www_rc':
