@@ -146,7 +146,7 @@ webcontrol_port 8080
 webcontrol_localhost on
 webcontrol_interface off
 text_right %Y-%m-%d\\n%T
-text_left CAMERA %t
+text_left CAMERA %t\\nD %D N %N
 max_movie_time 0
 despeckle_filter EedDl
 

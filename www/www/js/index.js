@@ -407,7 +407,6 @@ KM.enable_display_buttons = function (button) {
     // returns :
     //
 
-    KM.kill_timeout_ids(KM.BUTTON_BLINK);
     for (var i = 1; i < 13; i++) {
         if (i == KM.default_display_select) {
             document.getElementById('d' + i).src = 'images/z' + i + '.png';
@@ -544,7 +543,6 @@ KM.blink_camera_func_button = function (button) {
 
     if (KM.menu_bar_buttons.camera_sec_enabled) {
         KM.blink_button(document.getElementById('ct' + button));
-        document.getElementById('ct' + button).style.color = KM.RED;
     }
 };
 
@@ -626,19 +624,22 @@ KM.camera_func_button_clicked = function (button) {
     //
     // returns :
     //
-
     if (KM.menu_bar_buttons.camera_sec_enabled && KM.config.feeds[button] && KM.config.feeds[button].feed_enabled) {
         KM.blink_camera_func_button(button);
-        if (KM.menu_bar_buttons.camera_sec_enabled) {
-            KM.display_live.set_last_camera(button)
-            KM.config.display_feeds[1][0] =  button;
-            if (KM.config.misc.display_select == 1) {
-                // if '1' change view directly as a special case
-                KM.display_live.set_last_camera(0)
-                KM.display_live();
+        if (KM.config.misc.config_enabled) {   
+            if (KM.menu_bar_buttons.camera_sec_enabled) {
+                KM.display_live.set_last_camera(button)
+                KM.config.display_feeds[1][0] =  button;
+                if (KM.config.misc.display_select == 1) {
+                    // if '1' change view directly as a special case
+                    KM.display_live.set_last_camera(0)
+                    KM.display_live();
+
+                }
 
             }
-
+        } else {
+            KM.display_live.camera_jpeg_clicked(button);
         }
     }
 };
@@ -895,7 +896,7 @@ KM.display_live_ = function () {
         // returns :
         //
         var camera_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(camera);
-        if (last_camera_select !== 0) {
+        if (last_camera_select !== 0 && KM.config.misc.config_enabled) {
             var camera_last_pos=KM.config.display_feeds[KM.config.misc.display_select].indexOf(last_camera_select);
             var camera_old=KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
             if (KM.config.feeds[last_camera_select] && KM.config.feeds[last_camera_select].feed_enabled) {
@@ -906,7 +907,12 @@ KM.display_live_ = function () {
             }
             last_camera_select = 0;
         } else {
-            KM.config.display_feeds[1][0] = KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
+            if (KM.config.misc.config_enabled) {
+                KM.config.display_feeds[1][0] = KM.config.display_feeds[KM.config.misc.display_select][camera_pos];
+            } else {
+                KM.config.display_feeds[1][0] = camera;
+            }
+            
             KM.config.misc.display_select = 1;
             KM.update_display_buttons(1);
 
@@ -1444,11 +1450,13 @@ KM.display_live_ = function () {
     return {
         init: init,
         set_last_camera: set_last_camera,
+        camera_jpeg_clicked: camera_jpeg_clicked
     }
 }();
 
 KM.display_live = KM.display_live_.init;
 KM.display_live.set_last_camera = KM.display_live_.set_last_camera;
+KM.display_live.camera_jpeg_clicked = KM.display_live_.camera_jpeg_clicked;
 
 
 /* ****************************************************************************
