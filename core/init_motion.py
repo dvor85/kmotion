@@ -184,6 +184,8 @@ stream_localhost off
                 if self.config['feeds'][feed]['feed_mask'] != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
                     self.create_mask(feed)
                     print >> f_obj1, 'mask_file %s/core/masks/mask%0.2i.pgm' % (self.kmotion_dir, feed)
+                print >> f_obj1, 'smart_mask_speed {speed}'.format(
+                    speed=self.config['feeds'][feed].get('feed_smart_mask_speed', 0))
 
                 # framerate,
                 fps = self.config['feeds'][feed].get('feed_fps', 1)

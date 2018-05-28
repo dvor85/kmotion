@@ -2425,12 +2425,12 @@ KM.display_config_ = function () {
         document.getElementById('config_html').innerHTML = '<br />\
                 <div class="config_group_margin">\
                     <div class="config_tick_margin">\
-                      <input type="checkbox" id="logs_enabled" onchange="KM.conf_misc_highlight(this);" />Logs enabled.<br>\
-                      <input type="checkbox" id="archive_enabled" onchange="KM.conf_misc_highlight(this);" />Archive enabled.<br>\
+                      <input type="checkbox" id="logs_enabled" onchange="KM.conf_misc_highlight(this);" /><label for="logs_enabled">Logs enabled.</label><br>\
+                      <input type="checkbox" id="archive_enabled" onchange="KM.conf_misc_highlight(this);" /><label for="archive_enabled">Archive enabled.</label><br>\
                     </div>\
                     <div class="config_tick_margin">\
-                        <input type="checkbox" id="config_enabled" onchange="KM.conf_misc_highlight(this);" />Config enabled.<br>\
-                        <input type="checkbox" id="hide_button_bar" onchange="KM.conf_misc_highlight(this);" />Hide button bar.<br>\
+                        <input type="checkbox" id="config_enabled" onchange="KM.conf_misc_highlight(this);" /><label for="config_enabled">Config enabled.</label><br>\
+                        <input type="checkbox" id="hide_button_bar" onchange="KM.conf_misc_highlight(this);" /><label for="hide_button_bar">Hide button bar.</label><br>\
                     </div>\
                 </div>\
                 <br /><hr/>\
@@ -2440,10 +2440,10 @@ KM.display_config_ = function () {
                 </div>\
                 <br /><hr/>\
                 <div class="config_group_margin">\
-                <input type="checkbox" id="save_display" onchange="KM.conf_misc_highlight(this);" />Save the current "Display Select" configuration as default.<br>\
+                <input type="checkbox" id="save_display" onchange="KM.conf_misc_highlight(this);" /><label for="save_display">Save the current "Display Select" configuration as default.</label><br>\
                 </div>\
                 <div class="config_group_margin">\
-                <input type="checkbox" id="force_reload" onchange="KM.conf_misc_highlight(this);" />Force reload kmotion.<br>\
+                <input type="checkbox" id="force_reload" onchange="KM.conf_misc_highlight(this);" /><label for="force_reload">Force reload kmotion.</label><br>\
                 </div>\
                 <br /><hr/>\
                 <div class="config_text_margin" id="conf_text" >\
@@ -2573,12 +2573,28 @@ KM.display_config_ = function () {
                     <input type="button" id="mask_none" style="width:100%;" OnClick="KM.conf_feed_mask_button(3);" value="Mask None" disabled>\
                 </div>\
             </div>\
-            <div class="config_margin_left_20px" style="font-weight:bold;padding:10px;text-align:center">Click on the image or buttons to edit the motion mask.</div>\
+            <div class="config_margin_left_20px" style="font-weight:bold;padding:10px;text-align:center">\
+            <label for="feed_smart_mask_speed">Smart mask speed:</label>\
+            <input type="range" id="feed_smart_mask_speed" style="width:100%;" onchange="KM.conf_feed_highlight(this);" min="0" max="10" value="0" list="tickmarks" disabled>\
+            <datalist id="tickmarks">\
+                <option value="0" label="0">\
+                <option value="1" label="1">\
+                <option value="2" label="2">\
+                <option value="3" label="3">\
+                <option value="4" label="4">\
+                <option value="5" label="5">\
+                <option value="6" label="6">\
+                <option value="7" label="7">\
+                <option value="8" label="8">\
+                <option value="9" label="9">\
+                <option value="10" label="10">\
+            </datalist>\
+            </div>\
         </div>';
 
         
         html_str += '<div  class="config_form">\
-            Select camera:\
+            <label for="feed_camera">Select camera:</label>\
             <select  id="feed_camera" onchange="KM.conf_feed_change();">';
                 for (var f in KM.config.feeds) {
                     if (!KM.config.feeds[f].feed_name) {
@@ -2589,17 +2605,17 @@ KM.display_config_ = function () {
             html_str+='</select>\
             </div>\
                 <hr/> \
-                  <div class="config_form">Camera title:\
+                  <div class="config_form"><label for="feed_name">Camera title:</label>\
                     <input type="text" id="feed_name" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
-                  <div class="config_form">Enable camera:\
+                  <div class="config_form"><label for="feed_enabled">Enable camera:</label>\
                     <input type="checkbox" id="feed_enabled" onchange="KM.conf_feed_enabled(this);" />\
                   </div>\
-                  <div class="config_form">Reboot camera:\
+                  <div class="config_form"><label for="reboot_camera">Reboot camera:</label>\
                     <input type="checkbox" id="reboot_camera" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/> \
-                  <div class="config_form">Device:\
+                  <div class="config_form"><label for="feed_device">Device:</label>\
                     <select  id="feed_device" onchange="KM.conf_feed_net_highlight(this);" disabled>';
                         for (var f in KM.config.feeds) {
                             html_str+='<option value="'+f+'">/dev/video'+f+'</option>';
@@ -2607,7 +2623,7 @@ KM.display_config_ = function () {
                         html_str+='<option value="-1">Network Cam</option></select>\
                         </select>\
                   </div>\
-                  <div class="config_form">Input:\
+                  <div class="config_form"><label for="feed_input">Input:</label>\
                     <select id="feed_input" onchange="KM.conf_feed_highlight(this);" disabled>\
                         <option value="0">0</option>\
                         <option value="1">1</option>\
@@ -2621,69 +2637,69 @@ KM.display_config_ = function () {
                     </select>\
                   </div>\
                   <hr/>\
-                  <div class="config_form">Name:\
+                  <div class="config_form"><label for="feed_lgn_name">Name:</label>\
                     <input type="text" id="feed_lgn_name" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
-                  <div class="config_form">Password:\
+                  <div class="config_form"><label for="feed_lgn_pw">Password:</label>\
                     <input type="password" id="feed_lgn_pw" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
-                  <div class="config_form">Proxy:\
+                  <div class="config_form"><label for="feed_proxy">Proxy:</label>\
                     <input type="text" id="feed_proxy" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
-                  <div class="config_form">MJPEG URL:\
-                    <input type="text" id="feed_url" onchange="KM.conf_feed_highlight(this);" />\
+                  <div class="config_form"><label for="feed_url">MJPEG URL:</label>\
+                    <input type="url" id="feed_url" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
-                  <div class="config_form">RTSP URL:\
-                    <input type="text" id="rtsp2mp4_grab_url" onchange="KM.conf_feed_highlight(this);" />\
+                  <div class="config_form"><label for="rtsp2mp4_grab_url">RTSP URL:</label>\
+                    <input type="url" id="rtsp2mp4_grab_url" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
-                  <div class="config_form">RTSP Recode:\
+                  <div class="config_form"><label for="rtsp2mp4_recode">RTSP Recode:</label>\
                     <input type="checkbox" id="rtsp2mp4_recode" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
-                  <div class="config_form">RTSP Sound:\
+                  <div class="config_form"><label for="rtsp2mp4_sound">RTSP Sound:</label>\
                     <input type="checkbox" id="rtsp2mp4_sound" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
-                  <div class="config_form">Width:\
-                    <input type="text" id="feed_width" size="4" onchange="KM.conf_feed_highlight(this);" />\
+                  <div class="config_form"><label for="feed_width">Width:</label>\
+                    <input type="number" id="feed_width" size="4" onchange="KM.conf_feed_highlight(this);" min="1"/>\
                   </div>\
-                  <div class="config_form">Height:\
-                    <input type="text" id="feed_height" size="4" onchange="KM.conf_feed_highlight(this);" />\
+                  <div class="config_form"><label for="feed_height">Height:</label>\
+                    <input type="number" id="feed_height" size="4" onchange="KM.conf_feed_highlight(this);" min="1"/>\
                   </div>\
-                  <div class="config_form">Web Scale:\
-                    <input type="text" id="feed_webpicture_scale" onchange="KM.conf_feed_highlight(this);" value="1"/>\
-                  </div>\
-                  <hr/>\
-                  <div class="config_form">FPS:\
-                    <input type="text" id="feed_fps" onchange="KM.conf_feed_highlight(this);" value="1"/>\
-                  </div>\
-                  <div class="config_form">Bitrate:\
-                    <input type="text" id="feed_kbs" onchange="KM.conf_feed_highlight(this);" value="1024"/>\
+                  <div class="config_form"><label for="feed_webpicture_scale">Web Scale:</label>\
+                    <input type="number" id="feed_webpicture_scale" onchange="KM.conf_feed_highlight(this);" value="1" step="0.1" min="0.1"/>\
                   </div>\
                   <hr/>\
-                  <div class="config_form">Threshold:\
-                    <input type="text" id="feed_threshold" size="4" onchange="KM.conf_feed_highlight(this);" value="300" />\
+                  <div class="config_form"><label for="feed_fps">FPS:</label>\
+                    <input type="number" id="feed_fps" onchange="KM.conf_feed_highlight(this);" value="1" min="1"/>\
                   </div>\
-                  <div class="config_form">Noise level:\
-                    <input type="text" id="feed_noise_level" size="4" onchange="KM.conf_feed_highlight(this);" value="32" />\
+                  <div class="config_form"><label for="feed_kbs">Bitrate:</label>\
+                    <input type="number" id="feed_kbs" onchange="KM.conf_feed_highlight(this);" value="1024" min="1"/>\
                   </div>\
-                  <div class="config_form">Noise tune:\
+                  <hr/>\
+                  <div class="config_form"><label for="feed_threshold">Threshold:</label>\
+                    <input type="number" id="feed_threshold" size="4" onchange="KM.conf_feed_highlight(this);" value="300" min="1"/>\
+                  </div>\
+                  <div class="config_form"><label for="feed_noise_level">Noise level:</label>\
+                    <input type="number" id="feed_noise_level" size="4" onchange="KM.conf_feed_highlight(this);" value="32" />\
+                  </div>\
+                  <div class="config_form"><label for="feed_noise_tune">Noise tune:</label>\
                     <input type="checkbox" id="feed_noise_tune" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
-                  <div class="config_form">Enable motion highlighting:\
+                  <div class="config_form"><label for="feed_show_box">Enable motion highlighting:</label>\
                     <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight(this);" />\
                   </div>\
-                  <div class="config_form">Enable snapshot mode:\
+                  <div class="config_form"><label for="feed_snap_enabled">Enable snapshot mode:</label>\
                     <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
-                  <div class="config_form">Snapshot interval:\
-                    <input type="text" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight(this);" value="300"/>\
+                  <div class="config_form"><label for="feed_snap_interval">Snapshot interval:</label>\
+                    <input type="number" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight(this);" value="300"/>\
                   </div>\
-                  <div class="config_form">Quality of snapshots:\
-                    <input type="text" id="feed_quality" size="3" onchange="KM.conf_feed_highlight(this);" value="85"/>\
+                  <div class="config_form"><label for="feed_quality">Quality of snapshots:</label>\
+                    <input type="number" id="feed_quality" size="3" onchange="KM.conf_feed_highlight(this);" value="85" min="1"/>\
                   </div>';
 
         
@@ -2776,6 +2792,7 @@ KM.display_config_ = function () {
             cur_mask = cur_mask.substr(0, mask_num - 1) + '0' + cur_mask.substr(mask_num);
         }
         conf_feed_highlight({'id':'feed_mask'});
+        document.getElementById('feed_smart_mask_speed').value=0;
     };
 
     function conf_feed_mask_button(button_num) {
@@ -2813,6 +2830,7 @@ KM.display_config_ = function () {
         }
         }
         conf_feed_highlight({'id':'feed_mask'});
+        document.getElementById('feed_smart_mask_speed').value=0;
     };
 
     function conf_feed_change() {
@@ -2955,6 +2973,7 @@ KM.display_config_ = function () {
         document.getElementById('feed_button').style.color = KM.BLUE;
 
         conf_feed_update(obj);
+        return false;
     };
 
     function conf_feed_update(obj) {
@@ -2972,7 +2991,7 @@ KM.display_config_ = function () {
                     tmp = cur_mask.substr(i * 15, 15);
                     KM.config.feeds[cur_camera][obj.id] += parseInt(tmp, 2).toString(16) + '#';
                 }
-                break;             
+                break;
             default:
                 if (obj.type == "checkbox") {
                     KM.config.feeds[cur_camera][obj.id] = obj.checked;
