@@ -49,14 +49,14 @@ class MotionDaemon(Process):
 
     def pause_motion_detector(self, thread):
         try:
-            res = urllib.urlopen("http://localhost:8080/{feed_thread}/detection/pause".format(**{'feed_thread': thread}))
+            res = urllib.urlopen("http://localhost:8080/{feed_thread}/detection/pause".format(feed_thread=thread))
             try:
                 if res.getcode() == 200:
-                    log.debug('pause detection feed_thread {feed_thread} success'.format(**{'feed_thread': thread}))
+                    log.debug('pause detection feed_thread {feed_thread} success'.format(feed_thread=thread))
                     return True
                 else:
                     log.debug('pause detection feed_thread {feed_thread} failed with status code {code}'.format(
-                        {'feed_thread': thread, 'code': res.getcode()}))
+                        feed_thread=thread, code=res.getcode()))
             finally:
                 res.close()
         except Exception:

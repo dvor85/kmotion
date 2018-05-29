@@ -8,7 +8,7 @@ log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class Settings():
-    VERSION = '8.0.1'
+    VERSION = '8.0.2'
     _instance = None
     _lock = Lock()
 
@@ -95,8 +95,10 @@ class Settings():
                     if 'motion_feed' in section:
                         feed = int(section.replace('motion_feed', ''))
                         if self.config.get('www_rc'):
-                            conf['feed_name'] = conf['feed_name'] if 'feed_name' in conf else self.config['www_rc']['feeds'][feed]['feed_name']
-                            conf['feed_enabled'] = conf['feed_enabled'] and self.config['www_rc']['feeds'][feed]['feed_enabled']
+                            conf['feed_name'] = conf['feed_name'] if 'feed_name' in conf else self.config['www_rc']['feeds'][feed].get(
+                                'feed_name', '')
+                            conf['feed_enabled'] = conf['feed_enabled'] and self.config['www_rc']['feeds'][feed].get(
+                                'feed_enabled', False)
                         config['feeds'][feed] = conf
                     elif len(conf) > 0:
                         config[section] = conf

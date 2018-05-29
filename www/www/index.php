@@ -2,7 +2,7 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<link href="css/base.css?ver=8.0.1" rel="stylesheet" type="text/css" media="screen"/> 
+<link href="css/base.css?ver=8.0.2" rel="stylesheet" type="text/css" media="screen"/> 
 <meta name="keywords" content="" />
 <meta name="description" content="" />
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -166,7 +166,7 @@ function hidehint() {
 <?php
 $debug = false;
 $user=!empty($_SERVER["PHP_AUTH_USER"])?$_SERVER["PHP_AUTH_USER"]:"";
-$version='8.0.1';
+$version='8.0.2';
 $script=($debug and $user=='admin')?'js/index.js?ver="'.$version.'"':'js/index-min.js?ver="'.$version.'"';
 echo '<script type="text/javascript" src="'.$script.'"></script>';
 

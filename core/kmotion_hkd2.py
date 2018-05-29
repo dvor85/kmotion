@@ -24,9 +24,9 @@ class Hkd2_Feed():
         self.feed = int(feed)  # the feed number
         self.ramdisk_dir = ''  # the 'root' dir of the ramdisk
         self.images_dbase_dir = ''  # the 'root' dir of the images dbase
-        self.feed_snap_enabled = True  # feed snap enabled
-        self.feed_snap_interval = ''  # snap interval in seconds
-        self.feed_fps = ''  # frame fps
+        self.feed_snap_enabled = False  # feed snap enabled
+        self.feed_snap_interval = 0  # snap interval in seconds
+        self.feed_fps = 1  # frame fps
         self.feed_name = ''  # feed name
         self.snap_time = time.time()
         self.read_config()
@@ -47,10 +47,10 @@ class Hkd2_Feed():
         self.images_dbase_dir = config_main['images_dbase_dir']
         # sys.exit()
 
-        self.feed_snap_enabled = config['feeds'][self.feed]['feed_snap_enabled']
-        self.feed_snap_interval = config['feeds'][self.feed]['feed_snap_interval']
-        self.feed_fps = config['feeds'][self.feed]['feed_fps']
-        self.feed_name = config['feeds'][self.feed]['feed_name']
+        self.feed_snap_interval = config['feeds'][self.feed].get('feed_snap_interval', 0)
+        self.feed_snap_enabled = self.feed_snap_interval > 0
+        self.feed_fps = config['feeds'][self.feed].get('feed_fps', 1)
+        self.feed_name = config['feeds'][self.feed].get('feed_name', '')
         self.inc_snap_time(self.feed_snap_interval)
 
     def main(self):
@@ -102,15 +102,18 @@ class Hkd2_Feed():
                     os.remove(feed_www_jpg)
 
     def update_title(self):
-
         # updates 'name' with name string
-        title = '%s/%s/%02i/title' % (self.images_dbase_dir, time.strftime('%Y%m%d'), self.feed)
-        if not os.path.isdir(os.path.dirname(title)):
-            os.makedirs(os.path.dirname(title))
+        try:
+            title = '%s/%s/%02i/title' % (self.images_dbase_dir, time.strftime('%Y%m%d'), self.feed)
+            if not os.path.isdir(os.path.dirname(title)):
+                os.makedirs(os.path.dirname(title))
 
-        if not os.path.isfile(title):
-            with open(title, 'w') as f_obj:
-                f_obj.write(self.feed_name)
+            if not os.path.isfile(title):
+                with open(title, 'w') as f_obj:
+                    f_obj.write(self.feed_name)
+        except Exception:
+            log.error('** CRITICAL ERROR **')
+            log.exception('update_title()')
 
     def inc_snap_time(self, inc_sec):
         self.snap_time += inc_sec

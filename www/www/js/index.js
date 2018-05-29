@@ -1613,7 +1613,7 @@ KM.display_archive_ = function () {
         function callback(obj_data) {
             movies = obj_data;
             populate_view_dropdown();
-            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(retry, 60000));
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(retry, 30000));
         }
 
         if (KM.session_id.current === session_id) {
@@ -1684,7 +1684,7 @@ KM.display_archive_ = function () {
         var new_opt = '';
         for (var feed in cameras) {
             new_opt = document.createElement('option');
-            new_opt.text = KM.pad_out2(feed) + ' : ' + cameras[feed]['title'];
+            new_opt.text = KM.pad_out2(feed) + ': ' + cameras[feed]['title'];
             new_opt.value = feed;
             try {
               camera_select.add(new_opt, null); // standards compliant; doesn't work in IE
@@ -2620,11 +2620,12 @@ KM.display_config_ = function () {
                         for (var f in KM.config.feeds) {
                             html_str+='<option value="'+f+'">/dev/video'+f+'</option>';
                         };
-                        html_str+='<option value="-1">Network Cam</option></select>\
+                        html_str+='<option value="-1">Network Camera</option>\
                         </select>\
                   </div>\
                   <div class="config_form"><label for="feed_input">Input:</label>\
                     <select id="feed_input" onchange="KM.conf_feed_highlight(this);" disabled>\
+                        <option selected value="-1">USB</option>\
                         <option value="0">0</option>\
                         <option value="1">1</option>\
                         <option value="2">2</option>\
@@ -2633,7 +2634,6 @@ KM.display_config_ = function () {
                         <option value="5">5</option>\
                         <option value="6">6</option>\
                         <option value="7">7</option>\
-                        <option value="8">N/A</option>\
                     </select>\
                   </div>\
                   <hr/>\
@@ -2661,10 +2661,10 @@ KM.display_config_ = function () {
                     <input type="checkbox" id="rtsp2mp4_sound" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
-                  <div class="config_form"><label for="feed_width">Width:</label>\
+                  <div class="config_form"><label for="feed_width">Width (must be a multiple of 8):</label>\
                     <input type="number" id="feed_width" size="4" onchange="KM.conf_feed_highlight(this);" min="1"/>\
                   </div>\
-                  <div class="config_form"><label for="feed_height">Height:</label>\
+                  <div class="config_form"><label for="feed_height">Height (must be a multiple of 8):</label>\
                     <input type="number" id="feed_height" size="4" onchange="KM.conf_feed_highlight(this);" min="1"/>\
                   </div>\
                   <div class="config_form"><label for="feed_webpicture_scale">Web Scale:</label>\
@@ -2691,12 +2691,9 @@ KM.display_config_ = function () {
                   <div class="config_form"><label for="feed_show_box">Enable motion highlighting:</label>\
                     <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight(this);" />\
                   </div>\
-                  <div class="config_form"><label for="feed_snap_enabled">Enable snapshot mode:</label>\
-                    <input type="checkbox" id="feed_snap_enabled" onclick="KM.conf_feed_highlight(this);" />\
-                  </div>\
                   <hr/>\
                   <div class="config_form"><label for="feed_snap_interval">Snapshot interval:</label>\
-                    <input type="number" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight(this);" value="300"/>\
+                    <input type="number" id="feed_snap_interval" size="4" onchange="KM.conf_feed_highlight(this);" value="300" min="0"/>\
                   </div>\
                   <div class="config_form"><label for="feed_quality">Quality of snapshots:</label>\
                     <input type="number" id="feed_quality" size="3" onchange="KM.conf_feed_highlight(this);" value="85" min="1"/>\

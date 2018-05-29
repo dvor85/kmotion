@@ -181,7 +181,7 @@ stream_localhost off
                 print >> f_obj1, 'norm 1'
 
                 # feed mask,
-                if self.config['feeds'][feed]['feed_mask'] != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
+                if self.config['feeds'][feed].get('feed_mask', '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#') != '0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#':
                     self.create_mask(feed)
                     print >> f_obj1, 'mask_file %s/core/masks/mask%0.2i.pgm' % (self.kmotion_dir, feed)
                 print >> f_obj1, 'smart_mask_speed {speed}'.format(
@@ -201,11 +201,11 @@ stream_localhost off
                 feed_device = self.config['feeds'][feed].get('feed_device', -1)
                 if feed_device > -1:  # /dev/video? device
                     print >> f_obj1, 'videodevice /dev/video%s' % feed_device
-                    print >> f_obj1, 'input %s' % self.config['feeds'][feed]['feed_input']
+                    print >> f_obj1, 'input %s' % self.config['feeds'][feed].get('feed_input', 0)
                 else:  # netcam
                     print >> f_obj1, 'netcam_keepalive on'
                     print >> f_obj1, 'netcam_url  %s' % self.config['feeds'][feed]['feed_url']
-                    print >> f_obj1, 'netcam_proxy %s' % self.config['feeds'][feed]['feed_proxy']
+                    print >> f_obj1, 'netcam_proxy %s' % self.config['feeds'][feed].get('feed_proxy', '')
                     print >> f_obj1, 'netcam_userpass %s:%s' % (
                         self.config['feeds'][feed]['feed_lgn_name'],
                         self.config['feeds'][feed]['feed_lgn_pw'])

@@ -20,7 +20,7 @@ class rtsp2mp4(sample.sample):
 
         from core import logger
         global log
-        log = logger.Logger('kmotion', logger.DEBUG)
+        log = logger.Logger('kmotion', logger.INFO)
         self.key = 'rtsp2mp4'
 
         from core.config import Settings
@@ -33,9 +33,9 @@ class rtsp2mp4(sample.sample):
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
 
         try:
-            self.sound = config['feeds'][self.feed]['%s_sound' % self.key]
-            self.recode = config['feeds'][self.feed]['%s_recode' % self.key]
-            self.feed_kbs = config['feeds'][self.feed]['feed_kbs']
+            self.sound = config['feeds'][self.feed].get('%s_sound' % self.key, False)
+            self.recode = config['feeds'][self.feed].get('%s_recode' % self.key, False)
+            self.feed_kbs = config['feeds'][self.feed].get('feed_kbs', 1024)
             self.feed_username = config['feeds'][self.feed]['feed_lgn_name']
             self.feed_password = config['feeds'][self.feed]['feed_lgn_pw']
             self.feed_url = config['feeds'][self.feed]['feed_url']
