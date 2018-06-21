@@ -39,11 +39,11 @@ class CameraLost:
             log.exception('init error')
 
     def main(self):
+        self.restart_thread(self.feed_thread)
         if len(self.get_prev_instances()) == 0:
             need_reboot = True
-            self.restart_thread(self.feed_thread)
             time.sleep(60)
-            for t in range(60):
+            for t in range(10):
                 try:
                     res = urllib.urlopen(self.feed_url)
                     try:
@@ -56,7 +56,7 @@ class CameraLost:
                 except Exception:
                     log.error('error while getting image from feed {feed}'.format(feed=self.feed))
                 finally:
-                    time.sleep(10)
+                    time.sleep(60)
 
             if need_reboot:
                 if self.reboot_camera():
@@ -64,7 +64,7 @@ class CameraLost:
             self.restart_thread(self.feed_thread)
 
         else:
-            log.error('{file} {feed} already running'.format(**{'file': os.path.basename(__file__), 'feed': self.feed}))
+            log.error('{file} {feed} already running'.format(file=os.path.basename(__file__), feed=self.feed))
 
     def reboot_camera(self):
         try:
@@ -82,14 +82,14 @@ class CameraLost:
 
     def restart_thread(self, thread):
         try:
-            res = urllib.urlopen("http://localhost:8080/{feed_thread}/action/restart".format(**{'feed_thread': thread}))
+            res = urllib.urlopen("http://localhost:8080/{feed_thread}/action/restart".format(feed_thread=thread))
             try:
                 if res.getcode() == 200:
-                    log.debug('restart feed_thread {feed_thread} success'.format(**{'feed_thread': thread}))
+                    log.debug('restart feed_thread {feed_thread} success'.format(feed_thread=thread))
                     return True
                 else:
                     log.debug('restart feed_thread {feed_thread} failed with status code {code}'.format(
-                        {'feed_thread': thread, 'code': res.getcode()}))
+                        feed_thread=thread, code=res.getcode()))
             finally:
                 res.close()
         except Exception:
