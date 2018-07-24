@@ -52,7 +52,7 @@ KM.max_feed = function (only_enabled) {
             }
         }
     } else {
-        Object.keys(KM.config.feeds).length;
+        max = Object.keys(KM.config.feeds).length;
     }
     return max;
 };
@@ -1713,7 +1713,7 @@ KM.display_archive_ = function () {
 
         var view_select = document.getElementById('view_select');
         var selected_index = view_select.selectedIndex;
-        var selected_value = parseInt(view_select.value);
+        var selected_value = view_select.value;
 
 
         for (var i = view_select.options.length - 1; i > -1; i--) {
@@ -1724,22 +1724,31 @@ KM.display_archive_ = function () {
         var snap_enabled =   cameras[document.getElementById('camera_select').value]['snap_flag'];
         var drop_opts = [];
         if (movie_enabled)
-            drop_opts.push('Movies');
+            drop_opts.push({'value': 'movies', 'text':'Movies'});
         if (snap_enabled)
-            drop_opts.push('Snapshots');
+            drop_opts.push({'value':'snaps', 'text':'Snapshots'});
 
 
         for (var i = 0; i < drop_opts.length; i++) {
             var new_opt = document.createElement('option');
-            new_opt.text = drop_opts[i];
-            new_opt.value = i;
+            new_opt.text = drop_opts[i].text;
+            new_opt.value = drop_opts[i].value;
 
             try { view_select.add(new_opt, null); } // standards compliant; doesn't work in IE
             catch(e) { view_select.add(new_opt); } // IE only
         }
 
-        if (!isNaN(selected_value)) {
-            view_select.value = selected_value;
+        if (selected_value) {
+            switch (selected_value) {
+                case 'movies':
+                    if (movie_enabled) { view_select.value = selected_value; }
+                    break;
+                case 'snaps':
+                    if (snap_enabled) { view_select.value = selected_value; }
+                    break;
+                default:
+                    view_select.selectedIndex = 0;
+            }
         } else {
             view_select.selectedIndex = 0;
         }
@@ -1761,11 +1770,11 @@ KM.display_archive_ = function () {
         var html = '', span_html = '', duration = 0;
         var start, end;
 
-        var view = parseInt(document.getElementById('view_select').value);
+        var view = document.getElementById('view_select').value;
         var date = document.getElementById('date_select').value;
         var camera = document.getElementById('camera_select').value;
 
-        if (view == 0) { // movie events
+        if (view == 'movies') { // movie events
             var hlight = top_10pc();
             for (var i=0; i<movies['movies'].length; i++) {
                 start = movies['movies'][i]['start'];
@@ -1781,7 +1790,7 @@ KM.display_archive_ = function () {
                 html += '<br>';
                 html += '</span>';
             }
-        } else if (view == 1) { //snap events
+        } else if (view == 'snaps') { //snap events
             for (var i=0; i<movies['snaps'].length; i++) {
                 start = movies['snaps'][i]['start'];
                 html += '<span ' + 'onclick="KM.arch_event_clicked(' + i + ')">';
@@ -1887,7 +1896,7 @@ KM.display_archive_ = function () {
 
         var feed = document.getElementById('camera_select').value;
         var title = feed;
-        if (cameras) 
+        if (cameras && feed) 
             title = cameras[feed]['title'];    
         var time = KM.secs_hh_mm_ss(secs+KM.videoPlayer.get_time());
         var rate = document.getElementById('playback_rate').value;
@@ -1907,7 +1916,7 @@ KM.display_archive_ = function () {
 
         var feed = document.getElementById('camera_select').value;
         var title = feed;
-        if (cameras) 
+        if (cameras && feed) 
             title = cameras[feed]['title'];  
         document.getElementById('playback_info').innerHTML = title;
         feed = null; // stop memory leak
@@ -1915,12 +1924,12 @@ KM.display_archive_ = function () {
     };
 
     function event_clicked(id) {
-        var view = parseInt(document.getElementById('view_select').value);
+        var view = document.getElementById('view_select').value;
 
-        if (view == 0) {
+        if (view == 'movies') {
             play_movie(id);
 
-        } else if (view == 1) {
+        } else if (view == 'snaps') {
             play_snap(id);
         }
 

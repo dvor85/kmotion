@@ -38,8 +38,8 @@ class Archive():
             try:
                 if conf.get('feed_enabled'):
                     feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
+                    title = conf.get('feed_name', '%02i' % feed)
                     if os.path.isdir(feed_dir):
-                        title = 'Cam %02i' % feed
                         with open(os.path.join(feed_dir, 'title'), 'r') as f_obj:
                             title = f_obj.read()
 
@@ -64,13 +64,12 @@ class Archive():
 
     def journal_data(self, date, feed):
 
-        journal = {}
+        journal = {"movies": [], "snaps": []}
         if feed in self.config['feeds'].keys():
             movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)
             if os.path.isdir(movies_dir):
                 movies = os.listdir(movies_dir)
                 movies.sort()
-                journal['movies'] = []
                 for m in movies:
                     mf = os.path.join(movies_dir, m)
                     end = datetime.datetime.fromtimestamp(os.path.getmtime(mf))
@@ -86,7 +85,6 @@ class Archive():
             if os.path.isdir(snaps_dir):
                 snaps = os.listdir(snaps_dir)
                 snaps.sort()
-                journal['snaps'] = []
                 for m in snaps:
                     mf = os.path.join(snaps_dir, m)
                     snap = {}
