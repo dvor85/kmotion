@@ -86,10 +86,11 @@ class Loads:
                                    st=vmstat[7].split()[0],
                                    su=vmstat[8].split()[0])
 
-            vmstat = subprocess.Popen('vmstat', shell=True, stdout=subprocess.PIPE).communicate()[0].split('\n')[2].split()
-            data['cpuusage'] = dict(ci=vmstat[-1],
-                                    cu=vmstat[-3],
-                                    cs=vmstat[-4])
+            vmstat_a = subprocess.Popen('vmstat', shell=True, stdout=subprocess.PIPE).communicate()[0].split('\n')[1:]
+            vmstat_d = dict((k, v) for (k, v) in zip(vmstat_a[0].split(), vmstat_a[1].split()))
+            data['cpuusage'] = dict(ci=vmstat_d["wa"],
+                                    cu=vmstat_d["sy"],
+                                    cs=vmstat_d["us"])
 
             dfout = subprocess.Popen('df -h "{images_dbase_dir}"'.format(
                 images_dbase_dir=self.config_main['images_dbase_dir']), shell=True, stdout=subprocess.PIPE).communicate()[0].split('\n')[1].split()

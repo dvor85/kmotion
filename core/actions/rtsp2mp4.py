@@ -68,7 +68,7 @@ class rtsp2mp4(sample.sample):
 
     def start_grab(self, src, dst, dtime=datetime.datetime.now()):
         if self.sound:
-            audio = "-c:a libfaac -ac 1 -ar 22050 -b:a 64k"
+            audio = "-c:a ac3 -ac 1 -ar 22050 -b:a 64k"
         else:
             audio = "-an"
 
