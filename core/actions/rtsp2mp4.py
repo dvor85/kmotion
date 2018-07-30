@@ -9,6 +9,7 @@ import time
 import datetime
 import signal
 import sample
+import re
 
 log = None
 
@@ -39,6 +40,7 @@ class rtsp2mp4(sample.sample):
             self.feed_username = config['feeds'][self.feed]['feed_lgn_name']
             self.feed_password = config['feeds'][self.feed]['feed_lgn_pw']
             self.feed_url = config['feeds'][self.feed]['feed_url']
+            self.feed_name = config['feeds'][self.feed].get('feed_name', "Get from camera {0}".format(self.feed))
 
             from core.utils import add_userinfo
             self.feed_grab_url = add_userinfo(
@@ -66,20 +68,34 @@ class rtsp2mp4(sample.sample):
         else:
             return ''
 
-    def start_grab(self, src, dst, dtime=datetime.datetime.now()):
-        if self.sound:
-            audio = "-c:a ac3 -ac 1 -ar 22050 -b:a 64k"
-        else:
-            audio = "-an"
+    def get_codec(self, codec):
+        try:
+            enc_regex = re.compile("\s*[AV]\.{{5}}\s+(?P<codec>.*?{codec}.*?)\s+.*".format(codec=codec))
+            encoders = subprocess.check_output("ffmpeg -loglevel error -encoders", shell=True).split("\n")
+            for enc in encoders:
+                enc_match = enc_regex.match(enc)
+                if enc_match:
+                    log.debug('Found codec: {enc}'.format(enc=enc_match.group("codec")))
+                    return enc_match.group("codec")
+        except Exception:
+            log.exception("Can't get codec: {codec}".format(codec=codec))
 
-        metadata = '-metadata creation_time="{dtime}"'.format(dtime=dtime.strftime("%Y-%m-%d %H:%M:%S"))
+    def start_grab(self, src, dst, dtime=datetime.datetime.now()):
+        audio = "-an"
+        if self.sound:
+            codec = self.get_codec("aac")
+            if codec:
+                audio = "-c:a {codec} -ac 1 -ar 22050 -b:a 64k".format(codec=codec)
+
+        metadata = '-metadata creation_time="{dtime}" -metadata title="{title}"'.format(
+            dtime=dtime.strftime("%Y-%m-%d %H:%M:%S"), title=self.feed_name)
 
         if self.recode:
             vcodec = "-c:v libx264 -preset ultrafast -profile:v baseline -b:v {feed_kbs}k -qp 30".format(feed_kbs=self.feed_kbs)
         else:
             vcodec = '-c:v copy'
 
-        grab = 'ffmpeg -threads auto -rtsp_transport tcp -n -i {src} {vcodec} {audio} {metadata} {dst}'.format(
+        grab = 'ffmpeg -loglevel error -threads auto -rtsp_transport tcp -n -i {src} {vcodec} {audio} {metadata} {dst}'.format(
             src=src, dst=dst, vcodec=vcodec, audio=audio, metadata=metadata)
 
         try:
