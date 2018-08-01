@@ -4,13 +4,15 @@ import os
 import logger
 import time
 import utils
-import cPickle
 import events
 import threading
 from multiprocessing import Process
 from config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
+
+EXT_DETECTOR = 0
+INT_DETECTOR = 1
 
 
 class Detector(Process):
@@ -40,7 +42,9 @@ class Detector(Process):
         log.debug('find feed by ip "{0}"'.format(ip))
         if ip:
             for feed, conf in self.config['feeds'].iteritems():
-                if conf.get('feed_enabled', False) and conf.get('motion_detector', 1) == 0 and ip in conf['feed_url']:
+                if conf.get('feed_enabled', False) and \
+                        conf.get('motion_detector', INT_DETECTOR) == EXT_DETECTOR and \
+                        ip in conf['feed_url']:
                     return feed
 
     def sleep(self, timeout):
@@ -57,10 +61,9 @@ class Detector(Process):
             try:
                 if ev != feed:
                     evf = os.path.join(self.events_dir, ev)
-                    last_event_time = time.time()
-                    with open(evf, 'rb') as ef:
-                        last_event_time = cPickle.load(ef)
-                    if (time.time() - last_event_time) >= self.no_motion_secs:
+                    last_event_time = events.get_event_time(evf)
+                    if self.config['feeds'][int(ev)].get('motion_detector', INT_DETECTOR) == EXT_DETECTOR and \
+                            (time.time() - last_event_time) >= self.no_motion_secs:
                         events.Events(self.kmotion_dir, ev, events.STATE_END).end()
             except Exception as e:
                 pass
@@ -77,9 +80,6 @@ class Detector(Process):
                 with lock:
                     if not os.path.isfile(event_file):
                         events.Events(self.kmotion_dir, feed, events.STATE_START).start()
-
-                    with open(event_file, 'wb') as dump:
-                        cPickle.dump(time.time(), dump)
         except ValueError:
             pass
 

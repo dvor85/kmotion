@@ -17,6 +17,19 @@ STATE_END = 'end'
 log = logger.Logger('kmotion', logger.DEBUG)
 
 
+def set_event_time(event_file):
+    with open(event_file, 'wb') as dump:
+        cPickle.dump(time.time(), dump)
+
+
+def get_event_time(event_file):
+    try:
+        with open(event_file, 'rb') as dump:
+            return cPickle.load(dump)
+    except Exception:
+        return time.time()
+
+
 class Events:
 
     def __init__(self, kmotion_dir, feed, state):
@@ -31,13 +44,13 @@ class Events:
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
         self.state_file = os.path.join(self.ramdisk_dir, 'states', str(self.feed))
         self.state = state
-        self.setLastState(self.state)
+        self.set_last_state(self.state)
 
-    def setLastState(self, state):
+    def set_last_state(self, state):
         with open(self.state_file, 'wb') as dump:
             cPickle.dump(state, dump)
 
-    def getLastState(self):
+    def get_last_state(self):
         try:
             with open(self.state_file, 'rb') as dump:
                 return cPickle.load(dump)
@@ -60,11 +73,10 @@ class Events:
         self.state = STATE_START
         if not os.path.isfile(self.event_file):
             log.debug('start: creating: {0}'.format(self.event_file))
-            with open(self.event_file, 'wb'):
-                pass
+            set_event_time(self.event_file)
 
         actions.Actions(self.kmotion_dir, self.feed).start()
-        if self.getLastState() != self.state:
+        if self.get_last_state() != self.state:
             self.end()
 
     def end(self):
@@ -76,7 +88,7 @@ class Events:
             log.debug('end: delete {0}'.format(self.event_file))
             os.unlink(self.event_file)
 
-        if self.getLastState() != self.state:
+        if self.get_last_state() != self.state:
             self.start()
 
     def get_prev_instances(self):

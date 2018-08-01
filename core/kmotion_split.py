@@ -45,7 +45,7 @@ class Kmotion_split(Process):
             try:
                 event_file = os.path.join(self.events_dir, feed)
 
-                if os.path.isfile(event_file) and (time.time() - os.path.getatime(event_file)) >= self.max_duration:
+                if (time.time() - events.get_event_time(event_file)) >= self.max_duration:
                     log.debug('split feed %s' % (feed))
                     events.Events(self.kmotion_dir, feed, events.STATE_START).end()
             finally:
