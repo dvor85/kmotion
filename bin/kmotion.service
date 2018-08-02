@@ -6,6 +6,8 @@ After=network.target
 [Service]
 ExecStart=/usr/local/kmotion3/kmotion.py
 User=videouser
+Restart=always
+RestartSec=60
 
 [Install]
 WantedBy=multi-user.target
