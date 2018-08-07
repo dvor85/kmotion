@@ -1483,7 +1483,7 @@ KM.display_archive_ = function () {
 
     var display_secs =   0; // the current secs count
 
-
+	
 	function init() {
 
 	// A function that initialises that sets the archive backdrop HTML,
@@ -1500,6 +1500,19 @@ KM.display_archive_ = function () {
         window.onresize=null;
         update_dates_dbase(session_id);
     }
+	
+	
+	function add_loading_image_into(container) {
+		var loadingimg = new Image();
+		loadingimg.src = 'images/loading.gif';
+		loadingimg.style.position = 'absolute';
+		loadingimg.style.width = '32px';
+		loadingimg.style.height = '32px';
+		loadingimg.style.border = 0;
+		loadingimg.style.bottom = Math.round(container.clientHeight / 2) - 10 + 'px';
+		loadingimg.style.right = Math.round(container.clientWidth / 2) - 10 + 'px';
+		container.appendChild(loadingimg);
+	}
 
 
 
@@ -1534,36 +1547,35 @@ KM.display_archive_ = function () {
 	//
 
     document.getElementById('main_display').innerHTML = '\
-    <div class="title">kmotion: Archive-><span id="playback_info"></span></div>\
-    <div id="arch_display">\
-		<div id="config_bar">\
-            <select id="date_select" onchange="KM.arch_change_date();" > </select> \
-            <select id="camera_select" onchange="KM.arch_change_camera();" > </select> \
-            <select id="view_select" onchange="KM.arch_change_view();" > </select> \
-		</div>\
-		<div id="arch_display_html">\
-			<div id="arch_playlist"></div>\
-			<div id="arch_player"></div>\
-            <form id="playback_form">\
-                <input id="playback_rate" type="range" value="1" min="0.1" max="10" step="0.1" list="tickmarks">\
-                    <datalist id="tickmarks">\
-                        <option value="0" label="0">\
-                        <option value="1" label="1">\
-                        <option value="2" label="2">\
-                        <option value="3" label="3">\
-                        <option value="4" label="4">\
-                        <option value="5" label="5">\
-                        <option value="6" label="6">\
-                        <option value="7" label="7">\
-                        <option value="8" label="8">\
-                        <option value="9" label="9">\
-                        <option value="10" label="10">\
-                    </datalist>\
-            </form>\
-		</div>\
-	</div>';
-
-    }
+		<div class="title">kmotion: Archive-><span id="playback_info"></span></div>\
+		<div id="arch_display">\
+			<div id="config_bar">\
+				<select id="date_select" onchange="KM.arch_change_date();" > </select> \
+				<select id="camera_select" onchange="KM.arch_change_camera();" > </select> \
+				<select id="view_select" onchange="KM.arch_change_view();" > </select> \
+			</div>\
+			<div id="arch_display_html">\
+				<div id="arch_playlist"></div>\
+				<div id="arch_player"></div>\
+				<form id="playback_form">\
+					<input id="playback_rate" type="range" value="1" min="0.1" max="10" step="0.1" list="tickmarks">\
+						<datalist id="tickmarks">\
+							<option value="0" label="0">\
+							<option value="1" label="1">\
+							<option value="2" label="2">\
+							<option value="3" label="3">\
+							<option value="4" label="4">\
+							<option value="5" label="5">\
+							<option value="6" label="6">\
+							<option value="7" label="7">\
+							<option value="8" label="8">\
+							<option value="9" label="9">\
+							<option value="10" label="10">\
+						</datalist>\
+				</form>\
+			</div>\
+		</div>';
+	}
 
     function update_cams_dbase(date, session_id) {
         function retry() {
@@ -1925,9 +1937,8 @@ KM.display_archive_ = function () {
 
     function event_clicked(id) {
         var view = document.getElementById('view_select').value;
-
-        if (view == 'movies') {
-            play_movie(id);
+        if (view == 'movies') {			
+            play_movie(id, KM.session_id.current);
 
         } else if (view == 'snaps') {
             play_snap(id);
@@ -1935,7 +1946,12 @@ KM.display_archive_ = function () {
 
     }
 
-    function play_movie(movie_id) {
+    function play_movie(movie_id, session_id) {
+		
+		function retry() {
+            KM.kill_timeout_ids(KM.ARCH_LOOP);
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {play_movie(movie_id, session_id); }, 10000));
+        }
 
         // A function that plays the archive forward. If 'from_secs' is
         // specified play forward from 'movie_id' else play forward from
@@ -1947,17 +1963,23 @@ KM.display_archive_ = function () {
         // returns:
         //
 
-        KM.session_id.current++;
         KM.kill_timeout_ids(KM.ARCH_LOOP);
-
-        if (movies['movies'][movie_id]) {
-            playlist_hlight(movie_id);
-            display_secs = movies['movies'][movie_id]['start'];
-            if (!document.getElementById('html5player')) {
-                reset_display_html();
-            }
-            build_video_player(movie_id);
-        }
+		if (KM.session_id.current === session_id) {
+			if (movies['movies'][movie_id]) {
+				KM.session_id.current++;
+				playlist_hlight(movie_id);
+				display_secs = movies['movies'][movie_id]['start'];
+				if (!document.getElementById('html5player')) {
+					reset_display_html();
+				}
+				build_video_player(movie_id);
+			} else {
+				update_movies_dbase(document.getElementById('date_select').value,
+                                       document.getElementById('camera_select').value, session_id);
+				reset_display_html();
+				retry();
+			}
+		}
     }
 
     function play_snap(snap_id) {
@@ -2145,7 +2167,9 @@ KM.display_archive_ = function () {
     }();
 
     function reset_display_html() {
-        document.getElementById('arch_player').innerHTML = '';
+		var arch_player = document.getElementById('arch_player');
+        arch_player.innerHTML = '';
+		add_loading_image_into(arch_player);
         set_null_playback_info();
     }
 
