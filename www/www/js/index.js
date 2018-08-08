@@ -1,5 +1,5 @@
-﻿/* *****************************************************************************
-Define global namespaces & variables
+﻿/* ******************Define global namespaces & variables**********************
+
 ***************************************************************************** */
 
 var KM = {};
@@ -58,6 +58,13 @@ KM.max_feed = function (only_enabled) {
 };
 
 
+KM.show_loading = function(elem) {
+	elem.classList.add("loading_image");
+}
+
+KM.hide_loading = function(elem) {
+	elem.classList.remove("loading_image");
+}
 
 // использование Math.round() даст неравномерное распределение!
 KM.getRandomInt = function(min, max) {
@@ -70,8 +77,8 @@ KM.getRandomInt = function(min, max) {
 //window.onerror = handle_error;
 
 
-/* ****************************************************************************
-System - Misc code
+/* *****************System - Misc code****************************************
+
 
 Miscellaneous code that provides general closures and functions for kmotion
 **************************************************************************** */
@@ -369,8 +376,8 @@ KM.pad_out6 = function (val) {
 };
 
 
-/* ****************************************************************************
-Button bar - Low level code
+/* *****************Button bar - Low level code*******************************
+
 
 Low level button bar code that enables, disables, updates and blinks buttons.
 The clever stuff is in the next section :)
@@ -586,8 +593,8 @@ KM.enable_function_buttons = function (button) {
 KM.update_function_buttons = KM.enable_function_buttons;
 
 
-/* ****************************************************************************
-Button bar - High level code
+/* ******************Button bar - High level code*****************************
+
 
 High level button bar code. This is the nexus of control for kmotion. The
 functions here are called by 'onclick' events in 'index.html'.
@@ -741,13 +748,14 @@ KM.get_jpeg = function (feed) {
 }
 
 
-/* ****************************************************************************
-load settings
+/* ***************************load settings************************************
+
 **************************************************************************** */
 
 
 KM.load_settings = function () {
     function init_interface() {
+		KM.hide_loading(document.getElementById('main_display'));
         KM.browser.set_title();
         KM.background_button_clicked(KM.config.misc.color_select);
         KM.default_display_select = KM.config.misc.display_select;
@@ -773,7 +781,7 @@ KM.load_settings = function () {
             set_settings();
             init_interface();
         }
-
+		KM.show_loading(document.getElementById('main_display'));
         var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {read: '1'} };
         KM.json_request("/ajax/config", jreq, callback, onerror=retry);
     }
@@ -799,8 +807,8 @@ KM.load_settings = function () {
 
 KM.init = KM.load_settings.init;
 
-/* ****************************************************************************
-Live display - Live code
+/* ****************Live display - Live code************************************
+
 
 Code to constantly refreshes the display grid loading feed jpegs and displaying
 them.
@@ -827,7 +835,9 @@ KM.display_live_ = function () {
     function init() {
         // setup for grid display
         KM.session_id.current++;
+		KM.hide_loading(document.getElementById('main_display'));
         init_display_grid(KM.config.misc.display_select);
+		
 
         // exit if no feeds enabled, else 100% CPU usage
         var no_feeds = true;
@@ -1459,8 +1469,8 @@ KM.display_live.set_last_camera = KM.display_live_.set_last_camera;
 KM.display_live.camera_jpeg_clicked = KM.display_live_.camera_jpeg_clicked;
 
 
-/* ****************************************************************************
-Archive display - Archive code.
+/* ****************Archive display - Archive code.*****************************
+
 
 Code to display event listings and play back archive movies, smovies and snaps
 **************************************************************************** */
@@ -1495,27 +1505,12 @@ KM.display_archive_ = function () {
 	//
 
         KM.session_id.current++;
-        var session_id = KM.session_id.current;
+        var session_id = KM.session_id.current;		
         init_backdrop_html();
         window.onresize=null;
         update_dates_dbase(session_id);
     }
 	
-	
-	function add_loading_image_into(container) {
-		var loadingimg = new Image();
-		loadingimg.src = 'images/loading.gif';
-		loadingimg.style.position = 'absolute';
-		loadingimg.style.width = '32px';
-		loadingimg.style.height = '32px';
-		loadingimg.style.border = 0;
-		loadingimg.style.bottom = Math.round(container.clientHeight / 2) - 10 + 'px';
-		loadingimg.style.right = Math.round(container.clientWidth / 2) - 10 + 'px';
-		container.appendChild(loadingimg);
-	}
-
-
-
     function init_main_menus(session_id) {
 
         // A function that initialises and enables the main drop down menus.
@@ -1532,7 +1527,7 @@ KM.display_archive_ = function () {
         document.getElementById('date_select').disabled =   false;
         document.getElementById('camera_select').disabled = false;
         document.getElementById('view_select').disabled =   false;
-
+		KM.hide_loading(document.getElementById('arch_player'));
     }
 
     function init_backdrop_html() {
@@ -1545,7 +1540,8 @@ KM.display_archive_ = function () {
 	//
 	// returns:
 	//
-
+	
+	KM.hide_loading(document.getElementById('main_display'));
     document.getElementById('main_display').innerHTML = '\
 		<div class="title">kmotion: Archive-><span id="playback_info"></span></div>\
 		<div id="arch_display">\
@@ -1577,60 +1573,72 @@ KM.display_archive_ = function () {
 		</div>';
 	}
 
-    function update_cams_dbase(date, session_id) {
+    function update_cams_dbase(date, session_id, callback) {
         function retry() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_cams_dbase(date, session_id); }, 5000));
         }
 
-        function callback(obj_data) {
+        function _callback(obj_data) {
             cameras = obj_data;
             if (cameras !== {}) {
                 populate_camera_dropdown();
                 init_main_menus(session_id);
             }
+			if (typeof callback === "function") {
+				callback();
+			}
         }
 
         if (KM.session_id.current === session_id) {
+			KM.show_loading(document.getElementById('arch_player'));
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"feeds", date:date} };
-            KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
+            KM.json_request("/ajax/archive", jreq, _callback, onerror=retry);
         }
     }
 
-    function update_dates_dbase(session_id) {
+    function update_dates_dbase(session_id, callback) {
         function retry() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_dates_dbase(session_id); }, 5000));
         }
 
-        function callback(obj_data) {
+        function _callback(obj_data) {
             dates = obj_data;
             if (dates !== {}) {
                 populate_date_dropdown();
             }
+			if (typeof callback === "function") {
+				callback();
+			}
         }
 
         if (KM.session_id.current === session_id) {
+			KM.show_loading(document.getElementById('arch_player'));
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"dates"} };
-            KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
+            KM.json_request("/ajax/archive", jreq, _callback, onerror=retry);
         }
     }
 
-    function update_movies_dbase(date, camera, session_id) {
+    function update_movies_dbase(date, camera, session_id, callback) {
         function retry() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
-            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_movies_dbase(date, camera, session_id); }, 5000));
+            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {update_movies_dbase(date, camera, session_id, callback); }, 5000));
         }
 
-        function callback(obj_data) {
+        function _callback(obj_data) {
             movies = obj_data;
             populate_view_dropdown();
-            KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(retry, 30000));
+            //KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(retry, 30000));
+			if (typeof callback === "function") {
+				callback();
+			}
         }
 
         if (KM.session_id.current === session_id) {
+			KM.show_loading(document.getElementById('arch_player'));
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {date: date, feed: camera, func:"movies"} };
-            KM.json_request("/ajax/archive", jreq, callback, onerror=retry);
+            KM.json_request("/ajax/archive", jreq, _callback, onerror=retry);
         }
     }
 
@@ -1667,7 +1675,7 @@ KM.display_archive_ = function () {
         }
         document.getElementById('date_select').selectedIndex = 0;
         change_date();
-
+		KM.hide_loading(document.getElementById('arch_player'));
     }
 
     function populate_camera_dropdown() {
@@ -1765,6 +1773,7 @@ KM.display_archive_ = function () {
             view_select.selectedIndex = 0;
         }
         change_view();
+		KM.hide_loading(document.getElementById('arch_player'));
     }
 
     function fill_events() {
@@ -1842,10 +1851,10 @@ KM.display_archive_ = function () {
         // returns:
         //
 
-        KM.session_id.current++;
+        //KM.session_id.current++;
         var session_id = KM.session_id.current;
         display_secs = 0;
-        update_cams_dbase(document.getElementById('date_select').value, session_id);
+        update_cams_dbase(document.getElementById('date_select').value, session_id);	
 		reset_display_html();
     };
 
@@ -1859,12 +1868,12 @@ KM.display_archive_ = function () {
         // returns:
         //
 
-        KM.session_id.current++;
+        //KM.session_id.current++;
         var session_id = KM.session_id.current;
         display_secs = 0;
         update_movies_dbase(document.getElementById('date_select').value,
-                                       document.getElementById('camera_select').value, session_id);
-        reset_display_html();
+                            document.getElementById('camera_select').value, session_id);
+		reset_display_html();
     };
 
     function change_view() {
@@ -1875,11 +1884,31 @@ KM.display_archive_ = function () {
         // returns:
         //
 
+		var view = document.getElementById('view_select').value;
+		var html5player = document.getElementById('html5player');
+		var player_obj = document.getElementById('player_obj');
         fill_events();
-        reset_display_html();
+		if (view == 'movies') {
+			if (html5player) {
+				html5player.src="";
+			} else {
+				reset_display_html();
+			}
+		} else if (view == 'snaps') {
+			if (html5player) {
+				reset_display_html();
+			} else if (!player_obj) {
+				reset_display_html();
+			}
+		} else {
+			reset_display_html();
+		}
+		
+			
     };
 
     function playlist_hlight(movie_index) {
+		KM.hide_loading(document.getElementById('arch_player'));
         KM.videoPlayer.set_next_movie(movie_index+1);
         var playlist = document.getElementById('arch_playlist');
         if (playlist === null){
@@ -1965,19 +1994,18 @@ KM.display_archive_ = function () {
 
         KM.kill_timeout_ids(KM.ARCH_LOOP);
 		if (KM.session_id.current === session_id) {
+			if (!document.getElementById('html5player')) {
+				reset_display_html();
+			}
 			if (movies['movies'][movie_id]) {
-				KM.session_id.current++;
+				//KM.session_id.current++;
 				playlist_hlight(movie_id);
 				display_secs = movies['movies'][movie_id]['start'];
-				if (!document.getElementById('html5player')) {
-					reset_display_html();
-				}
 				build_video_player(movie_id);
 			} else {
 				update_movies_dbase(document.getElementById('date_select').value,
-                                       document.getElementById('camera_select').value, session_id);
-				reset_display_html();
-				retry();
+                                    document.getElementById('camera_select').value, session_id,
+									callback=function() {KM.show_loading(document.getElementById('arch_player')); retry();});				
 			}
 		}
     }
@@ -1988,7 +2016,18 @@ KM.display_archive_ = function () {
         document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
         snap_player.set_player({id:'player_obj', width: '100%', height: '100%', snap_id: snap_id});
     }
-
+	
+	function get_poster(start) {
+		if (movies["snaps"]) {
+			for (var i = 0; i < movies["snaps"].length; i++) {
+				if (movies["snaps"][i]["start"] === start) {
+					return movies["snaps"][i]["file"];
+				}
+			}
+		}
+		return "";
+	};
+		
     function build_video_player(movie_id) {
 
         // A closure that sets the movie (swf) HTML, and displays the image
@@ -2011,6 +2050,7 @@ KM.display_archive_ = function () {
         var end = movies['movies'][movie_id]['end'];
         var next_id = parseInt(movie_id)+1;
         var html5player = document.getElementById('html5player');
+		var poster = get_poster(start);
 
         if (!html5player) {
             document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
@@ -2048,7 +2088,8 @@ KM.display_archive_ = function () {
                         autoplay:true,
                         controls:true,
                         muted:true,
-                        playbackRate:rate
+                        playbackRate:rate,
+						poster:poster
                     }
                 });
                 html5player = document.getElementById('html5player');
@@ -2062,6 +2103,7 @@ KM.display_archive_ = function () {
                 }
             } else {
                 html5player.src = name;
+				html5player.poster = poster;
             }
 
 			break;
@@ -2095,10 +2137,19 @@ KM.display_archive_ = function () {
         }
 
         function reload() {
+			function retry() {
+				KM.kill_timeout_ids(KM.ARCH_LOOP);
+				KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {reload(); }, 10000));
+			}
+			
             if (KM.session_id.current === session_id) {
                 if (movies['snaps'][snap_id]) {
                     KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, delay-get_delta()));
-                }
+                } else {
+					update_movies_dbase(document.getElementById('date_select').value,
+										document.getElementById('camera_select').value, session_id,
+										callback=function() {retry();});				
+				}
             }
         }
 
@@ -2167,9 +2218,9 @@ KM.display_archive_ = function () {
     }();
 
     function reset_display_html() {
+		KM.session_id.current++;
 		var arch_player = document.getElementById('arch_player');
         arch_player.innerHTML = '';
-		add_loading_image_into(arch_player);
         set_null_playback_info();
     }
 
@@ -2191,8 +2242,8 @@ KM.arch_event_clicked = KM.display_archive_.event_clicked;
 KM.update_playback_info = KM.display_archive_.update_playback_info;
 
 
-/* ****************************************************************************
-Log display - Log Code.
+/* *****************Log display - Log Code.*************************************
+
 
 Displays logs with critical information highlighted
 **************************************************************************** */
@@ -2211,11 +2262,12 @@ KM.display_logs_ = function () {
 
     var events;
     var session_id;
-    var downloading_message = '<p style="text-align: center">Downloading Logs ...</p>';
+	var config_html;
 
 
     function init() {
         set_logs_html();
+		config_html=document.getElementById('config_html');
         window.onresize=null;
         get_kmotion_logs();
     }
@@ -2223,7 +2275,7 @@ KM.display_logs_ = function () {
     function set_logs_html() {
         KM.session_id.current++;
         session_id = KM.session_id.current;
-
+		KM.hide_loading(document.getElementById('main_display'));
         document.getElementById('main_display').innerHTML = '\
         <div class="title">kmotion: Logs</div>\
         <div class="divider" >\
@@ -2252,7 +2304,8 @@ KM.display_logs_ = function () {
                     log_html += format_event(events[i]);
                 }
             }
-            document.getElementById('config_html').innerHTML = log_html;
+            config_html.innerHTML = log_html;
+			KM.hide_loading(config_html);
     }
 
     function format_event(event) {
@@ -2280,7 +2333,8 @@ KM.display_logs_ = function () {
         }
 
         if (session_id === KM.session_id.current) {
-            document.getElementById('config_html').innerHTML = downloading_message;
+			config_html.innerHTML = '';
+			KM.show_loading(config_html);
             document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Kmotion logs";
             events = null;
 
@@ -2298,7 +2352,8 @@ KM.display_logs_ = function () {
         }
 
         if (session_id === KM.session_id.current) {
-            document.getElementById('config_html').innerHTML = downloading_message;
+			config_html.innerHTML = '';
+			KM.show_loading(config_html);
             document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Motion logs";
             events = null;
 
@@ -2319,8 +2374,8 @@ KM.get_kmotion_logs = KM.display_logs_.get_kmotion_logs;
 KM.get_motion_logs = KM.display_logs_.get_motion_logs;
 
 
-/* ****************************************************************************
-Main display - Config - Misc code
+/* *****************Main display - Config - Misc code***************************
+
 
 Miscellaneous code that provides general closures and functions for config
 **************************************************************************** */
@@ -3264,7 +3319,7 @@ KM.display_config_ = function () {
                 dbase = obj_data;
                 update_text();
                 update_bars();
-                reload();
+                reload();				
             }
 
             function reload() {

@@ -91,6 +91,10 @@ a:active {
 	bottom: 35px;
 }
 
+.loading_image {
+	background: url("/images/loading.gif") center no-repeat;
+}
+
 /* *****************************************************************************
 Button bar section
 ***************************************************************************** */
@@ -339,7 +343,7 @@ Main display section
 	border-right: 0px;	
 	padding: 0px;	
 	color: #C1C1C1;	
-    cursor: default;    
+    cursor: default; 	
 }
 
 #main_display img[id^='image_'] {
