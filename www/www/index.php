@@ -9,7 +9,6 @@
 <meta http-equiv="cache-control" content="no-cache">
 <meta name="robots" content="none">
 <title></title>
-<script type="text/javascript" src="js/swfobject.js"></script>
 <script type="text/javascript" >
 
 /* *****************************************************************************

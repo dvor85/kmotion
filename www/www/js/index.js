@@ -1522,7 +1522,7 @@ KM.display_archive_ = function () {
         //
         // returns:
         //
-        set_null_playback_info();
+        //update_playback_info(display_secs);
 
         document.getElementById('date_select').disabled =   false;
         document.getElementById('camera_select').disabled = false;
@@ -1735,19 +1735,15 @@ KM.display_archive_ = function () {
         var selected_index = view_select.selectedIndex;
         var selected_value = view_select.value;
 
-
         for (var i = view_select.options.length - 1; i > -1; i--) {
             view_select.remove(i);
         }
 
-        var movie_enabled =  cameras[document.getElementById('camera_select').value]['movie_flag'];
-        var snap_enabled =   cameras[document.getElementById('camera_select').value]['snap_flag'];
         var drop_opts = [];
-        if (movie_enabled)
+        if (movies['movies'])
             drop_opts.push({'value': 'movies', 'text':'Movies'});
-        if (snap_enabled)
+        if (movies['snaps'])
             drop_opts.push({'value':'snaps', 'text':'Snapshots'});
-
 
         for (var i = 0; i < drop_opts.length; i++) {
             var new_opt = document.createElement('option');
@@ -1761,10 +1757,10 @@ KM.display_archive_ = function () {
         if (selected_value) {
             switch (selected_value) {
                 case 'movies':
-                    if (movie_enabled) { view_select.value = selected_value; }
+                    if (movies['movies']) { view_select.value = selected_value; }
                     break;
                 case 'snaps':
-                    if (snap_enabled) { view_select.value = selected_value; }
+                    if (movies['snaps']) { view_select.value = selected_value; }
                     break;
                 default:
                     view_select.selectedIndex = 0;
@@ -1852,10 +1848,12 @@ KM.display_archive_ = function () {
         //
 
         //KM.session_id.current++;
+		reset_display_html();
         var session_id = KM.session_id.current;
         display_secs = 0;
+		var view = document.getElementById('view_select').value;
         update_cams_dbase(document.getElementById('date_select').value, session_id);	
-		reset_display_html();
+		
     };
 
     function change_camera() {
@@ -1869,11 +1867,15 @@ KM.display_archive_ = function () {
         //
 
         //KM.session_id.current++;
-        var session_id = KM.session_id.current;
-        display_secs = 0;
-        update_movies_dbase(document.getElementById('date_select').value,
-                            document.getElementById('camera_select').value, session_id);
 		reset_display_html();
+        var session_id = KM.session_id.current;
+        //display_secs = 0;
+		var view = document.getElementById('view_select').value;
+        update_movies_dbase(document.getElementById('date_select').value,
+                            document.getElementById('camera_select').value, session_id, 
+							callback=function() {playlist_hlight(get_id_by_start(display_secs, view));});
+							
+		
     };
 
     function change_view() {
@@ -1887,11 +1889,8 @@ KM.display_archive_ = function () {
 		var view = document.getElementById('view_select').value;
 		var html5player = document.getElementById('html5player');
 		var player_obj = document.getElementById('player_obj');
-        fill_events();
 		if (view == 'movies') {
-			if (html5player) {
-				html5player.src="";
-			} else {
+			if (!html5player) {
 				reset_display_html();
 			}
 		} else if (view == 'snaps') {
@@ -1903,7 +1902,8 @@ KM.display_archive_ = function () {
 		} else {
 			reset_display_html();
 		}
-		
+		fill_events();
+		playlist_hlight(get_id_by_start(display_secs, view));
 			
     };
 
@@ -1938,28 +1938,11 @@ KM.display_archive_ = function () {
         var feed = document.getElementById('camera_select').value;
         var title = feed;
         if (cameras && feed) 
-            title = cameras[feed]['title'];    
+            title = cameras[feed]['title']; 
+		
         var time = KM.secs_hh_mm_ss(secs+KM.videoPlayer.get_time());
         var rate = document.getElementById('playback_rate').value;
         document.getElementById('playback_info').innerHTML = title + ' <' + time + '> [' + rate + ']';
-        feed = null; // stop memory leak
-        title = null;
-    };
-
-    function set_null_playback_info() {
-
-	// A function to updates the title but does not show the 'clock'
-	//
-	// expects:
-	//
-	// returns:
-	//
-
-        var feed = document.getElementById('camera_select').value;
-        var title = feed;
-        if (cameras && feed) 
-            title = cameras[feed]['title'];  
-        document.getElementById('playback_info').innerHTML = title;
         feed = null; // stop memory leak
         title = null;
     };
@@ -2011,21 +1994,29 @@ KM.display_archive_ = function () {
     }
 
     function play_snap(snap_id) {
-        KM.session_id.current++;
+        //KM.session_id.current++;
         reset_display_html();
         document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
         snap_player.set_player({id:'player_obj', width: '100%', height: '100%', snap_id: snap_id});
     }
 	
-	function get_poster(start) {
-		if (movies["snaps"]) {
-			for (var i = 0; i < movies["snaps"].length; i++) {
-				if (movies["snaps"][i]["start"] === start) {
-					return movies["snaps"][i]["file"];
+	function get_id_by_start(start, view) {
+		var i = 0;
+		if (movies[view]) {
+			// т.к. i - внешняя, то цикл до length-1, при этом если не сработало условие, то вернется последний индекс
+			for (i = 0; i < movies[view].length-1; i++) {
+				if (movies[view][i]["start"] === start) {
+					return i;
+				} else if (movies[view][i]["start"] > start) {
+					if (start <= movies[view][i]["end"]) {
+						return i;
+					} else if (i > 0) {
+						return i - 1;
+					}
 				}
 			}
 		}
-		return "";
+		return i;
 	};
 		
     function build_video_player(movie_id) {
@@ -2050,7 +2041,7 @@ KM.display_archive_ = function () {
         var end = movies['movies'][movie_id]['end'];
         var next_id = parseInt(movie_id)+1;
         var html5player = document.getElementById('html5player');
-		var poster = get_poster(start);
+		var poster = movies["snaps"][get_id_by_start(start, "snaps")]["file"];
 
         if (!html5player) {
             document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
@@ -2064,17 +2055,6 @@ KM.display_archive_ = function () {
 
 
 		switch (file_ext) {
-
-		case '.swf':
-			document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
-			document.getElementById('player_obj').innerHTML = "<p><a href=\""+document.URL+name+"\" target='_blank'>DOWNLOAD: "+name.split(/(\\|\/)/g).pop()+"</a></p>";
-
-			var flashvars = {};
-			var fparams = {allowFullScreen:'true', allowscriptaccess: 'always', quality:'best', bgcolor:'#000000', scale:'exactfit'};
-			var fattributes = {id: 'player_obj', name: 'player_obj'};
-			swfobject.embedSWF(name, 'player_obj', '100%', '100%', '9.124.0', 'expressInstall.swf', flashvars, fparams, fattributes);
-			movie_id = document.getElementById('player_obj');
-			break;
 
 		default:
             if (!html5player) {
@@ -2094,11 +2074,11 @@ KM.display_archive_ = function () {
                 });
                 html5player = document.getElementById('html5player');
                 if (html5player) {
-                    html5player.onloadeddata=html5VideoLoaded;
-                    html5player.onseeked=html5VideoScrolled;
-                    html5player.ontimeupdate=html5VideoProgress;
-                    html5player.onended=html5VideoFinished;
-                    html5player.onclick=html5playerPlayPause;
+                    html5player.onloadeddata=KM.videoPlayer.html5VideoLoaded;
+                    html5player.onseeked=KM.videoPlayer.html5VideoScrolled;
+                    html5player.ontimeupdate=KM.videoPlayer.html5VideoProgress
+                    html5player.onended=KM.videoPlayer.html5VideoFinished;
+                    html5player.onclick=KM.videoPlayer.html5playerPlayPause;
                     html5player = null;
                 }
             } else {
@@ -2173,7 +2153,6 @@ KM.display_archive_ = function () {
 
             }
 
-
         function get_delta() {
             return Math.min(100, new Date().getTime()-time);
         }
@@ -2219,9 +2198,10 @@ KM.display_archive_ = function () {
 
     function reset_display_html() {
 		KM.session_id.current++;
+		KM.kill_timeout_ids(KM.ARCH_LOOP);
 		var arch_player = document.getElementById('arch_player');
         arch_player.innerHTML = '';
-        set_null_playback_info();
+        update_playback_info(display_secs);
     }
 
     return {
@@ -3411,96 +3391,16 @@ KM.videoPlayer = function() {
     }
 
     function get_time() {
-        return tm;
-    }
-
-    function set_play_accel(accel) {
-        current_play_accel = accel;
-    }
-
-    function ktVideoProgress(time) {
-    // вызывается каждую секунду проигрывания видео
-        tm=parseInt(time,10);
-        if ((current_play_accel>0)&&(current_play_accel<5)){
-            if (document.getElementById('flashplayer')['jsScroll']) {
-                document.getElementById('flashplayer').jsScroll(++tm);
-            }
-        }
-        KM.update_playback_info(cur_event_secs);
-    }
-
-    function ktVideoFinished() {
-        tm=0;
-        KM.arch_event_clicked(next_movie);
-    }
-
-    function ktVideoScrolled(time) {
-    // вызовется при перемотке видео
-        tm=parseInt(time,10);
-        KM.update_playback_info(cur_event_secs);
-    }
-
-    function ktVideoStarted() {
-    // вызовется при нажатии на кнопку play
-        paused=false;
-    }
-
-    function ktVideoPaused() {
-    // вызовется при нажатии на кнопку pause
-        paused=true;
-    }
-
-    function ktVideoStopped() {
-    // вызовется при нажатии на кнопку stop
-        paused=true;
-    }
-
-    function ktPlayerLoaded() {
-        tm=0;
-        document.onkeydown = function(e) {
-            if (document.getElementById('flashplayer')) {
-                var flashplayer=document.getElementById('flashplayer');
-                switch (e.which) {
-                case 39:
-                    if (flashplayer['jsScroll']) {
-                        tm+=1;
-                        if (tm<=movie_duration-1)
-                            flashplayer.jsScroll(tm);
-                    }
-                    break;
-                case 37:
-                    if (flashplayer['jsScroll']) {
-                        tm-=1;
-                        if (tm>=1)
-                            flashplayer.jsScroll(tm);
-                    }
-                    break;
-                case 32:
-                    if (paused) {
-                        if (flashplayer['jsPlay']) {
-                            flashplayer.jsPlay();
-                            paused=false;
-                        }
-                    }
-                    else {
-                        if (flashplayer['jsPause']) {
-                            flashplayer.jsPause();
-                            paused=true;
-                        }
-                    }
-                    break;
-                }
-                KM.update_playback_info(cur_event_secs);
-                flashplayer=null;
-            }
-            return false;
-        }
+		var html5player=document.getElementById('html5player');
+		if (!html5player) {
+			tm=0;
+		}
+		return tm;
     }
 
     function html5VideoProgress() {
         if (document.getElementById('html5player')) {
             var html5player=document.getElementById('html5player');
-
             var rate = document.getElementById('playback_rate').value;
             html5player.playbackRate=rate;
             tm=html5player.currentTime;
@@ -3579,16 +3479,13 @@ KM.videoPlayer = function() {
 					h264Test = vidTest
 							.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'); // mp4
 																						// format
-					if (!h264Test) { // if it doesnot support .mp4 format
-						return "flash"; // play flash
+					
+					if (h264Test == "probably") { // supports .mp4 format
+						return "html5"; // play HTML5 video
 					} else {
-						if (h264Test == "probably") { // supports .mp4 format
-							return "html5"; // play HTML5 video
-						} else {
-							return "flash"; // play flash video if it doesnot
-											// support any of them.
-						}
+						return "none";
 					}
+					
 				}
 			case 'ogv':
 				var vidTest = document.createElement("video");
@@ -3597,12 +3494,12 @@ KM.videoPlayer = function() {
 							.canPlayType('video/ogg; codecs="theora, vorbis"'); // ogg
 																				// format
 					if (!oggTest) { // if it doesnot support
-						return "none"; // play flash
+						return "none";
 					} else {
 						if (oggTest == "probably") { // supports
 							return "html5"; // play HTML5 video
 						} else {
-							return "none"; // play flash video if it doesnot
+							return "none"; 
 											// support any of them.
 						}
 					}
@@ -3614,20 +3511,16 @@ KM.videoPlayer = function() {
 							.canPlayType('video/webm; codecs="vp8.0, vorbis"'); // webm
 																				// format
 					if (!webmTest) { // if it doesnot support
-						return "none"; // play flash
+						return "none";
 					} else {
 						if (webmTest == "probably") { // supports
 							return "html5"; // play HTML5 video
 						} else {
-							return "none"; // play flash video if it doesnot
+							return "none"; 
 											// support any of them.
 						}
 					}
 				}
-				break;
-			case 'flv':
-			case 'swf':
-				return "flash";
 				break;
 			default:
 				return "none";
@@ -3655,38 +3548,6 @@ KM.videoPlayer = function() {
 					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
 
 			html5player.src = params.src;
-		} else if (canplay == "flash") {
-			var id = ID();
-			document.getElementById(params.id).innerHTML = '<div id="' + id
-					+ '"> </div>';
-			document.getElementById(id).innerHTML = "<p><a href=\"" + document.URL
-					+ params.src + "\" target='_blank'>DOWNLOAD: "
-					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
-
-			var flashvars = {
-				video_url : params.src,
-				permalink_url : document.URL + params.src,
-				bt : 5,
-				scaling : 'fill',
-				hide_controlbar : 0,
-				flv_stream : false,
-				autoplay : true,
-				js : 1
-			};
-			var fparams = {
-				allowfullscreen : 'true',
-				allowscriptaccess : 'always',
-				quality : 'best',
-				bgcolor : '#000000',
-				scale : 'exactfit'
-			};
-			var fattributes = {
-				id : 'flashplayer',
-				name : 'flashplayer'
-			};
-			swfobject.embedSWF('media/kt_player.swf', id, params.width, params.height,
-					'9.124.0', 'media/expressInstall.swf', flashvars, fparams,
-					fattributes);
 		} else {
 			document.getElementById(params.id).innerHTML = "<p><a href=\""
 					+ document.URL + params.src + "\" target='_blank'>DOWNLOAD: "
@@ -3702,17 +3563,6 @@ KM.videoPlayer = function() {
         set_next_movie: set_next_movie,
         set_movie_duration: set_movie_duration,
         get_time: get_time,
-        set_play_accel: set_play_accel,
-
-        ///////////////////FLASHPLAYER EVENTS//////////////////////////////
-
-        ktVideoProgress: ktVideoProgress,
-        ktVideoFinished: ktVideoFinished,
-        ktVideoScrolled: ktVideoScrolled,
-        ktVideoStarted: ktVideoStarted,
-        ktVideoPaused: ktVideoPaused,
-        ktVideoStopped: ktVideoStopped,
-        ktPlayerLoaded: ktPlayerLoaded,
 
         /////////////////HTML5PLAYER EVENTS/////////////////////////
 
@@ -3723,19 +3573,6 @@ KM.videoPlayer = function() {
         html5VideoLoaded: html5VideoLoaded
     }
 }();
-
-var ktVideoProgress = KM.videoPlayer.ktVideoProgress;
-var ktVideoFinished = KM.videoPlayer.ktVideoFinished;
-var ktVideoScrolled = KM.videoPlayer.ktVideoScrolled;
-var ktVideoStarted = KM.videoPlayer.ktVideoStarted;
-var ktVideoPaused = KM.videoPlayer.ktVideoPaused;
-var ktVideoStopped = KM.videoPlayer.ktVideoStopped;
-var ktPlayerLoaded = KM.videoPlayer.ktPlayerLoaded;
-var html5VideoProgress = KM.videoPlayer.html5VideoProgress;
-var html5VideoScrolled = KM.videoPlayer.html5VideoScrolled;
-var html5VideoFinished = KM.videoPlayer.html5VideoFinished;
-var html5playerPlayPause = KM.videoPlayer.html5playerPlayPause;
-var html5VideoLoaded = KM.videoPlayer.html5VideoLoaded;
 
 
 KM.init();

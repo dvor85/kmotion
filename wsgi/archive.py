@@ -43,9 +43,7 @@ class Archive():
                         with open(os.path.join(feed_dir, 'title'), 'r') as f_obj:
                             title = f_obj.read()
 
-                        feeds_list[feed] = {'movie_flag': os.path.isdir(os.path.join(feed_dir, 'movie')),
-                                            'snap_flag': os.path.isdir(os.path.join(feed_dir, 'snap')),
-                                            'title': title}
+                        feeds_list[feed] = {'title': title}
             except Exception:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 print('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
@@ -89,6 +87,7 @@ class Archive():
                     mf = os.path.join(snaps_dir, m)
                     snap = {}
                     snap['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
+                    snap['end'] = snap['start']
                     snap['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
                     journal['snaps'].append(snap)
 
