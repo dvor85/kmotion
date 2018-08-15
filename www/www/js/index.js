@@ -1533,8 +1533,7 @@ KM.display_archive_ = function () {
     function init_backdrop_html() {
 
 	// A function that generates the archive backdrop HTML including the top
-	// dropdown menus, the main display, the bottom button bar and the
-	// timeline.
+	// dropdown menus, the main display
 	//
 	// expects:
 	//
@@ -1840,14 +1839,13 @@ KM.display_archive_ = function () {
     function change_date() {
 
         // A function that is executed when the date is changed, re-inits
-        // 'camera', 'view' and 'mode' dropdowns, reloads the frame dbase and
+        // 'camera'
         //
         // expects:
         //
         // returns:
         //
 
-        //KM.session_id.current++;
 		reset_display_html();
         var session_id = KM.session_id.current;
         display_secs = 0;
@@ -1858,18 +1856,15 @@ KM.display_archive_ = function () {
 
     function change_camera() {
 
-        // A function that is executed when the camera is changed, re-inits
-        // 'view' and 'mode' dropdowns, reloads the frame dbase and
+        // A function that is executed when the camera is changed, reloads the movies dbase and
         //
         // expects:
         //
         // returns:
         //
 
-        //KM.session_id.current++;
 		reset_display_html();
         var session_id = KM.session_id.current;
-        //display_secs = 0;
 		var view = document.getElementById('view_select').value;
         update_movies_dbase(document.getElementById('date_select').value,
                             document.getElementById('camera_select').value, session_id, 
@@ -1908,6 +1903,7 @@ KM.display_archive_ = function () {
     };
 
     function playlist_hlight(movie_index) {
+		var view = document.getElementById('view_select').value;
 		KM.hide_loading(document.getElementById('arch_player'));
         KM.videoPlayer.set_next_movie(movie_index+1);
         var playlist = document.getElementById('arch_playlist');
@@ -1923,6 +1919,8 @@ KM.display_archive_ = function () {
                 lines[i].scrollIntoView(false);
             }
         }
+		display_secs = movies[view][movie_index]["start"];
+		update_playback_info(movies[view][movie_index]["start"]);
     }
 
     function update_playback_info(secs) {
@@ -1981,7 +1979,6 @@ KM.display_archive_ = function () {
 				reset_display_html();
 			}
 			if (movies['movies'][movie_id]) {
-				//KM.session_id.current++;
 				playlist_hlight(movie_id);
 				display_secs = movies['movies'][movie_id]['start'];
 				build_video_player(movie_id);
@@ -1994,7 +1991,6 @@ KM.display_archive_ = function () {
     }
 
     function play_snap(snap_id) {
-        //KM.session_id.current++;
         reset_display_html();
         document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
         snap_player.set_player({id:'player_obj', width: '100%', height: '100%', snap_id: snap_id});
@@ -2021,8 +2017,7 @@ KM.display_archive_ = function () {
 		
     function build_video_player(movie_id) {
 
-        // A closure that sets the movie (swf) HTML, and displays the image
-        // nearest to 'movie_obj.secs', once completed 'callback' is called
+        // A closure that sets the movie HTML
         //
         // expects :
         // 'movie_obj'  ... the movie object
@@ -2047,12 +2042,8 @@ KM.display_archive_ = function () {
             document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
         }
 
-		KM.videoPlayer.set_movie_duration(end-start);
 		KM.videoPlayer.set_cur_event_secs(start);
 		KM.videoPlayer.set_next_movie(next_id);
-
-		update_playback_info(start);
-
 
 		switch (file_ext) {
 
@@ -2201,7 +2192,6 @@ KM.display_archive_ = function () {
 		KM.kill_timeout_ids(KM.ARCH_LOOP);
 		var arch_player = document.getElementById('arch_player');
         arch_player.innerHTML = '';
-        update_playback_info(display_secs);
     }
 
     return {
@@ -3384,11 +3374,7 @@ KM.videoPlayer = function() {
 
     function set_next_movie(movie_id) {
         next_movie = movie_id;
-    }
-
-    function set_movie_duration(dur) {
-        movie_duration = dur;
-    }
+    }    
 
     function get_time() {
 		var html5player=document.getElementById('html5player');
@@ -3419,7 +3405,6 @@ KM.videoPlayer = function() {
     }
 
     function html5VideoFinished() {
-        tm=0;
         KM.arch_event_clicked(next_movie);
     }
 
@@ -3561,7 +3546,6 @@ KM.videoPlayer = function() {
         set_video_player: set_video_player,
         set_cur_event_secs: set_cur_event_secs,
         set_next_movie: set_next_movie,
-        set_movie_duration: set_movie_duration,
         get_time: get_time,
 
         /////////////////HTML5PLAYER EVENTS/////////////////////////
