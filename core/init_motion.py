@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 """
 Exports various methods used to initialize motion configuration. These methods
 have been moved to this seperate module to reduce issues when the motion API
@@ -142,12 +141,13 @@ class InitMotion:
 
 daemon off
 quiet on
-webcontrol_port 8080
 webcontrol_localhost on
-webcontrol_interface off
+webcontrol_port 8080
+webcontrol_interface 2
 text_right %Y-%m-%d\\n%T
 text_left CAMERA %t\\nD %D N %N
-max_movie_time 0
+movie_output off
+movie_max_time 0
 despeckle_filter EedDl
 
 '''
@@ -216,7 +216,7 @@ stream_localhost off
                 print >> f_obj1, 'noise_level %s' % self.config['feeds'][feed].get('feed_noise_level', 32)
                 print >> f_obj1, 'noise_tune {0}'.format('on' if self.config['feeds'][feed].get('feed_noise_tune') else 'off')
                 print >> f_obj1, 'threshold %s' % self.config['feeds'][feed].get('feed_threshold', 300)
-                print >> f_obj1, 'quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
+                print >> f_obj1, 'picture_quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
 
                 # show motion box
                 print >> f_obj1, 'locate_motion_mode {0}'.format(
@@ -225,9 +225,9 @@ stream_localhost off
 
                 # always on for feed updates
                 if fps > 1:
-                    print >> f_obj1, 'output_pictures on'
+                    print >> f_obj1, 'picture_output on'
                 else:
-                    print >> f_obj1, 'output_pictures off'
+                    print >> f_obj1, 'picture_output off'
                 print >> f_obj1, 'picture_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % feed
                 print >> f_obj1, 'snapshot_interval 1'
                 print >> f_obj1, 'snapshot_filename %0.2i/%%Y%%m%%d%%H%%M%%S' % feed
@@ -243,8 +243,8 @@ stream_localhost off
                 print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f %s' % (
                     self.kmotion_dir, self.config['feeds'][feed].get('feed_webpicture_scale', 1))
 
-
 # Module test code
+
 
 if __name__ == '__main__':
 

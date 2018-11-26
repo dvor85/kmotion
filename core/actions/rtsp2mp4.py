@@ -70,7 +70,7 @@ class rtsp2mp4(sample.sample):
 
     def get_codec(self, codec):
         try:
-            enc_regex = re.compile("\s*[AV]\.{{5}}\s+(?P<codec>.*?{codec}.*?)\s+.*".format(codec=codec))
+            enc_regex = re.compile("\s*[AV.]{{6}}\s+(?P<codec>.*?{codec}.*?)\s+.*".format(codec=codec))
             encoders = subprocess.check_output("ffmpeg -loglevel error -encoders", shell=True).split("\n")
             for enc in encoders:
                 enc_match = enc_regex.match(enc)

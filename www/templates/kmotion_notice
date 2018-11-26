@@ -1,5 +1,4 @@
 Listen ${port_notice}
-NameVirtualHost *:${port_notice}
 <VirtualHost *:${port_notice}>
 
 	ServerName notice

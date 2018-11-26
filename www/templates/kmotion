@@ -1,7 +1,4 @@
 Listen ${port}
-NameVirtualHost *:${port}
-# http://httpd.apache.org/docs/2.0/misc/security_tips.html
-
 <VirtualHost *:${port}>
 
     ServerName kmotion
