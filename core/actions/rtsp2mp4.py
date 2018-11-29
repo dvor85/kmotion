@@ -21,7 +21,7 @@ class rtsp2mp4(sample.sample):
 
         from core import logger
         global log
-        log = logger.Logger('kmotion', logger.INFO)
+        log = logger.Logger('kmotion', logger.DEBUG)
         self.key = 'rtsp2mp4'
 
         from core.config import Settings
@@ -44,7 +44,7 @@ class rtsp2mp4(sample.sample):
 
             from core.utils import add_userinfo
             self.feed_grab_url = add_userinfo(
-                config['feeds'][self.feed].get('%s_grab_url' % self.key, self.feed_url),
+                config['feeds'][self.feed].get('%s_url' % self.key, self.feed_url),
                 self.feed_username,
                 self.feed_password)
         except Exception:
@@ -121,7 +121,7 @@ class rtsp2mp4(sample.sample):
                 if not os.path.isdir(movie_dir):
                     os.makedirs(movie_dir)
 
-                dst = os.path.join(movie_dir, '%s.mp4' % event_time)
+                dst = os.path.join(movie_dir, '%s_%s.mp4' % (event_date, event_time))
 
                 self.start_grab(self.feed_grab_url, dst, dt)
 

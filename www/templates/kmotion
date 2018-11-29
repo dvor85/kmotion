@@ -62,6 +62,13 @@ Listen ${port}
 
 	ErrorLog "${APACHE_LOG_DIR}/kmotion_error.log"
 	TransferLog "${APACHE_LOG_DIR}/kmotion_access.log"
+
+    
+    ProxyRequests Off
+    ProxyPreserveHost On
+
+    ProxyPass "/live/"	"http://localhost:8110/"
+    ProxyPassReverse "/live/"	"http://localhost:8110/"
     
 </VirtualHost>
 

@@ -143,12 +143,12 @@ daemon off
 quiet on
 webcontrol_port 8080
 webcontrol_localhost on
-webcontrol_interface off
+webcontrol_interface 2
 text_right %Y-%m-%d\\n%T
 text_left CAMERA %t\\nD %D N %N
-movie_output off
-movie_max_time 0
 despeckle_filter EedDl
+stream_localhost on
+stream_port 8110
 
 '''
 
@@ -175,8 +175,9 @@ despeckle_filter EedDl
 event_gap 2
 pre_capture 1
 post_capture 10
-stream_localhost off
+
 '''
+                print >> f_obj1, 'camera_id %s' % feed
                 # pal or ntsc,
                 print >> f_obj1, 'norm 1'
 
@@ -195,7 +196,7 @@ stream_localhost off
                     print >> f_obj1, 'minimum_frame_time 0'
                 print >> f_obj1, 'framerate {fps}'.format(fps=fps)
 
-                print >> f_obj1, 'target_dir %s' % self.ramdisk_dir
+                print >> f_obj1, 'target_dir %s' % self.images_dbase_dir
 
                 # device and input
                 feed_device = self.config['feeds'][feed].get('feed_device', -1)
@@ -205,6 +206,8 @@ stream_localhost off
                 else:  # netcam
                     print >> f_obj1, 'netcam_keepalive on'
                     print >> f_obj1, 'netcam_url  %s' % self.config['feeds'][feed]['feed_url']
+                    if self.config['feeds'][feed].get('feed_rtsp_url'):
+                        print >> f_obj1, 'netcam_highres  %s' % self.config['feeds'][feed]['feed_rtsp_url']
                     print >> f_obj1, 'netcam_proxy %s' % self.config['feeds'][feed].get('feed_proxy', '')
                     print >> f_obj1, 'netcam_userpass %s:%s' % (
                         self.config['feeds'][feed]['feed_lgn_name'],
@@ -216,7 +219,6 @@ stream_localhost off
                 print >> f_obj1, 'noise_level %s' % self.config['feeds'][feed].get('feed_noise_level', 32)
                 print >> f_obj1, 'noise_tune {0}'.format('on' if self.config['feeds'][feed].get('feed_noise_tune') else 'off')
                 print >> f_obj1, 'threshold %s' % self.config['feeds'][feed].get('feed_threshold', 300)
-                print >> f_obj1, 'picture_quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
 
                 # show motion box
                 print >> f_obj1, 'locate_motion_mode {0}'.format(
@@ -224,24 +226,39 @@ stream_localhost off
                 print >> f_obj1, 'locate_motion_style box'
 
                 # always on for feed updates
-                if fps > 1:
-                    print >> f_obj1, 'picture_output on'
-                else:
-                    print >> f_obj1, 'picture_output off'
-                print >> f_obj1, 'picture_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % feed
-                print >> f_obj1, 'snapshot_interval 1'
-                print >> f_obj1, 'snapshot_filename %0.2i/%%Y%%m%%d%%H%%M%%S' % feed
+                # if fps > 1:
+                #    print >> f_obj1, 'picture_output on'
+                # else:
+#                 print >> f_obj1, 'stream_auth_method digest'
+                print >> f_obj1, 'stream_authentication %s:%s' % (
+                    self.config['feeds'][feed]['feed_lgn_name'],
+                    self.config['feeds'][feed]['feed_lgn_pw'])
+                print >> f_obj1, 'stream_quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
+                print >> f_obj1, 'stream_maxrate %s' % self.config['feeds'][feed].get('feed_fps', 1)
+                
+                print >> f_obj1, 'movie_output off'
+#                 print >> f_obj1, 'movie_max_time 180'
+#                 print >> f_obj1, 'movie_filename %%Y%%m%%d/%0.2i/movie/%%Y%%m%%d_%%H%%M%%S' % feed
+#                 print >> f_obj1, 'movie_extpipe_use on'
+#                 print >> f_obj1, 'movie_extpipe %s' % extencoder.Encoder(self.kmotion_dir, feed).get_extpipe_cmd() 
+                
+                print >> f_obj1, 'picture_output best'
+                print >> f_obj1, 'picture_quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
+                print >> f_obj1, 'picture_filename %%Y%%m%%d/%0.2i/snap/%%Y%%m%%d_%%H%%M%%S' % feed
+                if self.config['feeds'][feed].get('feed_snap_enabled'):
+                    print >> f_obj1, 'snapshot_interval %s' % self.config['feeds'][feed].get('feed_snap_interval', 300)
+                    print >> f_obj1, 'snapshot_filename %%Y%%m%%d/%0.2i/snap/%%Y%%m%%d_%%H%%M%%S' % feed
 
                 print >> f_obj1, ''
 
                 motion_detector = self.config['feeds'][feed].get('motion_detector', 1)
                 if motion_detector == 1:
-                    print >> f_obj1, 'on_event_start %s/core/events.py %i start' % (self.kmotion_dir, feed)
-                    print >> f_obj1, 'on_event_end %s/core/events.py %i end' % (self.kmotion_dir, feed)
+                     print >> f_obj1, 'on_event_start %s/core/events.py %i start' % (self.kmotion_dir, feed)
+                     print >> f_obj1, 'on_event_end %s/core/events.py %i end' % (self.kmotion_dir, feed)
 
                 print >> f_obj1, 'on_camera_lost %s/core/camera_lost.py %i' % (self.kmotion_dir, feed)
-                print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f %s' % (
-                    self.kmotion_dir, self.config['feeds'][feed].get('feed_webpicture_scale', 1))
+                # print >> f_obj1, 'on_picture_save %s/core/picture_save.py %%f %s' % (
+                # self.kmotion_dir, self.config['feeds'][feed].get('feed_webpicture_scale', 1))
 
 # Module test code
 

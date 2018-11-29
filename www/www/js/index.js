@@ -744,7 +744,7 @@ KM.background_button_clicked = function (color) {
 };
 
 KM.get_jpeg = function (feed) {
-    return  '/kmotion_ramdisk/'+KM.pad_out2(feed)+'/last.jpg?'+Math.random();
+    return  '/live/'+feed+'/stream';
 }
 
 
@@ -1366,7 +1366,7 @@ KM.display_live_ = function () {
         }
     }
 
-    function update_feed(feed, feeds_length) {
+    function update_feed(feed) {
         var image_feed;
         var fps=KM.config['feeds'][feed].feed_fps;
         var timeout_id=KM.DISPLAY_LOOP+feed;
@@ -1404,24 +1404,25 @@ KM.display_live_ = function () {
                     3)  а) изображение загружено и
                         б) счетчик одновременных обновлений меньше 10
                 */
-                if (image_loads.is_error(feed) ||
+                if (image_loads.is_error(feed)) {
 
-                   ((update_counter[feed]>=KM.getRandomInt(5,10)) ||
+                   /*((update_counter[feed]>=KM.getRandomInt(5,10)) ||
                    (feeds_length == 1) ||
                    (KM.item_in_array(feed, latest_events))) &&
 
                    (image_loads.is_loaded(feed) && (stream_counter<max_streams)))  {
-
-                        /*console.log('\n');
+*/
+                        console.log('\n');
                         console.log('UPDATE FEED ' + feed);
-                        console.log('\n');*/
+                        console.log('\n');
+						
                         update_counter[feed] = 0;
                         stream_counter++;
-                        image_loads.reset(feed);
+                        //image_loads.reset(feed);
                         image_feed.src=KM.get_jpeg(feed);
-                        if (KM.item_in_array(feed, latest_events))    {
-                            KM.add_timeout_id(timeout_id, setTimeout(function () {update_feed(feed, feeds_length); }, 1000/fps));
-                        }
+                        /*if (KM.item_in_array(feed, latest_events))    {
+                            KM.add_timeout_id(timeout_id, setTimeout(function () {update_feed(feed); }, 1000/fps));
+                        }*/
 
                 } else {
                     if (update_counter[feed] !== undefined) {
@@ -1440,7 +1441,7 @@ KM.display_live_ = function () {
     function update_feeds() {
         var display_feeds_sorted = KM.config.display_feeds[KM.config.misc.display_select].slice(0);
 
-        display_feeds_sorted.sort(display_feeds_compare_by_counter).sort(display_feeds_compare_by_latest);
+        //display_feeds_sorted.sort(display_feeds_compare_by_counter).sort(display_feeds_compare_by_latest);
         stream_counter = 0;
 
         /*console.log('display_feeds_b = ' + KM.config.display_feeds[KM.config.misc.display_select]);
@@ -1449,7 +1450,7 @@ KM.display_live_ = function () {
 
         for (var i=0;i<display_feeds_sorted.length;i++) {
             var feed = display_feeds_sorted[i];
-            update_feed(feed, display_feeds_sorted.length);
+            update_feed(feed);
         }
     };
 

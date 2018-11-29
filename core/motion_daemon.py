@@ -11,7 +11,6 @@ import urllib
 import utils
 from config import Settings
 
-
 log = logger.Logger('kmotion', logger.DEBUG)
 
 

@@ -154,7 +154,7 @@ function hidehint() {
 	</div>
 	<!--<script type="text/javascript" src="js/index.js"></script>-->
 <?php
-$debug = false;
+$debug = true;
 $user=!empty($_SERVER["PHP_AUTH_USER"])?$_SERVER["PHP_AUTH_USER"]:"";
 $version='8.0.4';
 $script=($debug and $user=='admin')?'js/index.js?ver="'.$version.'"':'js/index-min.js?ver="'.$version.'"';
