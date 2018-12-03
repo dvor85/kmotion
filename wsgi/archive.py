@@ -74,7 +74,7 @@ class Archive():
                     dt = datetime.datetime.now() - end
                     if dt.total_seconds() > 10:
                         movie = {}
-                        movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
+                        movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0][-6:])
                         movie['end'] = self.hhmmss_secs(end.strftime('%H%M%S'))
                         movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
                         journal['movies'].append(movie)
@@ -86,7 +86,7 @@ class Archive():
                 for m in snaps:
                     mf = os.path.join(snaps_dir, m)
                     snap = {}
-                    snap['start'] = self.hhmmss_secs(os.path.splitext(m)[0])
+                    snap['start'] = self.hhmmss_secs(os.path.splitext(m)[0][-6:])
                     snap['end'] = snap['start']
                     snap['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
                     journal['snaps'].append(snap)

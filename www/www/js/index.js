@@ -2709,8 +2709,8 @@ KM.display_config_ = function () {
                     <input type="url" id="feed_url" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
-                  <div class="config_form"><label for="rtsp2mp4_grab_url">RTSP URL:</label>\
-                    <input type="url" id="rtsp2mp4_grab_url" onchange="KM.conf_feed_highlight(this);" />\
+                  <div class="config_form"><label for="rtsp2mp4_url">RTSP URL:</label>\
+                    <input type="url" id="rtsp2mp4_url" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <div class="config_form"><label for="rtsp2mp4_recode">RTSP Recode:</label>\
                     <input type="checkbox" id="rtsp2mp4_recode" onchange="KM.conf_feed_highlight(this);" />\

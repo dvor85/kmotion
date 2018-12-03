@@ -25,7 +25,7 @@ class InitMotion:
         self.images_dbase_dir = config_main['images_dbase_dir']
         self.ramdisk_dir = config_main['ramdisk_dir']
 
-        self.feed_list = sorted([f for f in self.config['feeds'].keys() if self.config['feeds'][f].get('feed_enabled', False)])
+        self.camera_ids = sorted([f for f in self.config['feeds'].keys() if self.config['feeds'][f].get('feed_enabled', False)])
 
     def create_mask(self, feed):
         """
@@ -119,7 +119,7 @@ class InitMotion:
                          if os.path.isfile(os.path.join(motion_conf_dir, del_file))]:
             os.remove(os.path.join(motion_conf_dir, del_file))
 
-        if len(self.feed_list) > 0:  # only populate 'motion_conf' if valid feeds
+        if len(self.camera_ids) > 0:  # only populate 'motion_conf' if valid feeds
             self.gen_motion_conf()
             self.gen_threads_conf()
 
@@ -144,15 +144,15 @@ quiet on
 webcontrol_localhost on
 webcontrol_port 8080
 webcontrol_interface 2
+stream_localhost on
 text_right %Y-%m-%d\\n%T
 text_left CAMERA %t\\nD %D N %N
 movie_output off
-movie_max_time 0
 despeckle_filter EedDl
 
 '''
 
-            for feed in self.feed_list:
+            for feed in self.camera_ids:
                 print >> f_obj1, 'camera %s/core/motion_conf/thread%02i.conf\n' % (self.kmotion_dir, feed)
 
     def gen_threads_conf(self):
@@ -161,7 +161,7 @@ despeckle_filter EedDl
         files
         """
 
-        for feed in self.feed_list:
+        for feed in self.camera_ids:
             with open('%s/core/motion_conf/thread%02i.conf' % (self.kmotion_dir, feed), 'w') as f_obj1:
                 print >> f_obj1, '''
 # ------------------------------------------------------------------------------
@@ -175,8 +175,9 @@ despeckle_filter EedDl
 event_gap 2
 pre_capture 1
 post_capture 10
-stream_localhost off
+
 '''
+                print >> f_obj1, 'camera_id %s' % feed
                 # pal or ntsc,
                 print >> f_obj1, 'norm 1'
 
@@ -216,7 +217,6 @@ stream_localhost off
                 print >> f_obj1, 'noise_level %s' % self.config['feeds'][feed].get('feed_noise_level', 32)
                 print >> f_obj1, 'noise_tune {0}'.format('on' if self.config['feeds'][feed].get('feed_noise_tune') else 'off')
                 print >> f_obj1, 'threshold %s' % self.config['feeds'][feed].get('feed_threshold', 300)
-                print >> f_obj1, 'picture_quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
 
                 # show motion box
                 print >> f_obj1, 'locate_motion_mode {0}'.format(
@@ -228,6 +228,7 @@ stream_localhost off
                     print >> f_obj1, 'picture_output on'
                 else:
                     print >> f_obj1, 'picture_output off'
+                print >> f_obj1, 'picture_quality %s' % self.config['feeds'][feed].get('feed_quality', 85)
                 print >> f_obj1, 'picture_filename %0.2i/%%Y%%m%%d%%H%%M%%S%%q' % feed
                 print >> f_obj1, 'snapshot_interval 1'
                 print >> f_obj1, 'snapshot_filename %0.2i/%%Y%%m%%d%%H%%M%%S' % feed

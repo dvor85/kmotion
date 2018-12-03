@@ -121,7 +121,7 @@ class rtsp2mp4(sample.sample):
                 if not os.path.isdir(movie_dir):
                     os.makedirs(movie_dir)
 
-                dst = os.path.join(movie_dir, '%s.mp4' % event_time)
+                dst = os.path.join(movie_dir, '{cam}_{dtime}.mp4'.format(cam=self.feed, dtime=dt.strftime("%Y%m%d_%H%M%S")))
 
                 self.start_grab(self.feed_grab_url, dst, dt)
 

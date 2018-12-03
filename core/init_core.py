@@ -60,7 +60,7 @@ class InitCore:
         self.wsgi_scripts = os.path.join(self.kmotion_dir, 'wsgi')
         self.wsgi_notice = os.path.join(self.kmotion_dir, 'wsgi_notice')
 
-        self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
+        self.camera_ids = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
 
     def init_ramdisk_dir(self):
         """
@@ -88,7 +88,7 @@ class InitCore:
             log.debug('init_ramdisk_dir() - creating \'events\' folder')
             os.makedirs(events_dir)
 
-        for feed in self.feed_list:
+        for feed in self.camera_ids:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)):
                 try:
                     os.makedirs('%s/%02i' % (self.ramdisk_dir, feed))

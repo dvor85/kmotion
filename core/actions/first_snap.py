@@ -3,7 +3,7 @@ import sys
 import os
 import time
 import shutil
-from datetime import datetime
+import datetime
 import sample
 
 log = None
@@ -26,16 +26,17 @@ class first_snap(sample.sample):
 
     def start(self):
         sample.sample.start(self)
-        jpg_time = time.time()
-        jpg = '%s.jpg' % datetime.fromtimestamp(jpg_time).strftime('%Y%m%d%H%M%S')
+        dtime = datetime.datetime.now()
+        jpg = '%s.jpg' % dtime.strftime('%Y%m%d%H%M%S')
         jpg_dir = '%s/%02i' % (self.ramdisk_dir, self.feed)
 
         p = {'src': os.path.join(jpg_dir, jpg),
              'dst': os.path.join(self.images_dbase_dir,
-                                 datetime.fromtimestamp(jpg_time).strftime('%Y%m%d'),
+                                 dtime.strftime('%Y%m%d'),
                                  '%02i' % self.feed,
                                  'snap',
-                                 '%s.jpg' % datetime.fromtimestamp(jpg_time).strftime('%H%M%S'))}
+                                 '{cam}_{dtime}.jpg'.format(cam=self.feed,
+                                                            dtime=dtime.strftime('%Y%m%d_%H%M%S')))}
 
         if os.path.isfile(p['src']):
             try:

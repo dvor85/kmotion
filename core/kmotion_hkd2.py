@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 
-
 """
 Copys, moves or deletes files
 """
 
 import time
 import shutil
-from datetime import datetime
+import datetime
 import logger
 from multiprocessing import Process
 import os
 from config import Settings
-
 
 log = logger.Logger('kmotion', logger.WARN)
 
@@ -28,7 +26,7 @@ class Hkd2_Feed():
         self.feed_snap_interval = 0  # snap interval in seconds
         self.feed_fps = 1  # frame fps
         self.feed_name = ''  # feed name
-        self.snap_time = time.time()
+        self.snap_time = datetime.datetime.now()
         self.read_config()
 
     def read_config(self):
@@ -73,17 +71,18 @@ class Hkd2_Feed():
         # move or delete them
         while (len(jpg_list) >= 10):
             jpg = jpg_list.pop(0)
-            jpg_time = os.path.getmtime(os.path.join(jpg_dir, jpg))
+            dtime = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(jpg_dir, jpg)))
 
             if jpg != 'last.jpg':
                 p = {'src': os.path.join(jpg_dir, jpg),
                      'dst': os.path.join(self.images_dbase_dir,
-                                         datetime.fromtimestamp(jpg_time).strftime('%Y%m%d'),
+                                         dtime.strftime('%Y%m%d'),
                                          '%02i' % self.feed,
                                          'snap',
-                                         '%s.jpg' % datetime.fromtimestamp(jpg_time).strftime('%H%M%S'))}
+                                         '{cam}_{dtime}.jpg'.format(cam=self.feed,
+                                                                    dtime=dtime.strftime('%Y%m%d_%H%M%S')))}
 
-                if self.feed_snap_enabled and self.snap_time <= jpg_time:
+                if os.path.isfile(p['src']) and self.feed_snap_enabled and self.snap_time <= dtime:
                     try:
                         log.debug('service_snap() - copy {src} to {dst}'.format(**p))
                         if not os.path.isdir(os.path.dirname(p['dst'])):
@@ -116,7 +115,7 @@ class Hkd2_Feed():
             log.exception('update_title()')
 
     def inc_snap_time(self, inc_sec):
-        self.snap_time += inc_sec
+        self.snap_time += datetime.timedelta(seconds=inc_sec)
 
 
 class Kmotion_Hkd2(Process):
@@ -132,7 +131,7 @@ class Kmotion_Hkd2(Process):
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
-        self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
+        self.camera_ids = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
 
     def sleep(self, timeout):
         t = 0
@@ -156,7 +155,7 @@ class Kmotion_Hkd2(Process):
             try:
                 log.info('starting daemon ...')
                 self.instance_list = []  # list of Hkd2_Feed instances
-                for feed in self.feed_list:
+                for feed in self.camera_ids:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed))
                 while self.sleep(2):
                     for inst in self.instance_list:

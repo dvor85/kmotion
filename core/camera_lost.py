@@ -29,8 +29,6 @@ class CameraLost:
             config = cfg.get('www_rc')
             self.feed_username = config['feeds'][self.feed]['feed_lgn_name']
             self.feed_password = config['feeds'][self.feed]['feed_lgn_pw']
-            self.feed_list = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
-            self.feed_thread = self.feed_list.index(self.feed) + 1
 
             urllib.FancyURLopener.prompt_user_passwd = lambda *a, **k: (None, None)
             self.feed_url = add_userinfo(config['feeds'][self.feed]['feed_url'], self.feed_username, self.feed_password)
@@ -39,7 +37,7 @@ class CameraLost:
             log.exception('init error')
 
     def main(self):
-        self.restart_thread(self.feed_thread)
+        self.restart_thread(self.feed)
         if len(self.get_prev_instances()) == 0:
             need_reboot = True
             time.sleep(60)
@@ -61,7 +59,7 @@ class CameraLost:
             if need_reboot:
                 if self.reboot_camera():
                     time.sleep(60)
-            self.restart_thread(self.feed_thread)
+            self.restart_thread(self.feed)
 
         else:
             log.error('{file} {feed} already running'.format(file=os.path.basename(__file__), feed=self.feed))
@@ -82,21 +80,21 @@ class CameraLost:
 
     def restart_thread(self, thread):
         try:
-            res = urllib.urlopen("http://localhost:8080/{feed_thread}/action/restart".format(feed_thread=thread))
+            res = urllib.urlopen("http://localhost:8080/{feed}/action/restart".format(feed_thread=thread))
             try:
                 if res.getcode() == 200:
-                    log.debug('restart feed_thread {feed_thread} success'.format(feed_thread=thread))
+                    log.debug('restart feed {feed} success'.format(feed_thread=thread))
                     return True
                 else:
-                    log.debug('restart feed_thread {feed_thread} failed with status code {code}'.format(
+                    log.debug('restart feed {feed} failed with status code {code}'.format(
                         feed_thread=thread, code=res.getcode()))
             finally:
                 res.close()
         except Exception:
-            log.error('error while restart feed_thread {feed_thread}'.format(feed_thread=thread))
+            log.error('error while restart feed {feed}'.format(feed_thread=thread))
 
     def get_prev_instances(self):
-        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' %
+        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' % 
                                  (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
         stdout = p_obj.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
