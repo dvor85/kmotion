@@ -111,19 +111,17 @@ class rtsp2mp4(sample.sample):
     def start(self):
         sample.sample.start(self)
         try:
-            dt = datetime.datetime.now()
-            event_date = dt.strftime("%Y%m%d")
-            event_time = dt.strftime("%H%M%S")
-            movie_dir = os.path.join(self.images_dbase_dir, event_date, '%0.2i' % self.feed, 'movie')
+            dtime = datetime.datetime.now()
+            movie_dir = os.path.join(self.images_dbase_dir, dtime.strftime("%Y%m%d"), '%0.2i' % self.feed, 'movie')
 
             if len(self.get_grabber_pids()) == 0:
 
                 if not os.path.isdir(movie_dir):
                     os.makedirs(movie_dir)
 
-                dst = os.path.join(movie_dir, '{cam}_{dtime}.mp4'.format(cam=self.feed, dtime=dt.strftime("%Y%m%d_%H%M%S")))
+                dst = os.path.join(movie_dir, '{cam}_{dtime}.mp4'.format(cam=self.feed, dtime=dtime.strftime("%Y%m%d_%H%M%S")))
 
-                self.start_grab(self.feed_grab_url, dst, dt)
+                self.start_grab(self.feed_grab_url, dst, dtime)
 
                 if len(self.get_grabber_pids()) == 0 and os.path.isfile(dst):
                     os.unlink(dst)
