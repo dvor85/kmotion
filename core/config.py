@@ -51,7 +51,7 @@ class Settings():
 
     def _read_www_rc(self, www_rc='www_rc'):
         if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
-            www_rc = 'www_rc'
+            raise Exception('Incorrect configuration!')
         if not self.config.get(www_rc):
             try:
                 www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)

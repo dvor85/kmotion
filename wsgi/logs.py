@@ -18,7 +18,7 @@ class Logs():
 
         www_rc = 'www_rc_%s' % (self.username)
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
-            www_rc = 'www_rc'
+            raise Exception('Incorrect configuration!')
         self.config = cfg.get(www_rc)
 
     def __call__(self, *args, **kwargs):
