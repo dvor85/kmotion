@@ -1,0 +1,7 @@
+[Unit]
+Description=kmotion reboot cameras
+
+[Service]
+Type=simple
+User=videouser
+ExecStart=/usr/local/kmotion3/core/reboot_cams.py
