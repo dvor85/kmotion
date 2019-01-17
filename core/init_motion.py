@@ -183,7 +183,7 @@ post_capture 10
 
                 # framerate
                 fps = self.config['feeds'][feed].get('feed_fps', 1)
-                
+
                 print >> f_obj1, 'minimum_frame_time {0}'.format(1 if fps < 2 else 0)
                 print >> f_obj1, 'framerate {fps}'.format(fps=fps)
 
@@ -213,7 +213,8 @@ post_capture 10
                 print >> f_obj1, 'threshold %s' % self.config['feeds'][feed].get('feed_threshold', 300)
 
                 # show motion box
-                print >> f_obj1, 'locate_motion_mode {0}'.format('on' if self.config['feeds'][feed].get('feed_show_box') else 'off')
+                print >> f_obj1, 'locate_motion_mode {0}'.format(
+                    'on' if self.config['feeds'][feed].get('feed_show_box') else 'off')
                 print >> f_obj1, 'locate_motion_style box'
 
                 print >> f_obj1, 'picture_output {0}'.format('on' if fps > 1 else 'off')

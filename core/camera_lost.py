@@ -32,7 +32,8 @@ class CameraLost:
 
             urllib.FancyURLopener.prompt_user_passwd = lambda *a, **k: (None, None)
             self.camera_url = add_userinfo(config['feeds'][self.cam_id]['feed_url'], self.feed_username, self.feed_password)
-            self.reboot_url = add_userinfo(config['feeds'][self.cam_id]['feed_reboot_url'], self.feed_username, self.feed_password)
+            self.reboot_url = add_userinfo(config['feeds'][self.cam_id]['feed_reboot_url'],
+                                           self.feed_username, self.feed_password)
         except Exception:
             log.exception('init error')
 
@@ -94,7 +95,7 @@ class CameraLost:
             log.error('error while restart camera {cam_id}'.format(cam_id=cam_id))
 
     def get_prev_instances(self):
-        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' % 
+        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' %
                                  (os.path.basename(__file__), self.cam_id), stdout=subprocess.PIPE, shell=True)
         stdout = p_obj.communicate()[0]
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]

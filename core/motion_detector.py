@@ -96,17 +96,29 @@ class Detector(Process):
 
     def run(self):
         self.active = True
+        appendix = ''
         log.info('starting daemon ...')
         while self.active and len(self.config['feeds']) > 0:
             try:
                 data = self.read_pipe(1)
                 if data:
                     log.debug('received data = "{0}"'.format(data))
-                    for ip in utils.uniq(data.splitlines()[:data.count('\n')]):
-                        log.debug('ip = "{0}"'.format(ip))
-                        feed = self.find_feed_by_ip(ip)
-                        log.debug('feed = "{0}"'.format(feed))
-                        threading.Thread(target=self.main, args=(str(feed),)).start()
+                    last_n = data.rfind('\n')
+                else:
+                    last_n = -1
+                    appendix = ''
+
+                if last_n > -1:
+                    data = appendix + data
+                    appendix = data[last_n:]
+                    data = data[:last_n]
+                    datas = data.splitlines()
+                    for ip in utils.uniq(datas):
+                        if ip:
+                            log.debug('ip = "{0}"'.format(ip))
+                            feed = self.find_feed_by_ip(ip)
+                            log.debug('feed = "{0}"'.format(feed))
+                            threading.Thread(target=self.main, args=(str(feed),)).start()
                 else:
                     threading.Thread(target=self.main).start()
 

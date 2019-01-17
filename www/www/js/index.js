@@ -11,7 +11,7 @@ KM.GREEN =     '#00FF00';
 KM.BLUE =      '#0000FF';
 KM.BLACK =     '#000000';
 KM.WHITE =     '#FFFFFF';
-KM.GREY	=      '#C1C1C1';
+KM.GREY =      '#C1C1C1';
 KM.DARK_GREY = '#818181';
 KM.GHOST =     '#E2E2E2';
 
@@ -27,8 +27,8 @@ KM.MISC_JUMP    = 'MISC_JUMP';
 KM.browser = {
     browser_FF: false,      // browser is firefox
     browser_IE: false,      // browser is internet explorer
-    browser_OP:	false,	    // browser is opera
-    browser_SP:	false,	    // browser is on a smartphone
+    browser_OP: false,      // browser is opera
+    browser_SP: false,      // browser is on a smartphone
 };
 
 KM.session_id = {
@@ -44,7 +44,7 @@ KM.menu_bar_buttons = {
 };
 
 KM.max_feed = function (only_enabled) {
-    var max = 0;  
+    var max = 0;
     if (only_enabled) {
         for (var feed in KM.config.feeds) {
             if (KM.config.feeds[feed].feed_enabled) {
@@ -59,11 +59,11 @@ KM.max_feed = function (only_enabled) {
 
 
 KM.show_loading = function(elem) {
-	elem.classList.add("loading_image");
+    elem.classList.add("loading_image");
 }
 
 KM.hide_loading = function(elem) {
-	elem.classList.remove("loading_image");
+    elem.classList.remove("loading_image");
 }
 
 // использование Math.round() даст неравномерное распределение!
@@ -84,24 +84,24 @@ Miscellaneous code that provides general closures and functions for kmotion
 **************************************************************************** */
 
 KM.toggle_button_bar=function () {
-	var button_bar=document.getElementById('button_bar');
-	var h_button_bar=document.getElementById('toggle_button_bar');
-	if (button_bar.style.display=='none') {
-		button_bar.style.display='block';
-		h_button_bar.style.right='175px';
-		document.getElementById('main_display').style.right='185px';
-	} else {
-		button_bar.style.display='none';
-		h_button_bar.style.right='0px';
-		document.getElementById('main_display').style.right='10px';
-	}
+    var button_bar=document.getElementById('button_bar');
+    var h_button_bar=document.getElementById('toggle_button_bar');
+    if (button_bar.style.display=='none') {
+        button_bar.style.display='block';
+        h_button_bar.style.right='175px';
+        document.getElementById('main_display').style.right='185px';
+    } else {
+        button_bar.style.display='none';
+        h_button_bar.style.right='0px';
+        document.getElementById('main_display').style.right='10px';
+    }
 
-	//KM.function_button_clicked(KM.menu_bar_buttons.function_selected);
+    //KM.function_button_clicked(KM.menu_bar_buttons.function_selected);
 }
 
 KM.browser.set_title = function() {
     document.getElementById('version_num').innerHTML = 'Ver ' + KM.config.version;
-	document.getElementsByTagName('title')[0].innerHTML = KM.config.title;
+    document.getElementsByTagName('title')[0].innerHTML = KM.config.title;
 };
 
 KM.timeout_ids = function () {
@@ -113,56 +113,56 @@ KM.timeout_ids = function () {
 
     return {
 
-	add_id: function (group, timeout_id) {
+    add_id: function (group, timeout_id) {
 
-	    // A function to add a timeout id
-	    //
-	    // expects :
-	    //
-	    // 'group' ...	group
-	    // 'timeout_id' ... timeout id
-	    //
+        // A function to add a timeout id
+        //
+        // expects :
+        //
+        // 'group' ...  group
+        // 'timeout_id' ... timeout id
+        //
         if (timeout_ids[group] === undefined) {
             timeout_ids[group] = [];
         }
-	    timeout_ids[group].push(timeout_id);
-	},
+        timeout_ids[group].push(timeout_id);
+    },
 
-	cull_ids: function (group) {
+    cull_ids: function (group) {
 
-	    // A function to kill all but the last timeout id
-	    //
-	    // expects :
-	    //
-	    // 'group' ...	group
-	    //
+        // A function to kill all but the last timeout id
+        //
+        // expects :
+        //
+        // 'group' ...  group
+        //
 
-	    if (timeout_ids[group] !== undefined && timeout_ids[group].length > 1) {
-	        for (var i = 0; i < timeout_ids[group].length - 1; i++) {
+        if (timeout_ids[group] !== undefined && timeout_ids[group].length > 1) {
+            for (var i = 0; i < timeout_ids[group].length - 1; i++) {
                 clearTimeout(timeout_ids[group][i]);
                 delete timeout_ids[group][i];
             }
             timeout_ids[group].length = 1;
-	    }
-	},
+        }
+    },
 
-	kill_ids: function (group) {
+    kill_ids: function (group) {
 
-	    // A function to kill all timeout id
-	    //
-	    // expects :
-	    //
-	    // 'group' ...	group
-	    //
+        // A function to kill all timeout id
+        //
+        // expects :
+        //
+        // 'group' ...  group
+        //
 
-	    if (timeout_ids[group] !== undefined && timeout_ids[group].length > 0) {
+        if (timeout_ids[group] !== undefined && timeout_ids[group].length > 0) {
             for (var i = 0; i < timeout_ids[group].length; i++) {
                 clearTimeout(timeout_ids[group][i]);
                 delete timeout_ids[group][i];
             }
             delete timeout_ids[group];
-	    }
-	}
+        }
+    }
     };
 }();
 
@@ -191,16 +191,16 @@ KM.get_xmlHttp_obj = function () {
 };
 
 KM.json_request = function(url, json, callback, onerror){
-	var xmlHttp = KM.get_xmlHttp_obj();
-	var jreq = json;
-	var json = JSON.stringify(jreq);
-	xmlHttp.open('POST', url, true);
-	xmlHttp.setRequestHeader("Content-type", "application/json");
-	xmlHttp.onreadystatechange = function() {
-		if (xmlHttp.readyState == 4) {
-			xmlHttp.onreadystatechange = null; // plug memory leak
-			if (xmlHttp.status == 200) {
-				try {
+    var xmlHttp = KM.get_xmlHttp_obj();
+    var jreq = json;
+    var json = JSON.stringify(jreq);
+    xmlHttp.open('POST', url, true);
+    xmlHttp.setRequestHeader("Content-type", "application/json");
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4) {
+            xmlHttp.onreadystatechange = null; // plug memory leak
+            if (xmlHttp.status == 200) {
+                try {
                     var jres = JSON.parse(xmlHttp.responseText);
                     if (jres.id != jreq.id){
                         console.log("Invalid ID");
@@ -231,7 +231,7 @@ KM.json_request = function(url, json, callback, onerror){
                         }
 
                     return true;
-				} catch (e) {
+                } catch (e) {
                     console.log(e);
                     if (onerror)
                         try {
@@ -241,10 +241,10 @@ KM.json_request = function(url, json, callback, onerror){
                         }
                     return false;
                 }
-			}
-		}
-	}
-	xmlHttp.send(json);
+            }
+        }
+    }
+    xmlHttp.send(json);
 }
 
 KM.secs_hhmmss = function (secs) {
@@ -355,7 +355,7 @@ KM.pad_out = function (val, pad) {
 
     var fill = '00000000000000000000';
     if (String(val).length < pad) {
-	val = fill.substr(0, pad - String(val).length) + String(val);
+    val = fill.substr(0, pad - String(val).length) + String(val);
     }
     return String(val);
 };
@@ -451,7 +451,7 @@ KM.menu_bar_buttons.construct_camera_sec = function() {
             p++;
             if ((p % 4) == 0)
                 camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n</div>';
-            else if 	((p % 4) == 1)
+            else if     ((p % 4) == 1)
                 camsel+='<div class="button_line">\n<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>';
             else
                 camsel+='<div id="cb'+f+'" class="camera_button" onClick="KM.camera_func_button_clicked('+f+');"><span id="ct'+f+'">'+f+'</span></div>\n';
@@ -567,27 +567,27 @@ KM.enable_function_buttons = function (button) {
     var buttons = ['pad', 'pad', 'archive_enabled',
     'logs_enabled', 'config_enabled'];
 
-	var misc_function_display="none";
+    var misc_function_display="none";
 
     for (var i = 1; i < buttons.length; i++) {
         if (KM.config.misc[buttons[i]] || i == 1) {
             if (i == button) {
                 document.getElementById('ft' + i).style.color = KM.RED;
-				document.getElementById('ft' + i).parentNode.style.display="block";
-				misc_function_display="block";
+                document.getElementById('ft' + i).parentNode.style.display="block";
+                misc_function_display="block";
 
-	    } else {
+        } else {
             document.getElementById('ft' + i).style.color = KM.BLUE;
             document.getElementById('ft' + i).parentNode.style.display="block";
             misc_function_display="block";
-	    }
+        }
 
         } else {
             document.getElementById('ft' + i).style.color = KM.GREY;
             document.getElementById('ft' + i).parentNode.style.display="none";
         }
     }
-	document.getElementById("misc_function_display").style.display=misc_function_display;
+    document.getElementById("misc_function_display").style.display=misc_function_display;
 };
 
 KM.update_function_buttons = KM.enable_function_buttons;
@@ -633,7 +633,7 @@ KM.camera_func_button_clicked = function (button) {
     //
     if (KM.menu_bar_buttons.camera_sec_enabled && KM.config.feeds[button] && KM.config.feeds[button].feed_enabled) {
         KM.blink_camera_func_button(button);
-        if (KM.config.misc.config_enabled) {   
+        if (KM.config.misc.config_enabled) {
             if (KM.menu_bar_buttons.camera_sec_enabled) {
                 KM.display_live.set_last_camera(button)
                 KM.config.display_feeds[1][0] =  button;
@@ -666,9 +666,9 @@ KM.function_button_clicked = function (button) {
         KM.update_function_buttons(button);
         KM.menu_bar_buttons.function_selected = button;
         document.onkeydown=function(e){}; //stop memory leak
-        
+
         switch (button) {
-            case 1: // 'live button'                
+            case 1: // 'live button'
                 KM.enable_display_buttons(KM.config.misc.display_select);
                 KM.enable_camera_buttons();
                 KM.display_live();
@@ -724,7 +724,7 @@ KM.background_button_clicked = function (color) {
     var theme='css/dark.css';
     switch (color) {
         case 1:
-    	    theme='css/light.css';
+            theme='css/light.css';
         break;
     }
 
@@ -755,7 +755,7 @@ KM.get_jpeg = function (feed) {
 
 KM.load_settings = function () {
     function init_interface() {
-		KM.hide_loading(document.getElementById('main_display'));
+        KM.hide_loading(document.getElementById('main_display'));
         KM.browser.set_title();
         KM.background_button_clicked(KM.config.misc.color_select);
         KM.default_display_select = KM.config.misc.display_select;
@@ -781,7 +781,7 @@ KM.load_settings = function () {
             set_settings();
             init_interface();
         }
-		KM.show_loading(document.getElementById('main_display'));
+        KM.show_loading(document.getElementById('main_display'));
         var jreq = {jsonrpc: '2.0', method: 'config', id: Math.random(), params: {read: '1'} };
         KM.json_request("/ajax/config", jreq, callback, onerror=retry);
     }
@@ -835,9 +835,9 @@ KM.display_live_ = function () {
     function init() {
         // setup for grid display
         KM.session_id.current++;
-		KM.hide_loading(document.getElementById('main_display'));
+        KM.hide_loading(document.getElementById('main_display'));
         init_display_grid(KM.config.misc.display_select);
-		
+
 
         // exit if no feeds enabled, else 100% CPU usage
         var no_feeds = true;
@@ -922,7 +922,7 @@ KM.display_live_ = function () {
             } else {
                 KM.config.display_feeds[1][0] = camera;
             }
-            
+
             KM.config.misc.display_select = 1;
             KM.update_display_buttons(1);
 
@@ -1017,7 +1017,7 @@ KM.display_live_ = function () {
                     text = '';
                     KM.config.feeds[feed].feed_name = text;
                 }
-            };           
+            };
         } catch (e) {}
 
         text = feed + ': ' + text;
@@ -1493,24 +1493,24 @@ KM.display_archive_ = function () {
 
     var display_secs =   0; // the current secs count
 
-	
-	function init() {
 
-	// A function that initialises that sets the archive backdrop HTML,
-	// partialy populates the dbase and calls 'init_menus'.
-	//
-	// expects:
-	//
-	// returns:
-	//
+    function init() {
+
+    // A function that initialises that sets the archive backdrop HTML,
+    // partialy populates the dbase and calls 'init_menus'.
+    //
+    // expects:
+    //
+    // returns:
+    //
 
         KM.session_id.current++;
-        var session_id = KM.session_id.current;		
+        var session_id = KM.session_id.current;
         init_backdrop_html();
         window.onresize=null;
         update_dates_dbase(session_id);
     }
-	
+
     function init_main_menus(session_id) {
 
         // A function that initialises and enables the main drop down menus.
@@ -1527,50 +1527,50 @@ KM.display_archive_ = function () {
         document.getElementById('date_select').disabled =   false;
         document.getElementById('camera_select').disabled = false;
         document.getElementById('view_select').disabled =   false;
-		KM.hide_loading(document.getElementById('arch_player'));
+        KM.hide_loading(document.getElementById('arch_player'));
     }
 
     function init_backdrop_html() {
 
-	// A function that generates the archive backdrop HTML including the top
-	// dropdown menus, the main display
-	//
-	// expects:
-	//
-	// returns:
-	//
-	
-	KM.hide_loading(document.getElementById('main_display'));
+    // A function that generates the archive backdrop HTML including the top
+    // dropdown menus, the main display
+    //
+    // expects:
+    //
+    // returns:
+    //
+
+    KM.hide_loading(document.getElementById('main_display'));
     document.getElementById('main_display').innerHTML = '\
-		<div class="title">kmotion: Archive-><span id="playback_info"></span></div>\
-		<div id="arch_display">\
-			<div id="config_bar">\
-				<select id="date_select" onchange="KM.arch_change_date();" > </select> \
-				<select id="camera_select" onchange="KM.arch_change_camera();" > </select> \
-				<select id="view_select" onchange="KM.arch_change_view();" > </select> \
-			</div>\
-			<div id="arch_display_html">\
-				<div id="arch_playlist"></div>\
-				<div id="arch_player"></div>\
-				<form id="playback_form">\
-					<input id="playback_rate" type="range" value="1" min="0.1" max="10" step="0.1" list="tickmarks">\
-						<datalist id="tickmarks">\
-							<option value="0" label="0">\
-							<option value="1" label="1">\
-							<option value="2" label="2">\
-							<option value="3" label="3">\
-							<option value="4" label="4">\
-							<option value="5" label="5">\
-							<option value="6" label="6">\
-							<option value="7" label="7">\
-							<option value="8" label="8">\
-							<option value="9" label="9">\
-							<option value="10" label="10">\
-						</datalist>\
-				</form>\
-			</div>\
-		</div>';
-	}
+        <div class="title">kmotion: Archive-><span id="playback_info"></span></div>\
+        <div id="arch_display">\
+            <div id="config_bar">\
+                <select id="date_select" onchange="KM.arch_change_date();" > </select> \
+                <select id="camera_select" onchange="KM.arch_change_camera();" > </select> \
+                <select id="view_select" onchange="KM.arch_change_view();" > </select> \
+            </div>\
+            <div id="arch_display_html">\
+                <div id="arch_playlist"></div>\
+                <div id="arch_player"></div>\
+                <form id="playback_form">\
+                    <input id="playback_rate" type="range" value="1" min="0.1" max="10" step="0.1" list="tickmarks">\
+                        <datalist id="tickmarks">\
+                            <option value="0" label="0">\
+                            <option value="1" label="1">\
+                            <option value="2" label="2">\
+                            <option value="3" label="3">\
+                            <option value="4" label="4">\
+                            <option value="5" label="5">\
+                            <option value="6" label="6">\
+                            <option value="7" label="7">\
+                            <option value="8" label="8">\
+                            <option value="9" label="9">\
+                            <option value="10" label="10">\
+                        </datalist>\
+                </form>\
+            </div>\
+        </div>';
+    }
 
     function update_cams_dbase(date, session_id, callback) {
         function retry() {
@@ -1584,13 +1584,13 @@ KM.display_archive_ = function () {
                 populate_camera_dropdown();
                 init_main_menus(session_id);
             }
-			if (typeof callback === "function") {
-				callback();
-			}
+            if (typeof callback === "function") {
+                callback();
+            }
         }
 
         if (KM.session_id.current === session_id) {
-			KM.show_loading(document.getElementById('arch_player'));
+            KM.show_loading(document.getElementById('arch_player'));
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"feeds", date:date} };
             KM.json_request("/ajax/archive", jreq, _callback, onerror=retry);
         }
@@ -1607,13 +1607,13 @@ KM.display_archive_ = function () {
             if (dates !== {}) {
                 populate_date_dropdown();
             }
-			if (typeof callback === "function") {
-				callback();
-			}
+            if (typeof callback === "function") {
+                callback();
+            }
         }
 
         if (KM.session_id.current === session_id) {
-			KM.show_loading(document.getElementById('arch_player'));
+            KM.show_loading(document.getElementById('arch_player'));
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {func:"dates"} };
             KM.json_request("/ajax/archive", jreq, _callback, onerror=retry);
         }
@@ -1629,13 +1629,13 @@ KM.display_archive_ = function () {
             movies = obj_data;
             populate_view_dropdown();
             //KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(retry, 30000));
-			if (typeof callback === "function") {
-				callback();
-			}
+            if (typeof callback === "function") {
+                callback();
+            }
         }
 
         if (KM.session_id.current === session_id) {
-			KM.show_loading(document.getElementById('arch_player'));
+            KM.show_loading(document.getElementById('arch_player'));
             var jreq = {jsonrpc: '2.0', method: 'archive', id: Math.random(), params: {date: date, feed: camera, func:"movies"} };
             KM.json_request("/ajax/archive", jreq, _callback, onerror=retry);
         }
@@ -1643,15 +1643,15 @@ KM.display_archive_ = function () {
 
     function populate_date_dropdown() {
 
-	// A function that populates the date dropdown and selects the latest
-	// one.
-	//
-	// expects:
-	//
-	// returns:
-	//
+    // A function that populates the date dropdown and selects the latest
+    // one.
+    //
+    // expects:
+    //
+    // returns:
+    //
 
-	// remove all 'date_select' options
+    // remove all 'date_select' options
 
         var date_select = document.getElementById('date_select');
         for (var i = date_select.options.length - 1; i > -1; i--) {
@@ -1674,20 +1674,20 @@ KM.display_archive_ = function () {
         }
         document.getElementById('date_select').selectedIndex = 0;
         change_date();
-		KM.hide_loading(document.getElementById('arch_player'));
+        KM.hide_loading(document.getElementById('arch_player'));
     }
 
     function populate_camera_dropdown() {
 
-	// A function that populates the camera dropdown and selects the
-	// first one. Camera is dependent on date
-	//
-	// expects:
-	//
-	// returns:
-	//
+    // A function that populates the camera dropdown and selects the
+    // first one. Camera is dependent on date
+    //
+    // expects:
+    //
+    // returns:
+    //
 
-	// remove all 'camera_select' options
+    // remove all 'camera_select' options
         var camera_select = document.getElementById('camera_select');
         var selected_index = camera_select.selectedIndex;
         var selected_feed = parseInt(camera_select.value);
@@ -1722,13 +1722,13 @@ KM.display_archive_ = function () {
 
     function populate_view_dropdown() {
 
-	// A function that populates the view dropdown and selects the
-	// first one. View is dependent on camera.
-	//
-	// expects:
-	//
-	// returns:
-	//
+    // A function that populates the view dropdown and selects the
+    // first one. View is dependent on camera.
+    //
+    // expects:
+    //
+    // returns:
+    //
 
         var view_select = document.getElementById('view_select');
         var selected_index = view_select.selectedIndex;
@@ -1768,20 +1768,20 @@ KM.display_archive_ = function () {
             view_select.selectedIndex = 0;
         }
         change_view();
-		KM.hide_loading(document.getElementById('arch_player'));
+        KM.hide_loading(document.getElementById('arch_player'));
     }
 
     function fill_events() {
 
-	// A closure that generates the event HTML inside the archive backdrop
-	// HTML and embeds highlighting for the top 10% of event durations.
-	//
-	// expects:
-	// 'date'   ... the selected date
-	// 'camera' ... the selected camera
-	//
-	// returns:
-	//
+    // A closure that generates the event HTML inside the archive backdrop
+    // HTML and embeds highlighting for the top 10% of event durations.
+    //
+    // expects:
+    // 'date'   ... the selected date
+    // 'camera' ... the selected camera
+    //
+    // returns:
+    //
 
         var html = '', span_html = '', duration = 0;
         var start, end;
@@ -1846,12 +1846,12 @@ KM.display_archive_ = function () {
         // returns:
         //
 
-		reset_display_html();
+        reset_display_html();
         var session_id = KM.session_id.current;
         display_secs = 0;
-		var view = document.getElementById('view_select').value;
-        update_cams_dbase(document.getElementById('date_select').value, session_id);	
-		
+        var view = document.getElementById('view_select').value;
+        update_cams_dbase(document.getElementById('date_select').value, session_id);
+
     };
 
     function change_camera() {
@@ -1863,14 +1863,14 @@ KM.display_archive_ = function () {
         // returns:
         //
 
-		reset_display_html();
+        reset_display_html();
         var session_id = KM.session_id.current;
-		var view = document.getElementById('view_select').value;
+        var view = document.getElementById('view_select').value;
         update_movies_dbase(document.getElementById('date_select').value,
-                            document.getElementById('camera_select').value, session_id, 
-							callback=function() {playlist_hlight(get_id_by_start(display_secs, view));});
-							
-		
+                            document.getElementById('camera_select').value, session_id,
+                            callback=function() {playlist_hlight(get_id_by_start(display_secs, view));});
+
+
     };
 
     function change_view() {
@@ -1881,30 +1881,30 @@ KM.display_archive_ = function () {
         // returns:
         //
 
-		var view = document.getElementById('view_select').value;
-		var html5player = document.getElementById('html5player');
-		var player_obj = document.getElementById('player_obj');
-		if (view == 'movies') {
-			if (!html5player) {
-				reset_display_html();
-			}
-		} else if (view == 'snaps') {
-			if (html5player) {
-				reset_display_html();
-			} else if (!player_obj) {
-				reset_display_html();
-			}
-		} else {
-			reset_display_html();
-		}
-		fill_events();
-		playlist_hlight(get_id_by_start(display_secs, view));
-			
+        var view = document.getElementById('view_select').value;
+        var html5player = document.getElementById('html5player');
+        var player_obj = document.getElementById('player_obj');
+        if (view == 'movies') {
+            if (!html5player) {
+                reset_display_html();
+            }
+        } else if (view == 'snaps') {
+            if (html5player) {
+                reset_display_html();
+            } else if (!player_obj) {
+                reset_display_html();
+            }
+        } else {
+            reset_display_html();
+        }
+        fill_events();
+        playlist_hlight(get_id_by_start(display_secs, view));
+
     };
 
     function playlist_hlight(movie_index) {
-		var view = document.getElementById('view_select').value;
-		KM.hide_loading(document.getElementById('arch_player'));
+        var view = document.getElementById('view_select').value;
+        KM.hide_loading(document.getElementById('arch_player'));
         KM.videoPlayer.set_next_movie(movie_index+1);
         var playlist = document.getElementById('arch_playlist');
         if (playlist === null){
@@ -1919,25 +1919,25 @@ KM.display_archive_ = function () {
                 lines[i].scrollIntoView(false);
             }
         }
-		display_secs = movies[view][movie_index]["start"];
-		update_playback_info(movies[view][movie_index]["start"]);
+        display_secs = movies[view][movie_index]["start"];
+        update_playback_info(movies[view][movie_index]["start"]);
     }
 
     function update_playback_info(secs) {
 
-	// A function to updates the title and 'clock'
-	//
-	// expects:
-	// 'secs' ... the 'secs' to display
-	//
-	// returns:
-	//
+    // A function to updates the title and 'clock'
+    //
+    // expects:
+    // 'secs' ... the 'secs' to display
+    //
+    // returns:
+    //
 
         var feed = document.getElementById('camera_select').value;
         var title = feed;
-        if (cameras && feed) 
-            title = cameras[feed]['title']; 
-		
+        if (cameras && feed)
+            title = cameras[feed]['title'];
+
         var time = KM.secs_hh_mm_ss(secs+KM.videoPlayer.get_time());
         var rate = document.getElementById('playback_rate').value;
         document.getElementById('playback_info').innerHTML = title + ' <' + time + '> [' + rate + ']';
@@ -1947,7 +1947,7 @@ KM.display_archive_ = function () {
 
     function event_clicked(id) {
         var view = document.getElementById('view_select').value;
-        if (view == 'movies') {			
+        if (view == 'movies') {
             play_movie(id, KM.session_id.current);
 
         } else if (view == 'snaps') {
@@ -1957,8 +1957,8 @@ KM.display_archive_ = function () {
     }
 
     function play_movie(movie_id, session_id) {
-		
-		function retry() {
+
+        function retry() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {play_movie(movie_id, session_id); }, 10000));
         }
@@ -1974,20 +1974,20 @@ KM.display_archive_ = function () {
         //
 
         KM.kill_timeout_ids(KM.ARCH_LOOP);
-		if (KM.session_id.current === session_id) {
-			if (!document.getElementById('html5player')) {
-				reset_display_html();
-			}
-			if (movies['movies'][movie_id]) {
-				playlist_hlight(movie_id);
-				display_secs = movies['movies'][movie_id]['start'];
-				build_video_player(movie_id);
-			} else {
-				update_movies_dbase(document.getElementById('date_select').value,
+        if (KM.session_id.current === session_id) {
+            if (!document.getElementById('html5player')) {
+                reset_display_html();
+            }
+            if (movies['movies'][movie_id]) {
+                playlist_hlight(movie_id);
+                display_secs = movies['movies'][movie_id]['start'];
+                build_video_player(movie_id);
+            } else {
+                update_movies_dbase(document.getElementById('date_select').value,
                                     document.getElementById('camera_select').value, session_id,
-									callback=function() {KM.show_loading(document.getElementById('arch_player')); retry();});				
-			}
-		}
+                                    callback=function() {KM.show_loading(document.getElementById('arch_player')); retry();});
+            }
+        }
     }
 
     function play_snap(snap_id) {
@@ -1995,26 +1995,26 @@ KM.display_archive_ = function () {
         document.getElementById('arch_player').innerHTML = '<div id="player_obj"> </div>';
         snap_player.set_player({id:'player_obj', width: '100%', height: '100%', snap_id: snap_id});
     }
-	
-	function get_id_by_start(start, view) {
-		var i = 0;
-		if (movies[view]) {
-			// т.к. i - внешняя, то цикл до length-1, при этом если не сработало условие, то вернется последний индекс
-			for (i = 0; i < movies[view].length-1; i++) {
-				if (movies[view][i]["start"] === start) {
-					return i;
-				} else if (movies[view][i]["start"] > start) {
-					if (start <= movies[view][i]["end"]) {
-						return i;
-					} else if (i > 0) {
-						return i - 1;
-					}
-				}
-			}
-		}
-		return i;
-	};
-		
+
+    function get_id_by_start(start, view) {
+        var i = 0;
+        if (movies[view]) {
+            // т.к. i - внешняя, то цикл до length-1, при этом если не сработало условие, то вернется последний индекс
+            for (i = 0; i < movies[view].length-1; i++) {
+                if (movies[view][i]["start"] === start) {
+                    return i;
+                } else if (movies[view][i]["start"] > start) {
+                    if (start <= movies[view][i]["end"]) {
+                        return i;
+                    } else if (i > 0) {
+                        return i - 1;
+                    }
+                }
+            }
+        }
+        return i;
+    };
+
     function build_video_player(movie_id) {
 
         // A closure that sets the movie HTML
@@ -2027,27 +2027,27 @@ KM.display_archive_ = function () {
         // returns :
         //
 
-	    // generate the troublesome movie object
-	    var date = document.getElementById('date_select').value;
-	    var camera = document.getElementById('camera_select').value;
-	    var name = movies['movies'][movie_id]['file'];
+        // generate the troublesome movie object
+        var date = document.getElementById('date_select').value;
+        var camera = document.getElementById('camera_select').value;
+        var name = movies['movies'][movie_id]['file'];
         var file_ext = name.substr(name.lastIndexOf('.'));
         var start = movies['movies'][movie_id]['start'];
         var end = movies['movies'][movie_id]['end'];
         var next_id = parseInt(movie_id)+1;
         var html5player = document.getElementById('html5player');
-		var poster = movies["snaps"][get_id_by_start(start, "snaps")]["file"];
+        var poster = movies["snaps"][get_id_by_start(start, "snaps")]["file"];
 
         if (!html5player) {
             document.getElementById('arch_player').innerHTML = '<div id="player_obj"></div>';
         }
 
-		KM.videoPlayer.set_cur_event_secs(start);
-		KM.videoPlayer.set_next_movie(next_id);
+        KM.videoPlayer.set_cur_event_secs(start);
+        KM.videoPlayer.set_next_movie(next_id);
 
-		switch (file_ext) {
+        switch (file_ext) {
 
-		default:
+        default:
             if (!html5player) {
                 var rate = document.getElementById('playback_rate').value;
                 KM.videoPlayer.set_video_player({
@@ -2060,7 +2060,7 @@ KM.display_archive_ = function () {
                         controls:true,
                         muted:true,
                         playbackRate:rate,
-						poster:poster
+                        poster:poster
                     }
                 });
                 html5player = document.getElementById('html5player');
@@ -2074,11 +2074,11 @@ KM.display_archive_ = function () {
                 }
             } else {
                 html5player.src = name;
-				html5player.poster = poster;
+                html5player.poster = poster;
             }
 
-			break;
-		}
+            break;
+        }
     }
 
     snap_player = function() {
@@ -2108,19 +2108,19 @@ KM.display_archive_ = function () {
         }
 
         function reload() {
-			function retry() {
-				KM.kill_timeout_ids(KM.ARCH_LOOP);
-				KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {reload(); }, 10000));
-			}
-			
+            function retry() {
+                KM.kill_timeout_ids(KM.ARCH_LOOP);
+                KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function () {reload(); }, 10000));
+            }
+
             if (KM.session_id.current === session_id) {
                 if (movies['snaps'][snap_id]) {
                     KM.add_timeout_id(KM.ARCH_LOOP, setTimeout(function() {play()}, delay-get_delta()));
                 } else {
-					update_movies_dbase(document.getElementById('date_select').value,
-										document.getElementById('camera_select').value, session_id,
-										callback=function() {retry();});				
-				}
+                    update_movies_dbase(document.getElementById('date_select').value,
+                                        document.getElementById('camera_select').value, session_id,
+                                        callback=function() {retry();});
+                }
             }
         }
 
@@ -2188,19 +2188,19 @@ KM.display_archive_ = function () {
     }();
 
     function reset_display_html() {
-		KM.session_id.current++;
-		KM.kill_timeout_ids(KM.ARCH_LOOP);
-		var arch_player = document.getElementById('arch_player');
+        KM.session_id.current++;
+        KM.kill_timeout_ids(KM.ARCH_LOOP);
+        var arch_player = document.getElementById('arch_player');
         arch_player.innerHTML = '';
     }
 
     return {
-	init: init,
-	change_date: change_date,
-	change_camera: change_camera,
-	change_view: change_view,
+    init: init,
+    change_date: change_date,
+    change_camera: change_camera,
+    change_view: change_view,
     event_clicked: event_clicked,
-	update_playback_info: update_playback_info
+    update_playback_info: update_playback_info
     };
 }();
 
@@ -2232,12 +2232,12 @@ KM.display_logs_ = function () {
 
     var events;
     var session_id;
-	var config_html;
+    var config_html;
 
 
     function init() {
         set_logs_html();
-		config_html=document.getElementById('config_html');
+        config_html=document.getElementById('config_html');
         window.onresize=null;
         get_kmotion_logs();
     }
@@ -2245,7 +2245,7 @@ KM.display_logs_ = function () {
     function set_logs_html() {
         KM.session_id.current++;
         session_id = KM.session_id.current;
-		KM.hide_loading(document.getElementById('main_display'));
+        KM.hide_loading(document.getElementById('main_display'));
         document.getElementById('main_display').innerHTML = '\
         <div class="title">kmotion: Logs</div>\
         <div class="divider" >\
@@ -2275,7 +2275,7 @@ KM.display_logs_ = function () {
                 }
             }
             config_html.innerHTML = log_html;
-			KM.hide_loading(config_html);
+            KM.hide_loading(config_html);
     }
 
     function format_event(event) {
@@ -2303,8 +2303,8 @@ KM.display_logs_ = function () {
         }
 
         if (session_id === KM.session_id.current) {
-			config_html.innerHTML = '';
-			KM.show_loading(config_html);
+            config_html.innerHTML = '';
+            KM.show_loading(config_html);
             document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Kmotion logs";
             events = null;
 
@@ -2322,8 +2322,8 @@ KM.display_logs_ = function () {
         }
 
         if (session_id === KM.session_id.current) {
-			config_html.innerHTML = '';
-			KM.show_loading(config_html);
+            config_html.innerHTML = '';
+            KM.show_loading(config_html);
             document.getElementsByClassName('title')[0].innerHTML = "kmotion: Logs->Motion logs";
             events = null;
 
@@ -2386,7 +2386,7 @@ KM.display_config_ = function () {
                 delete(KM.config.feeds[f]['reboot_camera']);
             }
             init();
-        }        
+        }
 
         function sync(conf) {
             if (KM.config["save_display"]) {
@@ -2507,12 +2507,12 @@ KM.display_config_ = function () {
                 <div class="config_text_margin" id="conf_text" >\
                   <input type="button" id="conf_apply" onclick="KM.conf_apply();" value="Apply" />&nbsp;all changes to the local browser configuration and sync with the remote server.\
                </div>';
-               
-        if ((document.getElementById("feed_button").style.color) || 
+
+        if ((document.getElementById("feed_button").style.color) ||
             (document.getElementById('misc_button').style.color)) {
                 document.getElementById("conf_apply").style.color = KM.BLUE;
                 document.getElementById("conf_apply").style.fontWeight = 'bold';
-            } 
+            }
 
         for (var s in KM.config.misc) {
             try {
@@ -2520,7 +2520,7 @@ KM.display_config_ = function () {
                     document.getElementById(s).checked = KM.config.misc[s];
                 } else {
                     document.getElementById(s).value = KM.config.misc[s];
-                }                
+                }
             } catch (e) {}
         }
         for (var s in KM.config) {
@@ -2529,14 +2529,14 @@ KM.display_config_ = function () {
                     document.getElementById(s).checked = KM.config[s];
                 } else {
                     document.getElementById(s).value = KM.config[s];
-                }                
+                }
             } catch (e) {}
         }
-        
-        document.getElementsByName('color_select')[KM.config.misc.color_select].checked = true;        
+
+        document.getElementsByName('color_select')[KM.config.misc.color_select].checked = true;
         document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Misc";
     };
-    
+
     function conf_color_select(obj) {
         KM.background_button_clicked(parseInt(obj.value));
         conf_misc_highlight(obj);
@@ -2552,7 +2552,7 @@ KM.display_config_ = function () {
         //
         document.getElementById('misc_button').style.fontWeight = 'bold';
         document.getElementById('misc_button').style.color = KM.BLUE;
-        
+
         document.getElementById("conf_apply").style.fontWeight = 'bold';
         document.getElementById("conf_apply").style.color = KM.BLUE;
 
@@ -2582,7 +2582,7 @@ KM.display_config_ = function () {
         //
         // returns:
         //
-        
+
         conf_config_track.sync();
         KM.blink_button(document.getElementById('conf_apply'), conf_backdrop_html);
     };
@@ -2650,7 +2650,7 @@ KM.display_config_ = function () {
             </div>\
         </div>';
 
-        
+
         html_str += '<div  class="config_form">\
             <label for="feed_camera">Select camera:</label>\
             <select  id="feed_camera" onchange="KM.conf_feed_change();">';
@@ -2659,7 +2659,7 @@ KM.display_config_ = function () {
                         KM.config.feeds[f].feed_name = '';
                     }
                     html_str+='<option value="'+f+'">'+f+': '+KM.config.feeds[f].feed_name+'</option>';
-                };            
+                };
             html_str+='</select>\
             </div>\
                 <hr/> \
@@ -2757,17 +2757,17 @@ KM.display_config_ = function () {
                     <input type="number" id="feed_quality" size="3" onchange="KM.conf_feed_highlight(this);" value="85" min="1"/>\
                   </div>';
 
-        
+
         if (KM.config.feeds[cur_camera].feed_enabled) {
             html_str = html_str.replace(/disabled/g, '');
             html_str = html_str.replace(/gcam.png/, 'bcam.png');
         }
         document.getElementById('config_html').innerHTML = html_str;
-        
+
         var feedimage = document.getElementById('feedimage');
         feedimage.width = image_width;
         feedimage.height = image_height;
-        
+
         // has to be this messy way to avoid flicker
         //console.log(KM.config.feed_device[cur_camera]);
         if (KM.config.feeds[cur_camera].feed_enabled) {
@@ -2788,7 +2788,7 @@ KM.display_config_ = function () {
 
             } catch (e) {}
         }
-        
+
 
         // reposition the masks
         var origin_y = feedimage.offsetTop;
@@ -2823,7 +2823,7 @@ KM.display_config_ = function () {
                         document.getElementById('mask_img_' + (i + 1)).src = 'images/mask.png'
                     }
                 }
-            } 
+            }
         }
         document.getElementsByClassName('title')[0].innerHTML = "kmotion: Config->Cameras";
         conf_feed_enable_update();
@@ -2856,7 +2856,7 @@ KM.display_config_ = function () {
         //
         // expects:
         // 'button_num' ... the mask button clicked
-        //			1: mask all, 2: mask invert, 3: mask none
+        //          1: mask all, 2: mask invert, 3: mask none
         //
         // returns:
         //
@@ -2903,7 +2903,7 @@ KM.display_config_ = function () {
         cur_camera = document.getElementById('feed_camera').value;
         KM.add_timeout_id(KM.MISC_JUMP, setTimeout(function () {conf_feed_html(); }, 1));
     };
-    
+
     function conf_feed_enable_update() {
         if (document.getElementById('feed_enabled').checked) {
             conf_feed_ungrey();
@@ -2921,11 +2921,11 @@ KM.display_config_ = function () {
         // returns:
         //
 
-        conf_feed_highlight(obj);        
+        conf_feed_highlight(obj);
         conf_feed_enable_update();
         KM.menu_bar_buttons.construct_camera_sec();
         // have to generate new mask on feed enabled
-    };    
+    };
 
     function conf_feed_net_update() {
         if (document.getElementById('feed_device').value == -1) {
@@ -2942,7 +2942,7 @@ KM.display_config_ = function () {
             document.getElementById('feed_lgn_pw').disabled = true;
         }
     }
-    
+
     function conf_feed_net_highlight(obj) {
 
         // A function that enables/disables user inputs for net cams
@@ -3036,7 +3036,7 @@ KM.display_config_ = function () {
             case "feed_width":
             case "feed_height":
                 var tmp = parseInt(obj.value, 10);
-                if (isNaN(tmp)) tmp = 0;                
+                if (isNaN(tmp)) tmp = 0;
                 KM.config.feeds[cur_camera][obj.id] = tmp;
                 break;
             case "feed_mask":
@@ -3263,7 +3263,7 @@ KM.display_config_ = function () {
             } else {
                 document.getElementById('bar_fground10').style.backgroundColor = BAR_OK;
             }
-            
+
             // fs
             document.getElementById('bar_value11').innerHTML = dbase.fsarch[0];
             tmp = dbase.fsarch[2].substring(0, dbase.fsarch[2].length-1);
@@ -3273,7 +3273,7 @@ KM.display_config_ = function () {
             } else {
                 document.getElementById('bar_fground11').style.backgroundColor = BAR_OK;
             }
-            
+
             document.getElementById('bar_value12').innerHTML = dbase.fsramdisk[0];
             tmp = dbase.fsramdisk[2].substring(0, dbase.fsramdisk[2].length-1);
             document.getElementById('bar_fground12').style.width = dbase.fsramdisk[2];
@@ -3289,7 +3289,7 @@ KM.display_config_ = function () {
                 dbase = obj_data;
                 update_text();
                 update_bars();
-                reload();				
+                reload();
             }
 
             function reload() {
@@ -3374,14 +3374,14 @@ KM.videoPlayer = function() {
 
     function set_next_movie(movie_id) {
         next_movie = movie_id;
-    }    
+    }
 
     function get_time() {
-		var html5player=document.getElementById('html5player');
-		if (!html5player) {
-			tm=0;
-		}
-		return tm;
+        var html5player=document.getElementById('html5player');
+        if (!html5player) {
+            tm=0;
+        }
+        return tm;
     }
 
     function html5VideoProgress() {
@@ -3447,98 +3447,98 @@ KM.videoPlayer = function() {
     }
 
     function set_video_player(params) {
-		function getFileExtension(filename) {
-			var ext = /^.+\.([^.]+)$/.exec(filename);
-			return ext == null ? "" : ext[1];
-		}
+        function getFileExtension(filename) {
+            var ext = /^.+\.([^.]+)$/.exec(filename);
+            return ext == null ? "" : ext[1];
+        }
 
-		function ID() {
-			return '_' + Math.random().toString(36).substr(2, 9);
-		}
+        function ID() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
 
-		function checkVideo(format) {
-			switch (format) {
-			case 'mp4':
-				var vidTest = document.createElement("video");
-				if (vidTest.canPlayType) {
-					h264Test = vidTest
-							.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'); // mp4
-																						// format
-					
-					if (h264Test == "probably") { // supports .mp4 format
-						return "html5"; // play HTML5 video
-					} else {
-						return "none";
-					}
-					
-				}
-			case 'ogv':
-				var vidTest = document.createElement("video");
-				if (vidTest.canPlayType) {
-					oggTest = vidTest
-							.canPlayType('video/ogg; codecs="theora, vorbis"'); // ogg
-																				// format
-					if (!oggTest) { // if it doesnot support
-						return "none";
-					} else {
-						if (oggTest == "probably") { // supports
-							return "html5"; // play HTML5 video
-						} else {
-							return "none"; 
-											// support any of them.
-						}
-					}
-				}
-			case 'webm':
-				var vidTest = document.createElement("video");
-				if (vidTest.canPlayType) {
-					webmTest = vidTest
-							.canPlayType('video/webm; codecs="vp8.0, vorbis"'); // webm
-																				// format
-					if (!webmTest) { // if it doesnot support
-						return "none";
-					} else {
-						if (webmTest == "probably") { // supports
-							return "html5"; // play HTML5 video
-						} else {
-							return "none"; 
-											// support any of them.
-						}
-					}
-				}
-				break;
-			default:
-				return "none";
-			}
-		}
+        function checkVideo(format) {
+            switch (format) {
+            case 'mp4':
+                var vidTest = document.createElement("video");
+                if (vidTest.canPlayType) {
+                    h264Test = vidTest
+                            .canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'); // mp4
+                                                                                        // format
 
-		var canplay = checkVideo(getFileExtension(params.src));
+                    if (h264Test == "probably") { // supports .mp4 format
+                        return "html5"; // play HTML5 video
+                    } else {
+                        return "none";
+                    }
 
-		if (canplay == "html5") {
-			document.getElementById(params.id).innerHTML = '<video id="html5player" width="'
-					+ params.width
-					+ '" height="'
-					+ params.height
+                }
+            case 'ogv':
+                var vidTest = document.createElement("video");
+                if (vidTest.canPlayType) {
+                    oggTest = vidTest
+                            .canPlayType('video/ogg; codecs="theora, vorbis"'); // ogg
+                                                                                // format
+                    if (!oggTest) { // if it doesnot support
+                        return "none";
+                    } else {
+                        if (oggTest == "probably") { // supports
+                            return "html5"; // play HTML5 video
+                        } else {
+                            return "none";
+                                            // support any of them.
+                        }
+                    }
+                }
+            case 'webm':
+                var vidTest = document.createElement("video");
+                if (vidTest.canPlayType) {
+                    webmTest = vidTest
+                            .canPlayType('video/webm; codecs="vp8.0, vorbis"'); // webm
+                                                                                // format
+                    if (!webmTest) { // if it doesnot support
+                        return "none";
+                    } else {
+                        if (webmTest == "probably") { // supports
+                            return "html5"; // play HTML5 video
+                        } else {
+                            return "none";
+                                            // support any of them.
+                        }
+                    }
+                }
+                break;
+            default:
+                return "none";
+            }
+        }
+
+        var canplay = checkVideo(getFileExtension(params.src));
+
+        if (canplay == "html5") {
+            document.getElementById(params.id).innerHTML = '<video id="html5player" width="'
+                    + params.width
+                    + '" height="'
+                    + params.height
                     + '"</video>';
 
-			var html5player = document.getElementById('html5player');
+            var html5player = document.getElementById('html5player');
             for (var key in params.config) {
                 if (params.config.hasOwnProperty(key))
                     try {
                         html5player[key] = params.config[key];
                     } catch (e) {};
             }
-			html5player.innerHTML = "<p><a href=\"" + document.URL + params.src
-					+ "\" target='_blank'>DOWNLOAD: "
-					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
+            html5player.innerHTML = "<p><a href=\"" + document.URL + params.src
+                    + "\" target='_blank'>DOWNLOAD: "
+                    + params.src.split(/(\\|\/)/g).pop() + "</a></p>";
 
-			html5player.src = params.src;
-		} else {
-			document.getElementById(params.id).innerHTML = "<p><a href=\""
-					+ document.URL + params.src + "\" target='_blank'>DOWNLOAD: "
-					+ params.src.split(/(\\|\/)/g).pop() + "</a></p>";
-		}
-	}
+            html5player.src = params.src;
+        } else {
+            document.getElementById(params.id).innerHTML = "<p><a href=\""
+                    + document.URL + params.src + "\" target='_blank'>DOWNLOAD: "
+                    + params.src.split(/(\\|\/)/g).pop() + "</a></p>";
+        }
+    }
 
     ///////////////////EXPORT METHODS//////////////////////////////
 
