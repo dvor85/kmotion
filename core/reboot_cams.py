@@ -5,6 +5,7 @@ import os
 import time
 import threading
 import logger
+import events
 from camera_lost import CameraLost
 from config import Settings
 import argparse
@@ -17,7 +18,7 @@ def create_parser():
                                      epilog='(c) 2019 Dmitriy Vorotilin.')
     parser.add_argument('--cam', '-c', action='append', type=int,
                         help='Cameras to reboot. If not specified, reboot all cameras. Reboot, when are not grabbing.')
-    parser.add_argument('--force', '-f', action='store_true', help='Force reboot.')
+    parser.add_argument('--force', '-f', action='store_true', help='Force reboot unconditionally.')
     return parser
 
 
@@ -32,6 +33,7 @@ class RebootCams():
         config = cfg.get('www_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
+
         if options.cam:
             self.camera_ids = options.cam
         else:
@@ -39,7 +41,9 @@ class RebootCams():
         self.force_reboot = options.force
 
     def reboot_cam(self, cam):
-        while not self.force_reboot and str(cam) in os.listdir(self.events_dir):
+        state_file = os.path.join(self.ramdisk_dir, 'states', str(cam))
+        while not self.force_reboot and (str(cam) in os.listdir(self.events_dir) or
+                                         events.get_state(state_file) == events.STATE_START):
             time.sleep(10)
         cam_lost = CameraLost(self.kmotion_dir, cam)
         cam_lost.reboot_camera()
