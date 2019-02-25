@@ -2069,7 +2069,7 @@ KM.display_archive_ = function () {
                     html5player.onseeked=KM.videoPlayer.html5VideoScrolled;
                     html5player.ontimeupdate=KM.videoPlayer.html5VideoProgress
                     html5player.onended=KM.videoPlayer.html5VideoFinished;
-                    html5player.onclick=KM.videoPlayer.html5playerPlayPause;
+                    //html5player.onclick=KM.videoPlayer.html5playerPlayPause;
                     html5player = null;
                 }
             } else {
