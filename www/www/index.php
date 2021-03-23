@@ -23,7 +23,7 @@ echo '<link href="css/base.css?ver='.$version.'" rel="stylesheet" type="text/css
 <script type="text/javascript" >
 
 /* *****************************************************************************
-Preload section. The images are held in an array so the browser will download 
+Preload section. The images are held in an array so the browser will download
 them in the background ready for use and also not drop them from its cache.
 ***************************************************************************** */
 
@@ -34,16 +34,16 @@ function kmotion_preload_images() {
 	for (var i = 1; i < 55; i++) {
 		preload_array[i] = new Image();
 	}
-	
+
 	for (var i = 1; i < 13; i++) {
 		preload_array[i].src = 'images/r' + i + '.png';
 		preload_array[i + 12].src = 'images/b' + i + '.png';
 		preload_array[i + 24].src = 'images/g' + i + '.png';
 	}
-	
-	preload_array[37].src = 'images/bcam.png';	
+
+	preload_array[37].src = 'images/bcam.png';
 	preload_array[38].src = 'images/gcam.png';
-	preload_array[39].src = 'images/bcam_alt.png';	
+	preload_array[39].src = 'images/bcam_alt.png';
 	preload_array[40].src = 'images/gcam_alt.png';
 	preload_array[41].src = 'images/temp3.png';
 	preload_array[42].src = 'images/temp4.png';
@@ -81,7 +81,7 @@ function showhint(InputText) {
 		}
 	//}
 }
-		
+
 function hidehint() {
 	//return function(e) {
 		if(document.getElementById("hint"))
@@ -104,7 +104,7 @@ function hidehint() {
 *****************************************************************************-->
 
 	<div id="main_display" class="loading_image"></div>
-	
+
 
 <!-- ***************************************************************************
 'button_bar' section.
@@ -115,7 +115,7 @@ function hidehint() {
 		<div id="title">kmotion</div>
 		<span id="version_num"></span>
 		<span class="divider"><img src="images/divider.png" alt="" /> </span>
-	
+
 		<span class="header">Display select</span>
 
 		<div class="button_line">
@@ -131,7 +131,7 @@ function hidehint() {
 			<img class="display_button" id="d7" src="images/g7.png" alt="" onClick="KM.display_button_clicked(7);" />
 			<img class="display_button" id="d8" src="images/g8.png" alt="" onClick="KM.display_button_clicked(8);" />
 		</div>
-	
+
 		<div class="button_line">
 			<img class="display_button" id="d9" src="images/g9.png" alt="" onClick="KM.display_button_clicked(9);" />
 			<img class="display_button" id="d10" src="images/g10.png" alt="" onClick="KM.display_button_clicked(10);" />
@@ -143,26 +143,26 @@ function hidehint() {
 		<span id="camera_func_header" class="header">Camera Select</span>
 		<div id="camera_sec"></div>
 		<span class="divider"><img src="images/divider.png" alt="" /> </span>
-		
-		
+
+
 		<span class="header">Key Functions</span>
-		
+
 		<div class="button_line">
 			<div class="function_button" onClick="KM.function_button_clicked(1);"><span id="ft1">Онлайн</span></div>
 			<div class="function_button" onClick="KM.function_button_clicked(2);"><span id="ft2">Архив</span></div>
 		</div>
-		
+
 		<span class="divider"><img src="images/divider.png" alt="" /> </span>
 		<span class="header" id="misc_function_display">Misc Functions</span>
-		
+
 		<div class="button_line">
 			<div class="function_button" onClick="KM.function_button_clicked(3);"><span id="ft3">Logs</span></div>
 			<div class="function_button" onClick="KM.function_button_clicked(4);"><span id="ft4">Config</span></div>
 		</div>
-		
+
 
 
 	</div>
-	
+
 </body>
 </html>

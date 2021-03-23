@@ -3434,16 +3434,17 @@ KM.videoPlayer = function() {
                     if (tm>=1)
                         html5player.currentTime=tm;
                     break;
-                case 32:
+                /*case 32:
                     html5playerPlayPause();
                     tm=html5player.currentTime;
-                    break;
+                    break;*/
                 }
                 KM.update_playback_info(cur_event_secs);
                 html5player=null;
             }
             return false;
         }
+        
     }
 
     function set_video_player(params) {
@@ -3533,6 +3534,7 @@ KM.videoPlayer = function() {
                     + params.src.split(/(\\|\/)/g).pop() + "</a></p>";
 
             html5player.src = params.src;
+            html5player.focus();
         } else {
             document.getElementById(params.id).innerHTML = "<p><a href=\""
                     + document.URL + params.src + "\" target='_blank'>DOWNLOAD: "
