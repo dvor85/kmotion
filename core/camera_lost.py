@@ -1,16 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 '''
 @author: demon
 '''
 
-import logger
+from core import logger
 import subprocess
 import sys
 import os
 import time
-import urllib
-from utils import add_userinfo
-from config import Settings
+import requests
+from core import utils
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -30,10 +32,8 @@ class CameraLost:
             self.feed_username = config['feeds'][self.cam_id]['feed_lgn_name']
             self.feed_password = config['feeds'][self.cam_id]['feed_lgn_pw']
 
-            urllib.FancyURLopener.prompt_user_passwd = lambda *a, **k: (None, None)
-            self.camera_url = add_userinfo(config['feeds'][self.cam_id]['feed_url'], self.feed_username, self.feed_password)
-            self.reboot_url = add_userinfo(config['feeds'][self.cam_id]['feed_reboot_url'],
-                                           self.feed_username, self.feed_password)
+            self.camera_url = config['feeds'][self.cam_id]['feed_url']
+            self.reboot_url = config['feeds'][self.cam_id]['feed_reboot_url']
         except Exception:
             log.exception('init error')
 
@@ -44,14 +44,8 @@ class CameraLost:
             time.sleep(60)
             for t in range(10):
                 try:
-                    res = urllib.urlopen(self.camera_url)
-                    try:
-                        text1 = res.read(1)
-                        if res.getcode() == 200 and len(text1) > 0:
-                            need_reboot = False
-                            break
-                    finally:
-                        res.close()
+                    res = requests.get(self.camera_url, auth=(self.feed_username, self.feed_password))
+                    res.raise_for_status()
                 except Exception:
                     log.error('error while getting image from camera {cam_id}'.format(cam_id=self.cam_id))
                 finally:
@@ -67,37 +61,24 @@ class CameraLost:
 
     def reboot_camera(self):
         try:
-            res = urllib.urlopen(self.reboot_url)
-            try:
-                if res.getcode() == 200:
-                    log.debug('reboot {0} success'.format(self.cam_id))
-                    return True
-                else:
-                    log.debug('reboot {0} failed with status code {1}'.format(self.cam_id, res.getcode()))
-            finally:
-                res.close()
+            res = requests.get(self.reboot_url, auth=(self.feed_username, self.feed_password))
+            res.raise_for_status()
+            log.debug('reboot {0} success'.format(self.cam_id))
+            return True
         except Exception:
-            log.error('error while reboot {cam_id}'.format(cam_id=self.cam_id))
+            log.debug('reboot {0} failed with status code {1}'.format(self.cam_id, res.getcode()))
 
     def restart_thread(self, cam_id):
         try:
-            res = urllib.urlopen("http://localhost:8080/{cam_id}/action/restart".format(cam_id=cam_id))
-            try:
-                if res.getcode() == 200:
-                    log.debug('restart camera {cam_id} success'.format(cam_id=cam_id))
-                    return True
-                else:
-                    log.debug('restart camera {cam_id} failed with status code {code}'.format(
-                        cam_id=cam_id, code=res.getcode()))
-            finally:
-                res.close()
+            res = requests.get("http://localhost:8080/{cam_id}/action/restart".format(cam_id=cam_id))
+            res.raise_for_status()
+            log.debug('restart camera {cam_id} success'.format(cam_id=cam_id))
+            return True
         except Exception:
-            log.error('error while restart camera {cam_id}'.format(cam_id=cam_id))
+            log.debug('restart camera {cam_id} failed with status code {code}'.format(cam_id=cam_id, code=res.getcode()))
 
     def get_prev_instances(self):
-        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i$"' %
-                                 (os.path.basename(__file__), self.cam_id), stdout=subprocess.PIPE, shell=True)
-        stdout = p_obj.communicate()[0]
+        stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s %i$"' % (os.path.basename(__file__), self.cam_id), shell=True))
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
 
 

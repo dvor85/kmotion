@@ -1,13 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import sys
 import subprocess
-import logger
-import cPickle
+from core import logger
+from six.moves import cPickle
 import time
-import actions.actions as actions
+from core.actions import actions
 import os
-from config import Settings
+from core.config import Settings
 
 STATE_START = 'start'
 STATE_END = 'end'

@@ -1,11 +1,13 @@
-
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 """
 Export mutex lock functions for the '../www/mutex/' files
 """
 
 import os
 import time
-import logger
+from core import logger
+from core import utils
 
 log = logger.Logger('kmotion', logger.WARN)
 
@@ -18,7 +20,7 @@ class Mutex():
         log.debug('init_mutex() - init mutex : %s' % self.mutex)
         self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
         if not os.path.isdir(self.mutex_dir):
-            os.makedirs(self.mutex_dir, 0775)
+            utils.makedirs(self.mutex_dir)
 
     def acquire(self):
         """

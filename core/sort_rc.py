@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
+from six import iterkeys
 
 # Copyright 2008 David Selby dave6502@googlemail.com
 
@@ -47,14 +50,13 @@ def sort_rc(file_rc):
                 continue
             sections[section].append(line)
 
-        keys = sections.keys()
+        keys = iterkeys(sections)
         keys.sort()
         f_obj.seek(0)
 
         for section in keys:
-            print >> f_obj, section
+            f_obj.write(section + '\n')
             sections[section].sort()
             for option in sections[section]:
-                print >> f_obj, option
-            print >> f_obj, ''
+                f_obj.write(option + '\n')
         f_obj.truncate()

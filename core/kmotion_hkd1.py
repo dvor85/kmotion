@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 """
 Checks the size of the images directory deleteing the oldest directorys first
@@ -7,13 +9,13 @@ configuration. Checks the current kmotion software version every 24 hours.
 """
 
 import time
-import logger
-from www_logs import WWWLog
+from core import logger
+from core.www_logs import WWWLog
 from multiprocessing import Process
 import subprocess
-import utils
+from core import utils
 import os
-from config import Settings
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -129,7 +131,7 @@ class Kmotion_Hkd1(Process):
         for date in os.listdir(self.images_dbase_dir):
             date_dir = os.path.join(self.images_dbase_dir, date)
             if os.path.isfile('%s/dir_size' % date_dir):
-                with open('%s/dir_size' % date_dir) as f_obj:
+                with open('%s/dir_size' % date_dir, 'r') as f_obj:
                     bytes_ += int(f_obj.readline())
 
         log.debug('images_dbase_size() - size : %s' % bytes_)
@@ -185,7 +187,7 @@ class Kmotion_Hkd1(Process):
         """
 
         # don't use os.path.getsize as it does not report disk useage
-        line = subprocess.Popen('nice -n 19 du -s %s' % dir_, shell=True, stdout=subprocess.PIPE).communicate()[0]
+        line = utils.uni(subprocess.check_output('nice -n 19 du -s %s' % dir_, shell=True))
 
         bytes_ = int(line.split()[0]) * 1000
         log.debug('size of %s = %s' % (dir_, bytes_))

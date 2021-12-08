@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
 import sys
 import traceback
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
+import json
+from six import itervalues
 from core.config import Settings
 from core import utils
 
@@ -19,7 +16,7 @@ class Config():
         self.kmotion_dir = kmotion_dir
         self.env = env
 
-        self.username = utils.true_enc(utils.safe_str(env.get('REMOTE_USER')))
+        self.username = utils.safe_str(env.get('REMOTE_USER'))
 
         www_rc = 'www_rc_%s' % (self.username)
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
@@ -39,7 +36,7 @@ class Config():
                   }
         exclude_options = ('feed_reboot_url',)
         config.update(self.config)
-        for conf in config['feeds'].itervalues():
+        for conf in itervalues(config['feeds']):
             for eo in exclude_options:
                 if eo in conf:
                     del(conf[eo])
@@ -50,7 +47,7 @@ class Config():
         if self.config['misc']['config_enabled']:
             config = json.loads(jdata)
             config['user'] = self.username
-            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'wb') as pipeout:
+            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
                 pipeout.write(json.dumps(config))
 
         return ''
@@ -67,5 +64,5 @@ class Config():
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    print Config(kmotion_dir, {}).read()
+    print(Config(kmotion_dir, {}).read())
 #     requests.post("http://127.0.0.1:8080/config", json={'jsonrpc': '2.0', 'method': 'config', 'id': '1', 'params': {'read': '1'} }, headers={"Content-type": "application/json"}).content

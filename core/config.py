@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
+
 import os
-from mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
-import logger
-import utils
+from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
+from core import logger
+from core import utils
 from threading import Lock
 
 log = logger.Logger('kmotion', logger.DEBUG)

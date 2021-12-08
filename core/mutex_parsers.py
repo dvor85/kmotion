@@ -1,12 +1,14 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 '''
 Created on 18.12.2014
 
 @author: demon
 '''
-import ConfigParser
-import sort_rc
+from six.moves import configparser
+from core import sort_rc
 import os
-from mutex import Mutex
+from core.mutex import Mutex
 
 
 def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):
@@ -51,7 +53,7 @@ def mutex_www_parser_rd(kmotion_dir, www_rc='www_rc'):
         return  : parser ... a parser instance
         """
 
-    parser = ConfigParser.SafeConfigParser()
+    parser = configparser.SafeConfigParser()
     with Mutex(kmotion_dir, www_rc):
         parser.read('%s/www/%s' % (kmotion_dir, www_rc))
     return parser
@@ -67,7 +69,7 @@ def mutex_kmotion_parser_rd(kmotion_dir):
     return  : parser ... a parser instance
     """
 
-    parser = ConfigParser.SafeConfigParser()
+    parser = configparser.SafeConfigParser()
     with Mutex(kmotion_dir, 'kmotion_rc'):
         parser.read('%s/kmotion_rc' % kmotion_dir)
     return parser

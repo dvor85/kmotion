@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
+
 '''
 @author: demon
 '''
@@ -8,8 +11,9 @@ import shlex
 import time
 import datetime
 import signal
-import sample
+from core.actions import sample
 import re
+from core import utils
 
 log = None
 
@@ -42,20 +46,14 @@ class rtsp2mp4(sample.sample):
             self.feed_url = config['feeds'][self.feed]['feed_url']
             self.feed_name = config['feeds'][self.feed].get('feed_name', "Get from camera {0}".format(self.feed))
 
-            from core.utils import add_userinfo
-            self.feed_grab_url = add_userinfo(
-                config['feeds'][self.feed].get('%s_url' % self.key, self.feed_url),
-                self.feed_username,
-                self.feed_password)
+            self.feed_grab_url = utils.url_add_auth(config['feeds'][self.feed].get('%s_url' % self.key, self.feed_url),
+                                                    (self.feed_username, self.feed_password))
         except Exception:
             log.exception('init error')
 
     def get_grabber_pids(self):
         try:
-            p_obj = subprocess.Popen(
-                'pgrep -f "^ffmpeg.+{src}.*"'.format(src=self.feed_grab_url), stdout=subprocess.PIPE, shell=True)
-            stdout = p_obj.communicate()[0]
-            return stdout.splitlines()
+            return utils.uni(subprocess.check_output('pgrep -f "^ffmpeg.+{src}.*"'.format(src=self.feed_grab_url), shell=True)).splitlines()
         except Exception:
             return []
 
@@ -71,7 +69,7 @@ class rtsp2mp4(sample.sample):
     def get_codec(self, codec):
         try:
             enc_regex = re.compile("\s*[AV.]{{6}}\s+(?P<codec>.*?{codec}.*?)\s+.*".format(codec=codec))
-            encoders = subprocess.check_output("ffmpeg -loglevel error -encoders", shell=True).split("\n")
+            encoders = utils.uni(subprocess.check_output("ffmpeg -loglevel error -encoders", shell=True)).splitlines()
             for enc in encoders:
                 enc_match = enc_regex.match(enc)
                 if enc_match:

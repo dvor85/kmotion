@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-# from __future__ import unicode_literals
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 import os
 import sys
 from jsonrpc2 import JsonRpcApplication
-from cgi import escape
 
 
 kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -12,7 +11,7 @@ sys.path.insert(0, kmotion_dir)
 
 def application(env, start_response):
 
-    path_info = escape(env.get('PATH_INFO'))
+    path_info = env.get('PATH_INFO')
     if path_info == '/archive':
         from wsgi.archive import Archive
         app = JsonRpcApplication(rpcs=dict(archive=Archive(kmotion_dir, env)))

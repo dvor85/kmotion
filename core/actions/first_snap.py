@@ -1,10 +1,13 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
+
 
 import sys
 import os
 import time
 import shutil
 import datetime
-import sample
+from core.actions import sample
 
 log = None
 

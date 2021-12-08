@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 
 """
@@ -9,7 +11,6 @@ The kmotion exe file cannot call this code directly because it may be in a
 different working directory
 """
 
-import sys
 import os
 import signal
 import time
@@ -116,8 +117,7 @@ class Kmotion:
                 os.kill(int(pid), signal.SIGTERM)
 
     def get_kmotion_pids(self):
-        p_objs = subprocess.Popen('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True, stdout=subprocess.PIPE)
-        stdout = p_objs.communicate()[0]
+        stdout = subprocess.check_output('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True)
         return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
 
     def signal_term(self, signum, frame):

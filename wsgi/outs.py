@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
 import sys
@@ -12,7 +13,7 @@ class Outs():
         self.kmotion_dir = kmotion_dir
         self.env = env
 
-        self.username = utils.true_enc(utils.safe_str(env.get('REMOTE_USER')))
+        self.username = utils.safe_str(env.get('REMOTE_USER'))
         cfg = Settings.get_instance(self.kmotion_dir)
 
         www_rc = 'www_rc_%s' % (self.username)

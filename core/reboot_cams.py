@@ -1,14 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
 import time
 import threading
-import logger
-import events
-from camera_lost import CameraLost
-from config import Settings
+from core import logger
+from core import events
+from core.camera_lost import CameraLost
+from core.config import Settings
 import argparse
+from six import iterkeys
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -37,7 +39,7 @@ class RebootCams():
         if options.cam:
             self.camera_ids = options.cam
         else:
-            self.camera_ids = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
+            self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
         self.force_reboot = options.force
 
     def reboot_cam(self, cam):

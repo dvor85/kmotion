@@ -1,9 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 # image_resize an image using the PIL image library
 
 from PIL import Image
 import os
 import sys
+from core import utils
 
 
 def image_resize(src, dst, scale=1):
@@ -30,7 +33,7 @@ def main(src, scale):
         dst_dir = os.path.join(src_dir, 'www')
         last_jpg = os.path.join(src_dir, 'last.jpg')
         if not os.path.isdir(dst_dir):
-            os.makedirs(dst_dir)
+            utils.makedirs(dst_dir)
 
         dst = os.path.join(dst_dir, src_name)
         image_resize(src, dst, scale)

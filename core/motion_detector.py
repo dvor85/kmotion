@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
-import logger
+from core import logger
 import time
-import utils
-import events
+from core import utils
+from core import events
 import threading
 from multiprocessing import Process
-from config import Settings
+from core.config import Settings
+from six import iterkeys, iteritems
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -41,7 +43,7 @@ class Detector(Process):
     def find_feed_by_ip(self, ip):
         log.debug('find feed by ip "{0}"'.format(ip))
         if ip:
-            for feed, conf in self.config['feeds'].iteritems():
+            for feed, conf in iteritems(self.config['feeds']):
                 if conf.get('feed_enabled', False) and \
                         conf.get('motion_detector', INT_DETECTOR) == EXT_DETECTOR and \
                         ip in conf['feed_url']:
@@ -70,7 +72,7 @@ class Detector(Process):
 
         try:
 
-            if feed is not None and int(feed) > 0 and feed in self.config['feeds'].keys():
+            if feed is not None and int(feed) > 0 and feed in iterkeys(self.config['feeds']):
                 log.debug('main {0}'.format(feed))
                 if feed not in self.locks:
                     self.locks[feed] = threading.Lock()
@@ -87,7 +89,7 @@ class Detector(Process):
         pipein = os.open(self.pipe_file, os.O_RDONLY | os.O_NONBLOCK)
         try:
             if self.sleep(timeout):
-                data = os.read(pipein, 256)
+                data = utils.uni(os.read(pipein, 256))
             return data
         except Exception as e:
             log.debug(e)

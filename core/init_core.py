@@ -1,15 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 """
 Exports various methods used to initialize core configuration
 """
 
-import sys
-import logger
+from core import logger
 import subprocess
 from string import Template
 import os
-from config import Settings
+from six import iterkeys
+from core.utils import makedirs
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -60,7 +63,7 @@ class InitCore:
         self.wsgi_scripts = os.path.join(self.kmotion_dir, 'wsgi')
         self.wsgi_notice = os.path.join(self.kmotion_dir, 'wsgi_notice')
 
-        self.camera_ids = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
+        self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
 
     def init_ramdisk_dir(self):
         """
@@ -86,12 +89,12 @@ class InitCore:
         events_dir = os.path.join(self.ramdisk_dir, 'events')
         if not os.path.isdir(events_dir):
             log.debug('init_ramdisk_dir() - creating \'events\' folder')
-            os.makedirs(events_dir)
+            makedirs(events_dir)
 
         for feed in self.camera_ids:
             if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)):
                 try:
-                    os.makedirs('%s/%02i' % (self.ramdisk_dir, feed))
+                    makedirs('%s/%02i' % (self.ramdisk_dir, feed))
                     log.debug('init_ramdisk_dir() - creating \'%02i\' folder' % feed)
                 except OSError:
                     pass
@@ -116,7 +119,7 @@ class InitCore:
             if not os.path.exists(fifo):
                 subprocess.call(['mkfifo', fifo])
                 os.chown(fifo, uid, gid)
-                os.chmod(fifo, 0660)
+                os.chmod(fifo, 0o660)
 
     def gen_vhost(self):
         """
@@ -131,7 +134,7 @@ class InitCore:
         try:
             vhost_dir = os.path.join(self.kmotion_dir, 'www/vhosts')
             if not os.path.isdir(vhost_dir):
-                os.makedirs(vhost_dir)
+                makedirs(vhost_dir)
             tmpl_dir = os.path.join(self.kmotion_dir, 'www/templates')
             for vhost_tmpl in os.listdir(tmpl_dir):
                 with open(os.path.join(vhost_dir, vhost_tmpl), 'w') as f_obj1:
@@ -144,7 +147,7 @@ class InitCore:
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    print kmotion_dir
+    print(kmotion_dir)
     InitCore(kmotion_dir).gen_vhost()
     InitCore(kmotion_dir).init_ramdisk_dir()
     InitCore(kmotion_dir).set_uid_gid_named_pipes(os.getuid(), os.getgid())

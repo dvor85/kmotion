@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 """
 Copys, moves or deletes files
@@ -7,10 +9,11 @@ Copys, moves or deletes files
 import time
 import shutil
 import datetime
-import logger
+from core import logger
 from multiprocessing import Process
 import os
-from config import Settings
+from six import iterkeys
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.WARN)
 
@@ -131,7 +134,7 @@ class Kmotion_Hkd2(Process):
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
-        self.camera_ids = sorted([f for f in config['feeds'].keys() if config['feeds'][f].get('feed_enabled', False)])
+        self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
 
     def sleep(self, timeout):
         t = 0

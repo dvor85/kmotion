@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 """
 Update the 'logs' file with events and check for any incorrect shutdowns. If
@@ -10,8 +12,8 @@ The 'logs' file has the format: $date#time#text$date ...
 
 import os
 import time
-import logger
-from mutex import Mutex
+from core import logger
+from core.mutex import Mutex
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -125,7 +127,7 @@ class WWWLog:
 
 
 if __name__ == '__main__':
-    print '\nModule self test ...\n'
+    print('\nModule self test ...\n')
     kmotion_dir = os.path.abspath('..')
 
     WWWLog(kmotion_dir).add_no_space_event()

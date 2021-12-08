@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
 import sys
 import datetime
 from core.config import Settings
 from core import utils
+from six import iteritems, iterkeys
 
 
 class Archive():
@@ -13,7 +15,7 @@ class Archive():
         self.kmotion_dir = kmotion_dir
         self.env = env
 
-        self.username = utils.true_enc(utils.safe_str(env.get('REMOTE_USER')))
+        self.username = utils.safe_str(env.get('REMOTE_USER'))
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         self.images_dbase_dir = config_main['images_dbase_dir']
@@ -34,7 +36,7 @@ class Archive():
 
     def get_feeds(self, date):
         feeds_list = {}
-        for feed, conf in self.config['feeds'].iteritems():
+        for feed, conf in iteritems(self.config['feeds']):
             try:
                 if conf.get('feed_enabled'):
                     feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
@@ -63,7 +65,7 @@ class Archive():
     def journal_data(self, date, feed):
 
         journal = {"movies": [], "snaps": []}
-        if feed in self.config['feeds'].keys():
+        if feed in iterkeys(self.config['feeds']):
             movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)
             if os.path.isdir(movies_dir):
                 movies = os.listdir(movies_dir)

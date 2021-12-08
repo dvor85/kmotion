@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 """
 Waits on the 'fifo_settings_wr' fifo until data received then parse the data
@@ -6,15 +8,17 @@ and modifiy 'www_rc'
 """
 
 import os
-import logger
+from core import logger
 import time
 import json
 import subprocess
 import threading
-import utils
+from core import utils
+import six
+from six import iterkeys, iteritems
 from multiprocessing import Process
-from camera_lost import CameraLost
-from mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
+from core.camera_lost import CameraLost
+from core.mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -40,7 +44,7 @@ class Kmotion_setd(Process):
         while self.active:
             log.debug('waiting on FIFO pipe data')
             self.config = {}
-            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'rb') as pipein:
+            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein:
                 data = pipein.read()
             log.debug('kmotion FIFO pipe data: %s' % data)
 
@@ -54,33 +58,33 @@ class Kmotion_setd(Process):
                 raise Exception('Incorrect configuration!')
 
             www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
-            for section in self.config.keys():
+            for section in iterkeys(self.config):
                 if section == 'feeds':
-                    for feed in self.config[section].keys():
+                    for feed in iterkeys(self.config[section]):
                         feed_section = 'motion_feed%02i' % int(feed)
                         if not www_parser.has_section(feed_section):
                             www_parser.add_section(feed_section)
-                        for k, v in self.config[section][feed].iteritems():
+                        for k, v in iteritems(self.config[section][feed]):
                             if k == 'reboot_camera' and utils.parse_str(v) is True and \
                                     os.path.basename(os.path.realpath(www_rc_path)) == 'www_rc':
                                 cam_lost = CameraLost(self.kmotion_dir, feed)
                                 threading.Thread(target=cam_lost.reboot_camera).start()
                             else:
                                 must_reload = True
-                                val = utils.utf(v) if isinstance(v, basestring) else str(v)
+                                val = utils.uni(v)
                                 www_parser.set(feed_section, k, val)
                 elif section == 'display_feeds':
                     misc_section = 'misc'
                     if not www_parser.has_section(misc_section):
                         www_parser.add_section(misc_section)
-                    for k, v in self.config[section].iteritems():
+                    for k, v in iteritems(self.config[section]):
                         if len(v) > 0:
                             www_parser.set(misc_section, 'display_feeds_%02i' % int(k), ','.join([str(i) for i in v]))
                 elif isinstance(self.config[section], dict):
                     if not www_parser.has_section(section):
                         www_parser.add_section(section)
-                    for k, v in self.config[section].iteritems():
-                        val = utils.utf(v) if isinstance(v, basestring) else str(v)
+                    for k, v in iteritems(self.config[section]):
+                        val = utils.uni(v)
                         www_parser.set(section, k, val)
             mutex_www_parser_wr(self.kmotion_dir, www_parser, www_rc)
 

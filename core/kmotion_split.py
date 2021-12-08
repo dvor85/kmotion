@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals, print_function, generators
 '''
 
 @author: demon
@@ -5,10 +7,10 @@
 import threading
 from multiprocessing import Process
 import time
-import logger
-import events
+from core import logger
+from core import events
 import os
-from config import Settings
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
