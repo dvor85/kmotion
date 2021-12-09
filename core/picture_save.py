@@ -23,7 +23,7 @@ def image_resize(src, dst, scale=1):
         im = Image.open(src)
         im2 = im.resize((int(im.width * scale), int(im.height * scale)), Image.NEAREST)
         im2.save(dst)
-    except:
+    except Exception:
         os.symlink(src, dst)
 
 

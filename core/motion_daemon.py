@@ -8,7 +8,7 @@ import time
 import subprocess
 from core.init_motion import InitMotion
 from multiprocessing import Process
-from core import logger
+from core import logger, utils
 import requests
 from core.config import Settings
 from six import iterkeys, iteritems
@@ -42,10 +42,16 @@ class MotionDaemon(Process):
                        if self.config['feeds'][f].get('feed_enabled', False)]).index(feed) + 1
 
     def count_motion_running(self):
-        return len(subprocess.check_output('pgrep -f "^motion.+-c.*"', shell=True).splitlines())
+        try:
+            return len(utils.uni(subprocess.check_output('pgrep -f "^motion.+-c.*"', shell=True)).splitlines())
+        except Exception:
+            return 0
 
     def is_port_alive(self, port):
-        return subprocess.check_output('netstat -ntl | grep %i' % port, shell=True) != ''
+        try:
+            return utils.uni(subprocess.check_output('netstat -ntl | grep %i' % port, shell=True)) != ''
+        except Exception:
+            return False
 
     def pause_motion_detector(self, thread):
 

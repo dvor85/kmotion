@@ -9,6 +9,7 @@ from six.moves import cPickle
 import time
 from core.actions import actions
 import os
+from core import utils
 from core.config import Settings
 
 STATE_START = 'start'
@@ -104,10 +105,11 @@ class Events:
             self.start()
 
     def get_prev_instances(self):
-        p_obj = subprocess.Popen('pgrep -f "^python.+%s %i.*"' %
-                                 (os.path.basename(__file__), self.feed), stdout=subprocess.PIPE, shell=True)
-        stdout = p_obj.communicate()[0]
-        return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+        try:
+            stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s %i.*"' % (os.path.basename(__file__), self.feed), shell=True))
+            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+        except Exception:
+            return []
 
 
 if __name__ == '__main__':

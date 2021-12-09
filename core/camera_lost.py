@@ -78,8 +78,11 @@ class CameraLost:
             log.debug('restart camera {cam_id} failed with status code {code}'.format(cam_id=cam_id, code=res.getcode()))
 
     def get_prev_instances(self):
-        stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s %i$"' % (os.path.basename(__file__), self.cam_id), shell=True))
-        return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+        try:
+            stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s %i$"' % (os.path.basename(__file__), self.cam_id), shell=True))
+            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+        except Exception:
+            return []
 
 
 if __name__ == '__main__':

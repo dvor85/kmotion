@@ -14,7 +14,6 @@ import json
 import subprocess
 import threading
 from core import utils
-import six
 from six import iterkeys, iteritems
 from multiprocessing import Process
 from core.camera_lost import CameraLost

@@ -20,11 +20,7 @@ def url_add_auth(url, auth):
 
 
 def safe_str(s):
-    res = s
-    if not isinstance(res, six.text_type):
-        res = res.decode('utf-8', errors='ignore')
-
-    return __re_denied.sub('', res)
+    return __re_denied.sub('', uni(s))
 
 
 def split(s, num=0):
@@ -32,6 +28,7 @@ def split(s, num=0):
 
 
 def parse_str(s):
+    s = uni(s)
     try:
         return int(s)
     except:

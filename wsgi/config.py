@@ -2,8 +2,6 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
-import sys
-import traceback
 import json
 from six import itervalues
 from core.config import Settings

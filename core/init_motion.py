@@ -49,10 +49,10 @@ class InitMotion:
 
         log.debug('create_mask() - width: %i height: %i' % (image_width, image_height))
 
-        black_px = '\x00'
-        white_px = '\xFF'
+        black_px = b'\x00'
+        white_px = b'\xFF'
 
-        mask = ''
+        mask = b''
         mask_hex_split = mask_hex_str.split('#')
         px_yptr = 0
 
@@ -60,11 +60,11 @@ class InitMotion:
 
             tmp_dec = int(mask_hex_split[y], 16)
             px_xptr = 0
-            image_line = ''
+            image_line = b''
 
             for x in range(15, 0, -1):
 
-                px_mult = (image_width - px_xptr) / x
+                px_mult = int((image_width - px_xptr) / x)
                 px_xptr += px_mult
 
                 bin_ = tmp_dec & 16384
@@ -75,7 +75,7 @@ class InitMotion:
                 else:
                     image_line += white_px * px_mult
 
-            px_mult = (image_height - px_yptr) / (15 - y)
+            px_mult = int((image_height - px_yptr) / (15 - y))
             px_yptr += px_mult
 
             mask += image_line * px_mult
@@ -83,10 +83,10 @@ class InitMotion:
         masks_dir = os.path.join(self.kmotion_dir, 'core/masks')
         if not os.path.isdir(masks_dir):
             os.makedirs(masks_dir)
-        with open(os.path.join(masks_dir, 'mask%0.2i.pgm' % feed), 'w') as f_obj:
-            f_obj.write('P5\n')
-            f_obj.write('%i %i\n' % (image_width, image_height))
-            f_obj.write('255\n')
+        with open(os.path.join(masks_dir, 'mask%0.2i.pgm' % feed), 'wb') as f_obj:
+            f_obj.write(b'P5\n')
+            f_obj.write(b'%i %i\n' % (image_width, image_height))
+            f_obj.write(b'255\n')
             f_obj.write(mask)
         log.debug('create_mask() - mask written')
 

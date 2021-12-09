@@ -24,7 +24,7 @@ from core.kmotion_hkd2 import Kmotion_Hkd2
 from core.kmotion_setd import Kmotion_setd
 from core.kmotion_split import Kmotion_split
 from core.motion_detector import Detector
-from core import logger
+from core import logger, utils
 from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
@@ -117,8 +117,11 @@ class Kmotion:
                 os.kill(int(pid), signal.SIGTERM)
 
     def get_kmotion_pids(self):
-        stdout = subprocess.check_output('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True)
-        return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+        try:
+            stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True))
+            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+        except Exception:
+            return []
 
     def signal_term(self, signum, frame):
         self.stop()

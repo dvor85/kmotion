@@ -116,10 +116,13 @@ class InitCore:
         fifos = [os.path.join(self.kmotion_dir, 'www/fifo_settings_wr'),
                  os.path.join(self.kmotion_dir, 'www/fifo_motion_detector')]
         for fifo in fifos:
-            if not os.path.exists(fifo):
-                subprocess.call(['mkfifo', fifo])
-                os.chown(fifo, uid, gid)
-                os.chmod(fifo, 0o660)
+            try:
+                if not os.path.exists(fifo):
+                    subprocess.check_call(['mkfifo', fifo])
+                    os.chown(fifo, uid, gid)
+                    os.chmod(fifo, 0o660)
+            except Exception as e:
+                log.error(e)
 
     def gen_vhost(self):
         """

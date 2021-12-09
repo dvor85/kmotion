@@ -2,7 +2,6 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
-import sys
 from core.config import Settings
 from core import utils
 

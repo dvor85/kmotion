@@ -187,8 +187,12 @@ class Kmotion_Hkd1(Process):
         """
 
         # don't use os.path.getsize as it does not report disk useage
-        line = utils.uni(subprocess.check_output('nice -n 19 du -s %s' % dir_, shell=True))
-
-        bytes_ = int(line.split()[0]) * 1000
-        log.debug('size of %s = %s' % (dir_, bytes_))
-        return bytes_
+        _bytes = 0
+        try:
+            line = utils.uni(subprocess.check_output('nice -n 19 du -s %s' % dir_, shell=True))
+            bytes_ = int(line.split()[0]) * 1000
+        except Exception:
+            _bytes = utils.get_size(dir_)
+        finally:
+            log.debug('size of %s = %s' % (dir_, bytes_))
+            return bytes_
