@@ -6,7 +6,7 @@ Created on 18.12.2014
 @author: demon
 '''
 from six.moves import configparser
-from core import sort_rc
+from . import sort_rc
 import os
 from core.mutex import Mutex
 

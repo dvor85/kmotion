@@ -6,8 +6,7 @@ Export mutex lock functions for the '../www/mutex/' files
 
 import os
 import time
-from core import logger
-from core import utils
+from . import logger, utils
 
 log = logger.Logger('kmotion', logger.WARN)
 

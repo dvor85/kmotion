@@ -2,13 +2,11 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
-from core import logger
+from . import logger, utils, events
 import time
-from core import utils
-from core import events
 import threading
 from multiprocessing import Process
-from core.config import Settings
+from .config import Settings
 from six import iterkeys, iteritems
 
 log = logger.Logger('kmotion', logger.DEBUG)

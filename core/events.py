@@ -4,13 +4,13 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import sys
 import subprocess
-from core import logger
+from . import logger
 from six.moves import cPickle
 import time
-from core.actions import actions
+from .actions import actions
 import os
-from core import utils
-from core.config import Settings
+from . import utils
+from .config import Settings
 
 STATE_START = 'start'
 STATE_END = 'end'

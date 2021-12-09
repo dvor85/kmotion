@@ -9,11 +9,11 @@ Copys, moves or deletes files
 import time
 import shutil
 import datetime
-from core import logger
+from . import logger
 from multiprocessing import Process
 import os
 from six import iterkeys
-from core.config import Settings
+from .config import Settings
 
 log = logger.Logger('kmotion', logger.WARN)
 

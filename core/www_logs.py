@@ -12,8 +12,8 @@ The 'logs' file has the format: $date#time#text$date ...
 
 import os
 import time
-from core import logger
-from core.mutex import Mutex
+from . import logger
+from .mutex import Mutex
 
 log = logger.Logger('kmotion', logger.DEBUG)
 

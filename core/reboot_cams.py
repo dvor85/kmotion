@@ -5,10 +5,9 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import os
 import time
 import threading
-from core import logger
-from core import events
-from core.camera_lost import CameraLost
-from core.config import Settings
+from . import logger, events
+from .camera_lost import CameraLost
+from .config import Settings
 import argparse
 from six import iterkeys
 

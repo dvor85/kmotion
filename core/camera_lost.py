@@ -5,14 +5,13 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 @author: demon
 '''
 
-from core import logger
 import subprocess
 import sys
 import os
 import time
 import requests
-from core import utils
-from core.config import Settings
+from . import utils, logger
+from .config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
