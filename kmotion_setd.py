@@ -8,15 +8,15 @@ and modifiy 'www_rc'
 """
 
 import os
-from . import logger, utils
+from core import logger, utils
 import time
 import json
 import subprocess
 import threading
 from six import iterkeys, iteritems
 from multiprocessing import Process
-from .camera_lost import CameraLost
-from .mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
+from camera_lost import CameraLost
+from core.mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
 
 log = logger.Logger('kmotion', logger.DEBUG)
 

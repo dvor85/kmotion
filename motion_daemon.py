@@ -6,11 +6,11 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import os
 import time
 import subprocess
-from .init_motion import InitMotion
+from core.init_motion import InitMotion
 from multiprocessing import Process
-from . import logger, utils
+from core import logger, utils
 import requests
-from .config import Settings
+from core.config import Settings
 from six import iterkeys, iteritems
 
 

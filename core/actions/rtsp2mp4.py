@@ -61,7 +61,7 @@ class rtsp2mp4(sample.sample):
         cmdline_file = os.path.join('/proc', str(pid), 'cmdline')
         if os.path.isfile(cmdline_file):
             with open(cmdline_file, 'r') as f_obj:
-                cmdline = f_obj.read()
+                cmdline = utils.uni(f_obj.read())
                 return cmdline.replace('\x00', ' ')
         else:
             return ''

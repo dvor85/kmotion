@@ -10,8 +10,8 @@ import sys
 import os
 import time
 import requests
-from . import utils, logger
-from .config import Settings
+from core import utils, logger
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -85,5 +85,5 @@ class CameraLost:
 
 
 if __name__ == '__main__':
-    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
     CameraLost(kmotion_dir, sys.argv[1]).main()

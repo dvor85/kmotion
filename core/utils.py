@@ -140,10 +140,12 @@ def makedirs(path, mode=0o775, user=None, group=None):
     if not os.path.isdir(path):
         if not os.path.isdir(os.path.dirname(path)):
             makedirs(os.path.dirname(path), mode, user, group)
-
-        os.mkdir(path)
-        os.chmod(path, mode)
-        chown(path, user, group)
+        try:
+            os.mkdir(path)
+            os.chmod(path, mode)
+            chown(path, user, group)
+        except Exception:
+            pass
 
 
 def rmdir(path):

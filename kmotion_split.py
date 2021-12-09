@@ -7,9 +7,10 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import threading
 from multiprocessing import Process
 import time
-from . import logger, events
+from core import logger
+import events
 import os
-from .config import Settings
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 

@@ -5,9 +5,10 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import os
 import time
 import threading
-from . import logger, events
-from .camera_lost import CameraLost
-from .config import Settings
+from core import logger
+import events
+from camera_lost import CameraLost
+from core.config import Settings
 import argparse
 from six import iterkeys
 
@@ -56,6 +57,6 @@ class RebootCams():
 
 if __name__ == '__main__':
     log.debug('start reboot_cams')
-    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
     reboot_cams = RebootCams(kmotion_dir)
     reboot_cams.main()

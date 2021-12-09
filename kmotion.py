@@ -17,13 +17,13 @@ import time
 
 import subprocess
 from core.www_logs import WWWLog
-from core.motion_daemon import MotionDaemon
+from motion_daemon import MotionDaemon
 from core.init_core import InitCore
-from core.kmotion_hkd1 import Kmotion_Hkd1
-from core.kmotion_hkd2 import Kmotion_Hkd2
-from core.kmotion_setd import Kmotion_setd
-from core.kmotion_split import Kmotion_split
-from core.motion_detector import Detector
+from kmotion_hkd1 import Kmotion_Hkd1
+from kmotion_hkd2 import Kmotion_Hkd2
+from kmotion_setd import Kmotion_setd
+from kmotion_split import Kmotion_split
+from motion_detector import Detector
 from core import logger, utils
 from core.config import Settings
 

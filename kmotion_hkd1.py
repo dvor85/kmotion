@@ -9,12 +9,12 @@ configuration. Checks the current kmotion software version every 24 hours.
 """
 
 import time
-from . import logger, utils
-from .www_logs import WWWLog
+from core import logger, utils
+from core.www_logs import WWWLog
 from multiprocessing import Process
 import subprocess
 import os
-from .config import Settings
+from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
 

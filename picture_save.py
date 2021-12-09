@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 from PIL import Image
 import os
 import sys
-from . import utils
+from core import utils
 
 
 def image_resize(src, dst, scale=1):

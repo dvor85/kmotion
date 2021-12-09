@@ -4,13 +4,13 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import sys
 import subprocess
-from . import logger
+from core import logger
 from six.moves import cPickle
 import time
-from .actions import actions
+from core.actions import actions
 import os
-from . import utils
-from .config import Settings
+from core import utils
+from core.config import Settings
 
 STATE_START = 'start'
 STATE_END = 'end'
@@ -113,5 +113,5 @@ class Events:
 
 
 if __name__ == '__main__':
-    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
     Events(kmotion_dir, sys.argv[1], sys.argv[2]).main()

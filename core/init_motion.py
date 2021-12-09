@@ -227,11 +227,11 @@ post_capture 10
 
                 motion_detector = self.config['feeds'][feed].get('motion_detector', 1)
                 if motion_detector == 1:
-                    f_obj1.write('on_event_start %s/core/events.py %i start\n' % (self.kmotion_dir, feed))
-                    f_obj1.write('on_event_end %s/core/events.py %i end\n' % (self.kmotion_dir, feed))
+                    f_obj1.write('on_event_start %s/events.py %i start\n' % (self.kmotion_dir, feed))
+                    f_obj1.write('on_event_end %s/events.py %i end\n' % (self.kmotion_dir, feed))
 
-                f_obj1.write('on_camera_lost %s/core/camera_lost.py %i\n' % (self.kmotion_dir, feed))
-                f_obj1.write('on_picture_save %s/core/picture_save.py %%f %s\n' % (
+                f_obj1.write('on_camera_lost %s/camera_lost.py %i\n' % (self.kmotion_dir, feed))
+                f_obj1.write('on_picture_save %s/picture_save.py %%f %s\n' % (
                     self.kmotion_dir, self.config['feeds'][feed].get('feed_webpicture_scale', 1)))
 
 # Module test code
