@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import os
 from core.config import Settings
 from core import utils
+from io import open
 
 
 class Outs():
@@ -23,7 +24,7 @@ class Outs():
     def __call__(self, *args, **kwargs):
         lines = ''
         if self.config['misc']['logs_enabled']:
-            with open(os.path.join(self.kmotion_dir, 'www/motion_out'), 'r') as f_obj:
+            with open(os.path.join(self.kmotion_dir, 'www/motion_out'), 'r', encoding="utf-8") as f_obj:
                 lines = f_obj.read().splitlines()
 
             if len(lines) > 500:

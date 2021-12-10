@@ -14,6 +14,7 @@ import os
 import time
 from . import logger
 from .mutex import Mutex
+from io import open
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -25,7 +26,7 @@ class WWWLog:
         self.log_file = '%s/www/logs' % self.kmotion_dir
 
         if not os.path.isfile(self.log_file):
-            with open(self.log_file, 'w') as f_obj:
+            with open(self.log_file, 'w', encoding="utf-8") as f_obj:
                 f_obj.write(time.strftime('%d/%m/%Y#%H:%M:%S#Initial kmotion startup'))
 
     def add_startup_event(self):
@@ -116,7 +117,7 @@ class WWWLog:
         return  : none
         """
         with Mutex(self.kmotion_dir, 'logs'):
-            with open(self.log_file, 'r+') as f_obj:
+            with open(self.log_file, 'r+', encoding="utf-8") as f_obj:
                 events = f_obj.read().splitlines()
                 events.append(new_event)
                 if len(events) > 500:  # truncate logs

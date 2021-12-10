@@ -7,6 +7,7 @@ import datetime
 from core.config import Settings
 from core import utils
 from six import iteritems, iterkeys
+from io import open
 
 
 class Archive():
@@ -42,7 +43,7 @@ class Archive():
                     feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
                     title = conf.get('feed_name', '%02i' % feed)
                     if os.path.isdir(feed_dir):
-                        with open(os.path.join(feed_dir, 'title'), 'r') as f_obj:
+                        with open(os.path.join(feed_dir, 'title'), 'r', encoding="utf-8") as f_obj:
                             title = f_obj.read()
 
                         feeds_list[feed] = {'title': title}

@@ -9,6 +9,7 @@ from six.moves import configparser
 from . import sort_rc
 import os
 from core.mutex import Mutex
+from io import open
 
 
 def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):

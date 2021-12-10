@@ -14,6 +14,7 @@ from core.www_logs import WWWLog
 from multiprocessing import Process
 import subprocess
 import os
+from io import open
 from core.config import Settings
 
 log = logger.Logger('kmotion', logger.DEBUG)
@@ -48,7 +49,7 @@ class Kmotion_Hkd1(Process):
 
     def truncate_motion_logs(self):
         try:
-            with open(self.motion_log, 'r+') as f_obj:
+            with open(self.motion_log, 'r+', encoding="utf-8") as f_obj:
                 events = f_obj.read().splitlines()
                 if len(events) > 500:  # truncate logs
                     events = events[-500:]

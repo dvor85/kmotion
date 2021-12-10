@@ -13,6 +13,7 @@ import time
 import json
 import subprocess
 import threading
+from io import open
 from six import iterkeys, iteritems
 from multiprocessing import Process
 from camera_lost import CameraLost
@@ -42,7 +43,7 @@ class Kmotion_setd(Process):
         while self.active:
             log.debug('waiting on FIFO pipe data')
             self.config = {}
-            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r') as pipein:
+            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'r', encoding="utf-8") as pipein:
                 data = pipein.read()
             log.debug('kmotion FIFO pipe data: %s' % data)
 
@@ -86,6 +87,7 @@ class Kmotion_setd(Process):
                         www_parser.set(section, k, val)
             mutex_www_parser_wr(self.kmotion_dir, www_parser, www_rc)
 
+            log.debug("must reload = {r}; www_rc = {www_rc}".format(r=must_reload, www_rc=www_rc))
             if must_reload and www_rc == 'www_rc':
                 log.error('Reload kmotion...')
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])

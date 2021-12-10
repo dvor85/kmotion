@@ -12,6 +12,7 @@ import datetime
 from core import logger
 from multiprocessing import Process
 import os
+from io import open
 from six import iterkeys
 from core.config import Settings
 
@@ -111,7 +112,7 @@ class Hkd2_Feed():
                 os.makedirs(os.path.dirname(title))
 
             if not os.path.isfile(title):
-                with open(title, 'w') as f_obj:
+                with open(title, 'w', encoding="utf-8") as f_obj:
                     f_obj.write(self.feed_name)
         except Exception:
             log.error('** CRITICAL ERROR **')

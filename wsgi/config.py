@@ -6,6 +6,7 @@ import json
 from six import itervalues
 from core.config import Settings
 from core import utils
+from io import open
 
 
 class Config():
@@ -45,7 +46,7 @@ class Config():
         if self.config['misc']['config_enabled']:
             config = json.loads(jdata)
             config['user'] = self.username
-            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
+            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w', encoding="utf-8") as pipeout:
                 pipeout.write(json.dumps(config))
 
         return ''

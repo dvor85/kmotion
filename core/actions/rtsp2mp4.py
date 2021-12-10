@@ -14,6 +14,7 @@ import signal
 from core.actions import sample
 import re
 from core import utils
+from io import open
 
 log = None
 
@@ -60,8 +61,8 @@ class rtsp2mp4(sample.sample):
     def get_cmdline(self, pid):
         cmdline_file = os.path.join('/proc', str(pid), 'cmdline')
         if os.path.isfile(cmdline_file):
-            with open(cmdline_file, 'r') as f_obj:
-                cmdline = utils.uni(f_obj.read())
+            with open(cmdline_file, 'r', encoding="utf-8") as f_obj:
+                cmdline = f_obj.read()
                 return cmdline.replace('\x00', ' ')
         else:
             return ''

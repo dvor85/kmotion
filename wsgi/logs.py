@@ -5,6 +5,7 @@ import os
 import sys
 from core.config import Settings
 from core import utils
+from io import open
 
 
 class Logs():
@@ -27,7 +28,7 @@ class Logs():
         lines = ''
         if self.config['misc']['logs_enabled']:
             with Mutex(self.kmotion_dir, 'logs'):
-                with open(os.path.join(self.kmotion_dir, 'www/logs'), 'r') as f_obj:
+                with open(os.path.join(self.kmotion_dir, 'www/logs'), 'r', encoding="utf-8") as f_obj:
                     lines = f_obj.read().splitlines()
 
                 if len(lines) > 500:

@@ -12,6 +12,7 @@ import os
 from six import iterkeys
 from core.utils import makedirs
 from core.config import Settings
+from io import open
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -139,8 +140,8 @@ class InitCore:
                 makedirs(vhost_dir)
             tmpl_dir = os.path.join(self.kmotion_dir, 'www/templates')
             for vhost_tmpl in os.listdir(tmpl_dir):
-                with open(os.path.join(vhost_dir, vhost_tmpl), 'w') as f_obj1:
-                    tmpl = Template(open(os.path.join(tmpl_dir, vhost_tmpl), 'r').read())
+                with open(os.path.join(vhost_dir, vhost_tmpl), 'w', encoding="utf-8") as f_obj1:
+                    tmpl = Template(open(os.path.join(tmpl_dir, vhost_tmpl), 'r', encoding="utf-8").read())
                     f_obj1.write(tmpl.safe_substitute(**self.__dict__))
 
         except IOError:
