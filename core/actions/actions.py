@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import sys
 from threading import Thread
+from importlib import import_module
 
 log = None
 
@@ -26,6 +27,7 @@ class Actions():
 
             for feed_action in self.feed_actions:
                 try:
+                    # action_mod = import_module(feed_action)
                     action_mod = __import__(feed_action, globals=globals(), fromlist=[feed_action])
                     action = getattr(action_mod, feed_action)(self.kmotion_dir, self.feed)
                     self.actions_list.append(action)

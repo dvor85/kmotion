@@ -55,69 +55,70 @@ class Settings():
         if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
             raise Exception('Incorrect configuration!')
         if not self.config.get(www_rc):
+            self.config[www_rc] = {}
             try:
                 www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
+
+                config = {"feeds": {},
+                          "display_feeds": {}
+                          }
+
+                displays = {1: 1,
+                            2: 4,
+                            3: 9,
+                            4: 1,
+                            5: 6,
+                            6: 13,
+                            7: 8,
+                            8: 10,
+                            9: 2,
+                            10: 2,
+                            11: 2,
+                            12: 2}
+                for display in displays:
+                    config['display_feeds'][display] = []
+
+                for section in www_parser.sections():
+                    try:
+                        conf = {}
+                        for k, v in www_parser.items(section):
+                            try:
+                                if 'display_feeds_' in k:
+                                    display = utils.parse_str(k.replace('display_feeds_', ''))
+                                    config['display_feeds'][display] = utils.uniq(
+                                        [utils.parse_str(i) for i in v.split(',')
+                                         if www_parser.has_section('motion_feed%02i' % int(i))])
+                                else:
+                                    conf[k] = utils.parse_str(v)
+                            except Exception as e:
+                                log.exception('error: {error}'.format(error=e))
+
+                        if 'motion_feed' in section:
+                            feed = int(section.replace('motion_feed', ''))
+                            if self.config.get('www_rc'):
+                                conf['feed_name'] = conf['feed_name'] if 'feed_name' in conf else self.config['www_rc']['feeds'][feed].get('feed_name', '')
+                                conf['feed_enabled'] = conf['feed_enabled'] and self.config['www_rc']['feeds'][feed].get('feed_enabled', False)
+                            config['feeds'][feed] = conf
+                        elif len(conf) > 0:
+                            config[section] = conf
+                    except Exception as e:
+                        log.exception('error: {error}'.format(error=e))
+
+                displays[4] = len(config['feeds'])
+                for display in displays:
+                    try:
+                        while len(config['display_feeds'][display]) < min(len(config['feeds']), displays[display]):
+                            for feed in config['feeds']:
+                                try:
+                                    if feed not in config['display_feeds'][display]:
+                                        config['display_feeds'][display].append(feed)
+                                        break
+                                except Exception:
+                                    pass
+                    except Exception:
+                        pass
+                self.config[www_rc] = config
             except Exception as e:
                 log.exception(e)
-
-            config = {"feeds": {},
-                      "display_feeds": {}
-                      }
-
-            displays = {1: 1,
-                        2: 4,
-                        3: 9,
-                        4: 1,
-                        5: 6,
-                        6: 13,
-                        7: 8,
-                        8: 10,
-                        9: 2,
-                        10: 2,
-                        11: 2,
-                        12: 2}
-            for display in displays:
-                config['display_feeds'][display] = []
-
-            for section in www_parser.sections():
-                try:
-                    conf = {}
-                    for k, v in www_parser.items(section):
-                        try:
-                            if 'display_feeds_' in k:
-                                display = utils.parse_str(k.replace('display_feeds_', ''))
-                                config['display_feeds'][display] = utils.uniq(
-                                    [utils.parse_str(i) for i in v.split(',')
-                                     if www_parser.has_section('motion_feed%02i' % int(i))])
-                            else:
-                                conf[k] = utils.parse_str(v)
-                        except Exception as e:
-                            log.exception('error: {error}'.format(error=e))
-
-                    if 'motion_feed' in section:
-                        feed = int(section.replace('motion_feed', ''))
-                        if self.config.get('www_rc'):
-                            conf['feed_name'] = conf['feed_name'] if 'feed_name' in conf else self.config['www_rc']['feeds'][feed].get('feed_name', '')
-                            conf['feed_enabled'] = conf['feed_enabled'] and self.config['www_rc']['feeds'][feed].get('feed_enabled', False)
-                        config['feeds'][feed] = conf
-                    elif len(conf) > 0:
-                        config[section] = conf
-                except Exception as e:
-                    log.exception('error: {error}'.format(error=e))
-
-            displays[4] = len(config['feeds'])
-            for display in displays:
-                try:
-                    while len(config['display_feeds'][display]) < min(len(config['feeds']), displays[display]):
-                        for feed in config['feeds']:
-                            try:
-                                if feed not in config['display_feeds'][display]:
-                                    config['display_feeds'][display].append(feed)
-                                    break
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-            self.config[www_rc] = config
 
         return self.config[www_rc]
