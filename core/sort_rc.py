@@ -55,7 +55,7 @@ def sort_rc(file_rc):
         f_obj.seek(0)
 
         for section in keys:
-            f_obj.write(section + '\n')
+            f_obj.write('\n' + section + '\n')
             sections[section].sort()
             for option in sections[section]:
                 f_obj.write(option + '\n')

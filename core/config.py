@@ -10,7 +10,7 @@ log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class Settings():
-    VERSION = '8.1.0'
+    VERSION = '9.0.0'
     _instance = None
     _lock = Lock()
 
