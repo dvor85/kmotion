@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
-from six import iterkeys
+from io import open
 
 # Copyright 2008 David Selby dave6502@googlemail.com
 
@@ -40,7 +40,7 @@ def sort_rc(file_rc):
     section = ''
     sections = {}
 
-    with open(file_rc, 'r+') as f_obj:
+    with open(file_rc, 'r+', encoding='utf-8') as f_obj:
         for line in [line.rstrip() for line in f_obj]:
             if line == '':
                 continue
@@ -50,7 +50,7 @@ def sort_rc(file_rc):
                 continue
             sections[section].append(line)
 
-        keys = iterkeys(sections)
+        keys = list(sections.keys())
         keys.sort()
         f_obj.seek(0)
 

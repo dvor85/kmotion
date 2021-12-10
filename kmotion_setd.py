@@ -69,7 +69,7 @@ class Kmotion_setd(Process):
                                 threading.Thread(target=cam_lost.reboot_camera).start()
                             else:
                                 must_reload = True
-                                val = utils.uni(v)
+                                val = utils.to_bytes(v)
                                 www_parser.set(feed_section, k, val)
                 elif section == 'display_feeds':
                     misc_section = 'misc'
@@ -82,7 +82,7 @@ class Kmotion_setd(Process):
                     if not www_parser.has_section(section):
                         www_parser.add_section(section)
                     for k, v in iteritems(self.config[section]):
-                        val = utils.uni(v)
+                        val = utils.to_bytes(v)
                         www_parser.set(section, k, val)
             mutex_www_parser_wr(self.kmotion_dir, www_parser, www_rc)
 
