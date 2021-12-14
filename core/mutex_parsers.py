@@ -53,9 +53,9 @@ def mutex_www_parser_rd(kmotion_dir, www_rc='www_rc'):
         return  : parser ... a parser instance
         """
 
-    parser = configparser.SafeConfigParser()
+    parser = configparser.ConfigParser()
     with Mutex(kmotion_dir, www_rc):
-        parser.read('%s/www/%s' % (kmotion_dir, www_rc))
+        parser.read('%s/www/%s' % (kmotion_dir, www_rc), encoding="utf-8")
     return parser
 
 
@@ -69,7 +69,7 @@ def mutex_kmotion_parser_rd(kmotion_dir):
     return  : parser ... a parser instance
     """
 
-    parser = configparser.SafeConfigParser()
+    parser = configparser.ConfigParser()
     with Mutex(kmotion_dir, 'kmotion_rc'):
-        parser.read('%s/kmotion_rc' % kmotion_dir)
+        parser.read('{}/kmotion_rc'.format(kmotion_dir), encoding="utf-8")
     return parser

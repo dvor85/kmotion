@@ -5,7 +5,7 @@ import sys
 from jsonrpc2 import JsonRpcApplication
 
 
-kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+kmotion_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, kmotion_dir)
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
@@ -77,8 +77,8 @@ class Kmotion_Hkd1(Process):
 
                     # if > 90% of max_size_gb, delete oldest
                     _size = utils.get_size(self.images_dbase_dir)
-                    log.debug('size of {} = {}'.format(self.images_dbase_dir, _size))
-                    if _size > self.max_size * 0.9:
+                    log.debug('size of {} = {}'.format(self.images_dbase_dir, utils.sizeof_fmt(_size)))
+                    if _size > self.max_size:
                         log.info('image storage limit reached')
 
                         dir_ = os.listdir(self.images_dbase_dir)

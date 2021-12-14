@@ -2,6 +2,8 @@
 Description=kmotion
 Requires=network.target
 After=network.target
+Before=apache2.service
+PartOf=apache2.service
 
 [Service]
 ExecStart=/usr/local/kmotion3/kmotion.py

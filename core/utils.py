@@ -166,7 +166,7 @@ def uni(s, from_encoding='utf8'):
     return "{}".format(s)
 
 
-def to_bytes(s, to_encoding='utf8'):
+def utf(s, to_encoding='utf8'):
     """
     PY2 - Кодирует :s: в :to_encoding:
     """
@@ -177,6 +177,27 @@ def to_bytes(s, to_encoding='utf8'):
             return six.binary_type(s)
         except:
             return s
+
+
+def str2(s, to_encoding='utf8'):
+    """
+    PY2 - Кодирует :s: в :to_encoding:
+    """
+    try:
+        return six.ensure_str(s, to_encoding, errors='ignore')
+    except TypeError:
+        try:
+            return six.text_type(s)
+        except:
+            return s
+
+
+def sizeof_fmt(num, suffix="B"):
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        if abs(num) < 1024.0:
+            return "{num:3.1f}{unit}{suffix}".format(num=num, unit=unit, suffix=suffix)
+        num /= 1024.0
+    return "{num:.1f}Yi{suffix}".format(num=num, suffix=suffix)
 
 
 def get_user_name():

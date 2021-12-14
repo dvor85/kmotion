@@ -103,7 +103,7 @@ class rtsp2mp4(sample.sample):
             DEVNULL = open(os.devnull, 'wb')
 
         log.debug('try start grabbing {src} to {dst}'.format(src=src, dst=dst))
-        ps = subprocess.Popen(shlex.split(utils.to_bytes(grab)), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
+        ps = subprocess.Popen(shlex.split(utils.str2(grab)), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
 
         return ps.pid
 
@@ -131,7 +131,7 @@ class rtsp2mp4(sample.sample):
         sample.sample.end(self)
         for pid in self.get_grabber_pids():
             try:
-                dst = shlex.split(utils.to_bytes(self.get_cmdline(pid)))[-1]
+                dst = shlex.split(utils.str2(self.get_cmdline(pid)))[-1]
                 os.kill(int(pid), signal.SIGTERM)
 
                 if os.path.isfile(dst) and not os.path.getsize(dst) > 0:

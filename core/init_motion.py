@@ -12,6 +12,7 @@ import os
 from core.config import Settings
 from six import iterkeys
 from io import open
+from core import utils
 
 log = logger.Logger('kmotion', logger.DEBUG)
 
@@ -85,7 +86,7 @@ class InitMotion:
             os.makedirs(masks_dir)
         with open(os.path.join(masks_dir, 'mask%0.2i.pgm' % feed), 'wb') as f_obj:
             f_obj.write(b'P5\n')
-            f_obj.write(b'%i %i\n' % (image_width, image_height))
+            f_obj.write(utils.utf('{} {}\n'.format(image_width, image_height)))
             f_obj.write(b'255\n')
             f_obj.write(mask)
         log.debug('create_mask() - mask written')

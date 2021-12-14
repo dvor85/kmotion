@@ -64,7 +64,7 @@ class Loads:
             try:
                 data['uname'] = utils.uni(subprocess.check_output('uname -srvo', shell=True)).strip()
             except Exception as e:
-                data['uname'] = e.message
+                data['uname'] = e
             data['cpu'] = 0
             with open('/proc/cpuinfo', 'r') as f_obj:
                 for l in f_obj:
@@ -81,7 +81,7 @@ class Loads:
                 data['up'] = uptime
 
             try:
-                vmstat = utils.uni(subprocess.check_output('vmstat -s', shell=True, stdout=subprocess.PIPE)).splitlines()
+                vmstat = utils.uni(subprocess.check_output('vmstat -s', shell=True)).splitlines()
                 data['memstat'] = dict(mt=vmstat[0].split()[0],
                                        mf=vmstat[4].split()[0],
                                        mb=vmstat[5].split()[0],
@@ -89,7 +89,7 @@ class Loads:
                                        st=vmstat[7].split()[0],
                                        su=vmstat[8].split()[0])
             except Exception as e:
-                data['memstat'] = e.message
+                data['memstat'] = e
 
             try:
                 vmstat_a = utils.uni(subprocess.check_output('vmstat', shell=True)).splitlines()[1:]
@@ -98,19 +98,19 @@ class Loads:
                                         cu=vmstat_d["sy"],
                                         cs=vmstat_d["us"])
             except Exception as e:
-                data['cpuusage'] = e.message
+                data['cpuusage'] = e
 
             try:
                 dfout = utils.uni(subprocess.check_output('df -h "{images_dbase_dir}"'.format(
                     images_dbase_dir=self.config_main['images_dbase_dir']), shell=True)).splitlines()[1].split()
                 data['fsarch'] = dfout[2:]
             except Exception as e:
-                data['fsarch'] = e.message
+                data['fsarch'] = e
             try:
                 dfout = utils.uni(subprocess.check_output('df -h "{ramdisk_dir}"'.format(
                     ramdisk_dir=self.config_main['ramdisk_dir']), shell=True)).splitlines()[1].split()
                 data['fsramdisk'] = dfout[2:]
             except Exception as e:
-                data['fsramdisk'] = e.message
+                data['fsramdisk'] = e
 
         return data
