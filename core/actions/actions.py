@@ -27,8 +27,8 @@ class Actions():
 
             for feed_action in self.feed_actions:
                 try:
-                    # action_mod = import_module(feed_action)
-                    action_mod = __import__(feed_action, globals=globals(), fromlist=[feed_action])
+                    action_mod = import_module("core.actions." + feed_action)
+                    # action_mod = __import__(feed_action, globals=globals(), fromlist=[feed_action])
                     action = getattr(action_mod, feed_action)(self.kmotion_dir, self.feed)
                     self.actions_list.append(action)
                 except Exception:

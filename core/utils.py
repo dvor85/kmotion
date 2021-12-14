@@ -156,14 +156,14 @@ def rmdir(path):
 def uni(s, from_encoding='utf8'):
     """
     Декодирует строку из кодировки encoding
-    :path: строка для декодирования
+    :s: строка для декодирования
     :from_encoding: Кодировка из которой декодировать.
-    :return: unicode path
+    :return: unicode
     """
 
     if isinstance(s, six.binary_type):
         return s.decode(from_encoding, 'ignore')
-    return s
+    return "{}".format(s)
 
 
 def to_bytes(s, to_encoding='utf8'):
