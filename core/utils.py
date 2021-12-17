@@ -8,6 +8,7 @@ import pwd
 import shutil
 import six
 from six.moves import urllib_parse
+from pathlib import Path
 
 
 __re_denied = re.compile(r'[^./\wА-яЁё-]|[./]{2}')
@@ -121,31 +122,28 @@ def chown(path, user=None, group=None):
         if _group is None:
             raise LookupError("no such group: {!r}".format(group))
 
-    os.chown(path, _user, _group)
+    if not isinstance(path, Path):
+        path = Path(path)
+    path.chown(path, _user, _group)
 
 
-def get_size(start_path='.'):
+def get_dir_size(path):
+    if not isinstance(path, Path):
+        path = Path(path)
     total_size = 0
-    for dirpath, dirnames, filenames in os.walk(start_path):
-        for f in filenames:
-            fp = os.path.join(dirpath, f)
-            # skip if it is symbolic link
-            if not os.path.islink(fp):
-                total_size += os.path.getsize(fp)
-
+    for p in path.rglob('*'):
+        if p.is_file():
+            total_size += p.stat().st_size
     return total_size
 
 
 def makedirs(path, mode=0o775, user=None, group=None):
-    if not os.path.isdir(path):
-        if not os.path.isdir(os.path.dirname(path)):
-            makedirs(os.path.dirname(path), mode, user, group)
-        try:
-            os.mkdir(path)
-            os.chmod(path, mode)
-            chown(path, user, group)
-        except Exception:
-            pass
+    if not isinstance(path, Path):
+        path = Path(path)
+    if not path.is_dir():
+        path.mkdir(mode, parents=True)
+        path.chmod(mode)
+        chown(path.as_posix(), user, group)
 
 
 def rmdir(path):

@@ -86,7 +86,7 @@ class Kmotion_setd(Process):
                         www_parser.set(section, k, val)
             mutex_www_parser_wr(self.kmotion_dir, www_parser, www_rc)
 
-            if must_reload:
+            if must_reload and os.path.basename(os.path.realpath(www_rc_path)) == 'www_rc':
                 log.error('Reload kmotion...')
                 subprocess.Popen([os.path.join(self.kmotion_dir, 'kmotion.py')])
 
