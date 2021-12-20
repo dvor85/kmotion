@@ -124,7 +124,7 @@ def chown(path, user=None, group=None):
 
     if not isinstance(path, Path):
         path = Path(path)
-    path.chown(path, _user, _group)
+    os.chown(path.as_posix(), _user, _group)
 
 
 def get_dir_size(path):
@@ -143,7 +143,7 @@ def makedirs(path, mode=0o775, user=None, group=None):
     if not path.is_dir():
         path.mkdir(mode, parents=True)
         path.chmod(mode)
-        chown(path.as_posix(), user, group)
+        chown(path, user, group)
 
 
 def rmdir(path):

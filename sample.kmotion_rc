@@ -6,6 +6,7 @@ ramdisk_dir = /dev/shm/kmotion_ramdisk
 port = 8100
 port_notice = 8110
 images_dbase_limit_gb = 480
+video_length = 300
 title=Видеонаблюдение
 
 

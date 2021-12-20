@@ -76,7 +76,7 @@ class Kmotion_Hkd1(Process):
                     self.truncate_motion_logs()
 
                     # if > 90% of max_size_gb, delete oldest
-                    _size = utils.get_size(self.images_dbase_dir)
+                    _size = utils.get_dir_size(self.images_dbase_dir)
                     log.debug('size of {} = {}'.format(self.images_dbase_dir, utils.sizeof_fmt(_size)))
                     if _size > self.max_size:
                         log.info('image storage limit reached')

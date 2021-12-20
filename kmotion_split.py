@@ -32,7 +32,7 @@ class Kmotion_split(Process):
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
-        self.max_duration = 180
+        self.max_duration = config_main.get('video_length', 300)
         self.semaphore = threading.Semaphore(8)
         self.locks = {}
 
