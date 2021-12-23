@@ -5,7 +5,9 @@ import os
 import json
 from six import itervalues
 from core.config import Settings
-from core import utils
+from core import utils, logger
+
+log = logger.Logger(__name__, logger.ERROR)
 
 
 class Config():
@@ -23,32 +25,39 @@ class Config():
         conf = Settings.get_instance(kmotion_dir)
         self.config = conf.get(www_rc)
         config_main = conf.get('kmotion_rc')
+        log.setLevel(config_main['log_level'])
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.title = config_main.get('title', 'Surveillance')
 
     def read(self):
-        config = {"version": Settings.VERSION,
-                  "title": self.title,
-                  "feeds": {},
-                  "display_feeds": {}
-                  }
-        exclude_options = ('feed_reboot_url',)
-        config.update(self.config)
-        for conf in itervalues(config['feeds']):
-            for eo in exclude_options:
-                if eo in conf:
-                    del(conf[eo])
+        try:
+            config = {"version": Settings.VERSION,
+                      "title": self.title,
+                      "feeds": {},
+                      "display_feeds": {}
+                      }
+            exclude_options = ('feed_reboot_url',)
+            config.update(self.config)
+            for conf in itervalues(config['feeds']):
+                for eo in exclude_options:
+                    if eo in conf:
+                        del(conf[eo])
 
-        return config
+            return config
+        except Exception:
+            log.critical("read error", exc_info=1)
 
     def write(self, jdata):
-        if self.config['misc']['config_enabled']:
-            config = json.loads(jdata)
-            config['user'] = self.username
-            with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
-                pipeout.write(json.dumps(config))
+        try:
+            if self.config['misc']['config_enabled']:
+                config = json.loads(jdata)
+                config['user'] = self.username
+                with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
+                    pipeout.write(json.dumps(config))
 
-        return ''
+            return ''
+        except Exception:
+            log.critical("write error", exc_info=1)
 
     def __call__(self, *args, **kwargs):
         if 'read' in kwargs:

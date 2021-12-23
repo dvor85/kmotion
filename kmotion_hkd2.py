@@ -16,7 +16,7 @@ from io import open
 from six import iterkeys
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.WARN)
+log = logger.Logger(__name__, logger.ERROR)
 
 
 class Hkd2_Feed():
@@ -115,8 +115,7 @@ class Hkd2_Feed():
                 with open(title, 'w', encoding="utf-8") as f_obj:
                     f_obj.write(self.feed_name)
         except Exception:
-            log.error('** CRITICAL ERROR **')
-            log.exception('update_title()')
+            log.critical('** CRITICAL ERROR **', exc_info=1)
 
     def inc_snap_time(self, inc_sec):
         self.snap_time += datetime.timedelta(seconds=inc_sec)
@@ -134,6 +133,7 @@ class Kmotion_Hkd2(Process):
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
+        log.setLevel(config_main['log_level'])
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
 
@@ -155,9 +155,9 @@ class Kmotion_Hkd2(Process):
         return  : none
         """
         self.active = True
+        log.info('starting daemon [{pid}]'.format(pid=self.pid))
         while self.active:
             try:
-                log.info('starting daemon ...')
                 self.instance_list = []  # list of Hkd2_Feed instances
                 for feed in self.camera_ids:
                     self.instance_list.append(Hkd2_Feed(self.kmotion_dir, feed))
@@ -168,9 +168,9 @@ class Kmotion_Hkd2(Process):
                         except Exception as e:
                             log.error(e)
             except Exception:
-                log.exception('** CRITICAL ERROR **')
+                log.critical('** CRITICAL ERROR **', exc_info=1)
                 self.sleep(60)
 
     def stop(self):
-        log.debug('stop {name}'.format(name=__name__))
+        log.info('stop {name}'.format(name=__name__))
         self.active = False

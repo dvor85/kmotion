@@ -5,9 +5,11 @@ import os
 import sys
 import datetime
 from core.config import Settings
-from core import utils
+from core import utils, logger
 from six import iteritems, iterkeys
 from io import open
+
+log = logger.Logger(__name__, logger.ERROR)
 
 
 class Archive():
@@ -19,6 +21,7 @@ class Archive():
         self.username = utils.safe_str(env.get('REMOTE_USER'))
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
+        log.setLevel(config_main['log_level'])
         self.images_dbase_dir = config_main['images_dbase_dir']
         www_rc = 'www_rc_%s' % (self.username)
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
@@ -47,14 +50,12 @@ class Archive():
                             title = f_obj.read()
 
                         feeds_list[feed] = {'title': title}
-            except Exception:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                print('init - error {type}: {value}'.format(**{'type': exc_type, 'value': exc_value}))
+            except Exception as e:
+                log.exception("Get feeds error")
 
         return feeds_list
 
     def get_dates(self):
-
         dates = [i for i in os.listdir(self.images_dbase_dir) if len(i) == 8]
         dates.sort(reverse=True)
 

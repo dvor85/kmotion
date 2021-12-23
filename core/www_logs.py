@@ -16,7 +16,7 @@ from . import logger
 from .mutex import Mutex
 from io import open
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.ERROR)
 
 
 class WWWLog:

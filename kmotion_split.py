@@ -12,7 +12,7 @@ import events
 import os
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.ERROR)
 
 
 class Kmotion_split(Process):
@@ -30,6 +30,7 @@ class Kmotion_split(Process):
         self.daemon = True
         self.kmotion_dir = kmotion_dir
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
+        log.setLevel(config_main['log_level'])
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
         self.max_duration = config_main.get('video_length', 300)
@@ -56,7 +57,7 @@ class Kmotion_split(Process):
             self.semaphore.release()
 
     def run(self):
-        log.info('starting daemon ...')
+        log.info('starting daemon [{pid}]'.format(pid=self.pid))
         self.active = True
         while self.active:
             try:
@@ -66,7 +67,7 @@ class Kmotion_split(Process):
                         threading.Thread(target=self.main, args=(event,)).start()
 
             except Exception:
-                log.exception('** CRITICAL ERROR **')
+                log.critical('** CRITICAL ERROR **', exc_info=1)
                 self.sleep(60)
 
     def sleep(self, timeout):
@@ -79,5 +80,5 @@ class Kmotion_split(Process):
         return self.active
 
     def stop(self):
-        log.debug('stop {name}'.format(name=__name__))
+        log.info('stop {name}'.format(name=__name__))
         self.active = False

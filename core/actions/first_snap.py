@@ -7,28 +7,25 @@ import os
 import time
 import shutil
 import datetime
-from core.actions import sample
-
-log = None
+from core.actions import action
 
 
-class first_snap(sample.sample):
+class first_snap(action.Action):
 
     def __init__(self, kmotion_dir, feed):
-        sys.path.append(kmotion_dir)
-        from core import logger
-        global log
-        log = logger.Logger('kmotion', logger.DEBUG)
+        action.Action.__init__(self, kmotion_dir, feed)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         self.key = 'first_snap'
         from core.config import Settings
-        config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
+        cfg = Settings.get_instance(kmotion_dir)
+        config_main = cfg.get('kmotion_rc')
+        self.log.setLevel(config_main['log_level'])
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.images_dbase_dir = config_main['images_dbase_dir']
 
     def start(self):
-        sample.sample.start(self)
+        action.Action.start(self)
         dtime = datetime.datetime.now()
         jpg = '%s.jpg' % dtime.strftime('%Y%m%d%H%M%S')
         jpg_dir = '%s/%02i' % (self.ramdisk_dir, self.feed)
@@ -43,14 +40,14 @@ class first_snap(sample.sample):
 
         if os.path.isfile(p['src']):
             try:
-                log.info('copy {src} to {dst}'.format(**p))
+                self.log.debug('copy {src} to {dst}'.format(**p))
                 if not os.path.isdir(os.path.dirname(p['dst'])):
                     os.makedirs(os.path.dirname(p['dst']))
                 time.sleep(1)
                 shutil.copy(**p)
             except Exception:
-                log.exception('error while copy jpg to snap dir.')
+                self.log.exception('error while copy jpg to snap dir.')
 
     def end(self):
-        # sample.sample.end(self)
+        # action.Action.end(self)
         pass

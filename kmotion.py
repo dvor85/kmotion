@@ -27,7 +27,7 @@ from motion_detector import Detector
 from core import logger, utils
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class exit_(Exception):
@@ -37,6 +37,7 @@ class exit_(Exception):
 class Kmotion:
 
     def __init__(self, kmotion_dir):
+        self.pid = os.getpid()
         self.kmotion_dir = kmotion_dir
         self.active = False
 
@@ -46,6 +47,7 @@ class Kmotion:
 
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
+        log.setLevel(config_main['log_level'])
         self.ramdisk_dir = config_main['ramdisk_dir']
 
         self.init_core = InitCore(self.kmotion_dir)
@@ -69,12 +71,12 @@ class Kmotion:
         return  : none
         """
 
-        log.info('starting kmotion ...')
+        log.info('starting kmotion [{pid}]'.format(pid=self.pid))
         try:
             with open(self.pidfile, 'w') as pf:
-                pf.write(str(os.getpid()))
+                pf.write(str(self.pid))
         except IOError:
-            log.exception("Can't write pid to pidfile")
+            log.warning("Can't write pid to pidfile")
 
         self.www_log.add_startup_event()
 
@@ -112,14 +114,14 @@ class Kmotion:
                 pid = pf.read()
             os.kill(int(pid), signal.SIGTERM)
         except Exception:
-            log.exception("Can't read pid from pidfile")
+            log.warning("Can't read pid from pidfile")
             for pid in self.get_kmotion_pids():
                 os.kill(int(pid), signal.SIGTERM)
 
     def get_kmotion_pids(self):
         try:
             stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True))
-            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(self.pid)]
         except Exception:
             return []
 
@@ -141,6 +143,7 @@ class Kmotion:
             pass
         for d in self.daemons:
             try:
+                log.info("wait for {}".format(d.name))
                 d.join(1.1 / len(self.daemons))
             except Exception:
                 log.exception('wait_termination of {daemon}'.format(daemon=d.name))
@@ -156,3 +159,4 @@ if __name__ == '__main__':
     kmotion.start()
     kmotion.wait_termination()
     kmotion.www_log.add_shutdown_event()
+    log.info("Exit")

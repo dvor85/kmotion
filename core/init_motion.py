@@ -14,7 +14,7 @@ from six import iterkeys
 from io import open
 from core import utils
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.DEBUG)
 
 
 class InitMotion:
@@ -23,6 +23,7 @@ class InitMotion:
         self.kmotion_dir = kmotion_dir
         cfg = Settings.get_instance(kmotion_dir)
         config_main = cfg.get('kmotion_rc')
+        log.setLevel(config_main['log_level'])
         self.config = cfg.get('www_rc')
 
         self.images_dbase_dir = config_main['images_dbase_dir']

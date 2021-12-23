@@ -14,7 +14,7 @@ from core.utils import makedirs
 from core.config import Settings
 from io import open
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.DEBUG)
 
 
 class InitCore:
@@ -41,9 +41,11 @@ class InitCore:
 """
 
     def __init__(self, kmotion_dir):
+
         self.kmotion_dir = kmotion_dir
         cfg = Settings.get_instance(kmotion_dir)
         config_main = cfg.get('kmotion_rc')
+        log.setLevel(config_main['log_level'])
         config = cfg.get('www_rc')
 
         self.ramdisk_dir = config_main['ramdisk_dir']

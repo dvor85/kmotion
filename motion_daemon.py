@@ -14,7 +14,7 @@ from core.config import Settings
 from six import iterkeys, iteritems
 
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.ERROR)
 
 
 class MotionDaemon(Process):
@@ -35,6 +35,7 @@ class MotionDaemon(Process):
         self.motion_daemon = None
         self.stop_motion()
         cfg = Settings.get_instance(kmotion_dir)
+        log.setLevel(cfg.get('kmotion_rc')['log_level'])
         self.config = cfg.get('www_rc')
 
     def feed2thread(self, feed):
@@ -88,19 +89,19 @@ class MotionDaemon(Process):
             log.error('no motion.conf, motion not active')
 
     def stop(self):
-        log.debug('stop {name}'.format(name=__name__))
+        log.info('stop {name}'.format(name=__name__))
         self.active = False
         self.stop_motion()
 
     def stop_motion(self):
         if self.motion_daemon is not None:
-            log.debug('kill motion daemon')
+            log.info('kill motion daemon')
             self.motion_daemon.kill()
             self.motion_daemon = None
 
         subprocess.call('pkill -f "^motion.+-c.*"', shell=True)
-        while self.count_motion_running() > 0:
-            subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)
+        # while self.count_motion_running() > 0:
+        #     subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)
 
         log.info('motion killed')
 
@@ -111,6 +112,7 @@ class MotionDaemon(Process):
         return  : none
         """
         self.active = True
+        log.info('starting daemon [{pid}]'.format(pid=self.pid))
         while self.active:
             try:
                 if not self.is_port_alive(8080):
@@ -126,7 +128,7 @@ class MotionDaemon(Process):
 #                 raise Exception('motion killed')
 
             except Exception:  # global exception catch
-                log.exception('** CRITICAL ERROR **')
+                log.critical('** CRITICAL ERROR **', exc_info=1)
 
             self.sleep(60)
 

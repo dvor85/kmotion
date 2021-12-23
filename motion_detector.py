@@ -10,7 +10,7 @@ from multiprocessing import Process
 from core.config import Settings
 from six import iterkeys, iteritems
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.DEBUG)
 
 EXT_DETECTOR = 0
 INT_DETECTOR = 1
@@ -34,7 +34,7 @@ class Detector(Process):
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         self.config = cfg.get('www_rc')
-
+        log.setLevel(config_main['log_level'])
         self.ramdisk_dir = config_main['ramdisk_dir']
 
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
@@ -89,7 +89,7 @@ class Detector(Process):
         try:
             if self.sleep(timeout):
                 data = utils.uni(os.read(pipein, 256))
-            return data
+                return data
         except Exception as e:
             log.debug(e)
         finally:
@@ -98,7 +98,7 @@ class Detector(Process):
     def run(self):
         self.active = True
         appendix = ''
-        log.info('starting daemon ...')
+        log.info('starting daemon [{pid}]'.format(pid=self.pid))
         while self.active and len(self.config['feeds']) > 0:
             try:
                 data = self.read_pipe(1)
@@ -127,7 +127,7 @@ class Detector(Process):
                 log.exception(e)
 
     def stop(self):
-        log.debug('stop {name}'.format(name=__name__))
+        log.info('stop {name}'.format(name=__name__))
         self.active = False
 
 

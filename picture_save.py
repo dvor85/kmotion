@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 # image_resize an image using the PIL image library
 
-from PIL import Image
 import os
 import sys
 from core import utils
@@ -18,6 +17,7 @@ def image_resize(src, dst, scale=1):
     try:
         if scale == 1:
             raise Exception('Nothing resize')
+        from PIL import Image
         if os.path.lexists(dst):
             os.unlink(dst)
         im = Image.open(src)

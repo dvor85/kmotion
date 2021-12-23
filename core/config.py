@@ -5,8 +5,9 @@ import os
 from .mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
 from . import logger, utils
 from threading import Lock
+from logging import _nameToLevel
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class Settings():
@@ -45,6 +46,7 @@ class Settings():
                 for section in self.kmotion_parser.sections():
                     for k, v in self.kmotion_parser.items(section):
                         config[k] = utils.parse_str(v)
+                config['log_level'] = _nameToLevel.get(config.get('log_level', 'info').upper(), logger.INFO)
             except Exception as e:
                 log.exception(e)
             self.config['kmotion_rc'] = config

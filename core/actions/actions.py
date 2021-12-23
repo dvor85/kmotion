@@ -15,14 +15,16 @@ class Actions():
 
         from core import logger
         global log
-        log = logger.Logger('kmotion', logger.DEBUG)
+        log = logger.Logger(__name__, logger.ERROR)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         log.debug('init')
         self.actions_list = []
         try:
             from core.config import Settings
-            config = Settings.get_instance(self.kmotion_dir).get('www_rc')
+            cfg = Settings.get_instance(kmotion_dir)
+            log.setLevel(cfg.get('kmotion_rc')['log_level'])
+            config = cfg.get('www_rc')
             self.feed_actions = config['feeds'][self.feed]['feed_actions'].split(' ')
 
             for feed_action in self.feed_actions:

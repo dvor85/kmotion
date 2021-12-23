@@ -11,27 +11,23 @@ import shlex
 import time
 import datetime
 import signal
-from core.actions import sample
+from core.actions import action
 import re
 from core import utils
 from io import open
 
-log = None
 
-
-class rtsp2mp4(sample.sample):
+class rtsp2mp4(action.Action):
 
     def __init__(self, kmotion_dir, feed):
-        sample.sample.__init__(self, kmotion_dir, feed)
+        action.Action.__init__(self, kmotion_dir, feed)
 
-        from core import logger
-        global log
-        log = logger.Logger('kmotion', logger.INFO)
         self.key = 'rtsp2mp4'
 
         from core.config import Settings
-        cfg = Settings.get_instance(self.kmotion_dir)
+        cfg = Settings.get_instance(kmotion_dir)
         config_main = cfg.get('kmotion_rc')
+        self.log.setLevel(config_main['log_level'])
         config = cfg.get('www_rc')
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.images_dbase_dir = config_main['images_dbase_dir']
@@ -50,7 +46,7 @@ class rtsp2mp4(sample.sample):
             self.feed_grab_url = utils.url_add_auth(config['feeds'][self.feed].get('%s_url' % self.key, self.feed_url),
                                                     (self.feed_username, self.feed_password))
         except Exception:
-            log.exception('init error')
+            self.log.exception('init error')
 
     def get_grabber_pids(self):
         try:
@@ -74,10 +70,10 @@ class rtsp2mp4(sample.sample):
             for enc in encoders:
                 enc_match = enc_regex.match(enc)
                 if enc_match:
-                    log.debug('Found codec: {enc}'.format(enc=enc_match.group("codec")))
+                    self.log.debug('Found codec: {enc}'.format(enc=enc_match.group("codec")))
                     return enc_match.group("codec")
         except Exception:
-            log.exception("Can't get codec: {codec}".format(codec=codec))
+            self.log.exception("Can't get codec: {codec}".format(codec=codec))
 
     def start_grab(self, src, dst, dtime=datetime.datetime.now()):
         audio = "-an"
@@ -102,13 +98,13 @@ class rtsp2mp4(sample.sample):
         except ImportError:
             DEVNULL = open(os.devnull, 'wb')
 
-        log.debug('try start grabbing {src} to {dst}'.format(src=src, dst=dst))
+        self.log.debug('try start grabbing {src} to {dst}'.format(src=src, dst=dst))
         ps = subprocess.Popen(shlex.split(utils.str2(grab)), stderr=DEVNULL, stdout=DEVNULL, close_fds=True)
 
         return ps.pid
 
     def start(self):
-        sample.sample.start(self)
+        action.Action.start(self)
         try:
             dtime = datetime.datetime.now()
             movie_dir = os.path.join(self.images_dbase_dir, dtime.strftime("%Y%m%d"), '%0.2i' % self.feed, 'movie')
@@ -125,10 +121,10 @@ class rtsp2mp4(sample.sample):
                 if len(self.get_grabber_pids()) == 0 and os.path.isfile(dst):
                     os.unlink(dst)
         except Exception:
-            log.exception('start error')
+            self.log.exception('start error')
 
     def end(self):
-        sample.sample.end(self)
+        action.Action.end(self)
         for pid in self.get_grabber_pids():
             try:
                 dst = shlex.split(utils.str2(self.get_cmdline(pid)))[-1]
@@ -139,4 +135,4 @@ class rtsp2mp4(sample.sample):
 
                 time.sleep(1)
             except Exception:
-                log.exception('end error')
+                self.log.exception('end error')

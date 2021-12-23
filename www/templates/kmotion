@@ -69,7 +69,7 @@ Listen ${port}
     
     WSGIScriptAlias /ajax ${wsgi_scripts}/ajax.py
     WSGIPassAuthorization On
-    WSGIDaemonProcess kmotion processes=2 threads=15 display-name=%{GROUP} lang=en_US.UTF-8 locale=en_US.UTF-8
+    WSGIDaemonProcess kmotion processes=2 threads=15 display-name=%{GROUP} lang=ru_RU.UTF-8 locale=ru_RU.UTF-8
     WSGIProcessGroup kmotion
     <Directory ${wsgi_scripts}>
 		# secure login ...

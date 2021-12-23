@@ -12,7 +12,7 @@ from core.config import Settings
 import argparse
 from six import iterkeys
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.ERROR)
 
 
 def create_parser():
@@ -33,6 +33,7 @@ class RebootCams():
         cfg = Settings.get_instance(kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
+        log.setLevel(config_main['log_level'])
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
 

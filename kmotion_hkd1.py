@@ -16,7 +16,7 @@ import os
 from io import open
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger(__name__, logger.ERROR)
 
 
 class Kmotion_Hkd1(Process):
@@ -31,6 +31,7 @@ class Kmotion_Hkd1(Process):
         self.max_size = 0  # max size permitted for the images dbase
         self.motion_log = os.path.join(self.kmotion_dir, 'www', 'motion_out')
         self.www_logs = WWWLog(self.kmotion_dir)
+        self.read_config()
 
     def sleep(self, timeout):
         t = 0
@@ -43,6 +44,7 @@ class Kmotion_Hkd1(Process):
 
     def read_config(self):
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
+        log.setLevel(config_main['log_level'])
         self.images_dbase_dir = config_main['images_dbase_dir']
         self.max_size = config_main['images_dbase_limit_gb'] * 2 ** 30
 
@@ -67,7 +69,7 @@ class Kmotion_Hkd1(Process):
         return  : none
         """
         self.active = True
-        log.info('starting daemon ...')
+        log.info('starting daemon [{pid}]'.format(pid=self.pid))
         while self.active:
             try:
                 self.read_config()
@@ -77,7 +79,7 @@ class Kmotion_Hkd1(Process):
 
                     # if > 90% of max_size_gb, delete oldest
                     _size = utils.get_dir_size(self.images_dbase_dir)
-                    log.debug('size of {} = {}'.format(self.images_dbase_dir, utils.sizeof_fmt(_size)))
+                    log.info('size of {} = {}'.format(self.images_dbase_dir, utils.sizeof_fmt(_size)))
                     if _size > self.max_size:
                         log.info('image storage limit reached')
 
@@ -100,10 +102,9 @@ class Kmotion_Hkd1(Process):
                                 log.error('deleting of "{dir}" error: {error}'.format(dir=fulld, error=e))
 
             except Exception as e:  # global exception catch
-                log.error('** CRITICAL ERROR **')
-                log.exception(e)
+                log.critical('** CRITICAL ERROR **', exc_info=1)
                 self.sleep(60)
 
     def stop(self):
-        log.debug('stop {name}'.format(name=__name__))
+        log.info('stop {name}'.format(name=__name__))
         self.active = False

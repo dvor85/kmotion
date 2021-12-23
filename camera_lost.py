@@ -13,7 +13,7 @@ import requests
 from core import utils, logger
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.DEBUG)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class CameraLost:
@@ -28,6 +28,8 @@ class CameraLost:
 
             cfg = Settings.get_instance(self.kmotion_dir)
             config = cfg.get('www_rc')
+            config_main = cfg.get('kmotion_rc')
+            log.setLevel(config_main['log_level'])
             self.feed_username = config['feeds'][self.cam_id]['feed_lgn_name']
             self.feed_password = config['feeds'][self.cam_id]['feed_lgn_pw']
 
@@ -62,7 +64,7 @@ class CameraLost:
         try:
             res = requests.get(self.reboot_url, auth=(self.feed_username, self.feed_password))
             res.raise_for_status()
-            log.debug('reboot {0} success'.format(self.cam_id))
+            log.info('reboot {0} success'.format(self.cam_id))
             return True
         except Exception:
             log.debug('reboot {0} failed with status code {1}'.format(self.cam_id, res.getcode()))
