@@ -16,7 +16,7 @@ import os
 from io import open
 from core.config import Settings
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class Kmotion_Hkd1(Process):

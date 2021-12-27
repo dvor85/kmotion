@@ -14,7 +14,7 @@ from core.utils import makedirs
 from core.config import Settings
 from io import open
 
-log = logger.Logger(__name__, logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class InitCore:

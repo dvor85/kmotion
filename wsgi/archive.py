@@ -9,7 +9,7 @@ from core import utils, logger
 from six import iteritems, iterkeys
 from io import open
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class Archive():

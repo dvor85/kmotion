@@ -26,7 +26,7 @@ class Logger(logging.Logger):
         # stream_handler.setFormatter(stream_format)
         # self.addHandler(stream_handler)
 
-        syslog_format = logging.Formatter(fmt="%(name)s: %(levelname)s: %(message)s")
+        syslog_format = logging.Formatter(fmt="%(name)s: %(levelname)s: [%(module)s]: %(message)s")
         syslog_handler = SysLogHandler(address='/dev/log')
         syslog_handler.setFormatter(syslog_format)
         self.addHandler(syslog_handler)

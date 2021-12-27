@@ -20,7 +20,7 @@ from core.mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
 from core.config import Settings
 import signal
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class Kmotion_setd(Process):

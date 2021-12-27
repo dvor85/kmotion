@@ -7,7 +7,7 @@ from six import itervalues
 from core.config import Settings
 from core import utils, logger
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class Config():

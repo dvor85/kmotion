@@ -12,7 +12,7 @@ import events
 import os
 from core.config import Settings
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class Kmotion_split(Process):

@@ -15,7 +15,7 @@ class Actions():
 
         from core import logger
         global log
-        log = logger.Logger(__name__, logger.ERROR)
+        log = logger.Logger('kmotion', logger.ERROR)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         log.debug('init')

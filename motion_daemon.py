@@ -14,7 +14,7 @@ from core.config import Settings
 from six import iterkeys, iteritems
 
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class MotionDaemon(Process):

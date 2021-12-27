@@ -16,7 +16,7 @@ from io import open
 from six import iterkeys
 from core.config import Settings
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 class Hkd2_Feed():

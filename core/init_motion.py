@@ -14,7 +14,7 @@ from six import iterkeys
 from io import open
 from core import utils
 
-log = logger.Logger(__name__, logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 
 class InitMotion:

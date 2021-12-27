@@ -10,7 +10,7 @@ from multiprocessing import Process
 from core.config import Settings
 from six import iterkeys, iteritems
 
-log = logger.Logger(__name__, logger.DEBUG)
+log = logger.Logger('kmotion', logger.DEBUG)
 
 EXT_DETECTOR = 0
 INT_DETECTOR = 1

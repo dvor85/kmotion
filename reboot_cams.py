@@ -12,7 +12,7 @@ from core.config import Settings
 import argparse
 from six import iterkeys
 
-log = logger.Logger(__name__, logger.ERROR)
+log = logger.Logger('kmotion', logger.ERROR)
 
 
 def create_parser():
