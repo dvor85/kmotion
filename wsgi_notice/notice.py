@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import sys
 import os
+from core.utils import utf
 
 kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, kmotion_dir)
@@ -12,7 +13,7 @@ def application(env, start_response):
     try:
         status = '200 OK'
         body = ''
-        from wsgi_notice.http import Http
+        from wsgi_notice.httpapp import Http
         body = Http(kmotion_dir, env)()
 
     except Exception:
@@ -22,10 +23,10 @@ def application(env, start_response):
     finally:
         start_response(status, [('Content-type', 'text/plain'),
                                 ('Content-Length', str(len(body)))])
-    return [body]
+    return [utf(body)]
 
 
 if __name__ == "__main__":
     from wsgiref.simple_server import make_server
-    httpd = make_server('', 8080, application)
-    httpd.serve_forever()
+    with make_server('', 8080, application) as httpd:
+        httpd.handle_request()
