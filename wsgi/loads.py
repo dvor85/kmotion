@@ -7,7 +7,7 @@ from datetime import timedelta
 from core.config import Settings
 from core import utils, logger
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Loads:

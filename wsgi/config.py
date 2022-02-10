@@ -7,7 +7,7 @@ from six import itervalues
 from core.config import Settings
 from core import utils, logger
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Config():
@@ -25,7 +25,7 @@ class Config():
         conf = Settings.get_instance(kmotion_dir)
         self.config = conf.get(www_rc)
         config_main = conf.get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.title = config_main.get('title', 'Surveillance')
 

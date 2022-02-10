@@ -15,7 +15,7 @@ class Actions():
 
         from core import logger
         global log
-        log = logger.Logger('kmotion', logger.ERROR)
+        log = logger.getLogger('kmotion', logger.ERROR)
         self.kmotion_dir = kmotion_dir
         self.feed = int(feed)
         log.debug('init')
@@ -23,7 +23,7 @@ class Actions():
         try:
             from core.config import Settings
             cfg = Settings.get_instance(kmotion_dir)
-            log.setLevel(cfg.get('kmotion_rc')['log_level'])
+            log.setLevel(min(cfg.get('kmotion_rc')['log_level'], log.getEffectiveLevel()))
             config = cfg.get('www_rc')
             self.feed_actions = config['feeds'][self.feed]['feed_actions'].split(' ')
 

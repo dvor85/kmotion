@@ -2745,6 +2745,9 @@ KM.display_config_ = function () {
                   <div class="config_form"><label for="feed_noise_tune">Noise tune:</label>\
                     <input type="checkbox" id="feed_noise_tune" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
+                  <div class="config_form"><label for="ext_motion_detector">External motion detector:</label>\
+                    <input type="checkbox" id="ext_motion_detector" onchange="KM.conf_feed_highlight(this);" />\
+                  </div>\
                   <hr/>\
                   <div class="config_form"><label for="feed_show_box">Enable motion highlighting:</label>\
                     <input type="checkbox" id="feed_show_box" onclick="KM.conf_feed_highlight(this);" />\
@@ -3444,7 +3447,7 @@ KM.videoPlayer = function() {
             }
             return false;
         }
-        
+
     }
 
     function set_video_player(params) {

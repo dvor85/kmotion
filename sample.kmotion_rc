@@ -3,11 +3,12 @@ images_dbase_dir = /mnt/kmotion/images_dbase
 ramdisk_dir = /dev/shm/kmotion_ramdisk
 
 [misc]
-port = 8100
-port_notice = 8110
+listen_port = 8100
+notice_address = 0.0.0.0:48110
 images_dbase_limit_gb = 480
 video_length = 300
 log_level = info
+motion_webcontrol_port = 8080
 title=Видеонаблюдение
 
 

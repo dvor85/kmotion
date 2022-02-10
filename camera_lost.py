@@ -13,7 +13,7 @@ import requests
 from core import utils, logger
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class CameraLost:
@@ -29,12 +29,13 @@ class CameraLost:
             cfg = Settings.get_instance(self.kmotion_dir)
             config = cfg.get('www_rc')
             config_main = cfg.get('kmotion_rc')
-            log.setLevel(config_main['log_level'])
+            log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
             self.feed_username = config['feeds'][self.cam_id]['feed_lgn_name']
             self.feed_password = config['feeds'][self.cam_id]['feed_lgn_pw']
 
             self.camera_url = config['feeds'][self.cam_id]['feed_url']
             self.reboot_url = config['feeds'][self.cam_id]['feed_reboot_url']
+            self.motion_webcontrol_port = config_main.get('motion_webcontrol_port', 8080)
         except Exception:
             log.exception('init error')
 
@@ -71,7 +72,7 @@ class CameraLost:
 
     def restart_thread(self, cam_id):
         try:
-            res = requests.get("http://localhost:8080/{cam_id}/action/restart".format(cam_id=cam_id))
+            res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{cam_id}/action/restart")
             res.raise_for_status()
             log.debug('restart camera {cam_id} success'.format(cam_id=cam_id))
             return True

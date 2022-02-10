@@ -3,11 +3,11 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import os
 import sys
+import subprocess
 from core.config import Settings
 from core import utils, logger
-from io import open
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Logs():
@@ -20,7 +20,7 @@ class Logs():
         self.username = utils.safe_str(utils.safe_str(env.get('REMOTE_USER')))
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
 
         www_rc = 'www_rc_%s' % (self.username)
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
@@ -33,11 +33,12 @@ class Logs():
         try:
             if self.config['misc']['logs_enabled']:
                 with Mutex(self.kmotion_dir, 'logs'):
-                    with open(os.path.join(self.kmotion_dir, 'www/logs'), 'r', encoding="utf-8") as f_obj:
-                        lines = f_obj.read().splitlines()
-
-                    if len(lines) > 500:
-                        lines = lines[-500:]
+                    lines = utils.uni(subprocess.check_output(["/usr/bin/tail", "-n", "100", "/var/log/kmotion/kmotion.log"])).splitlines()
+                    # with open(os.path.join(self.kmotion_dir, 'www/logs'), 'r', encoding="utf-8") as f_obj:
+                    #     lines = f_obj.read().splitlines()
+                    #
+                    # if len(lines) > 500:
+                    #     lines = lines[-500:]
         except Exception:
             log.critical("read logs error", exc_info=1)
 

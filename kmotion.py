@@ -23,11 +23,12 @@ from kmotion_hkd1 import Kmotion_Hkd1
 from kmotion_hkd2 import Kmotion_Hkd2
 from kmotion_setd import Kmotion_setd
 from kmotion_split import Kmotion_split
-from motion_detector import Detector
+from motion_detector_monitor import Detector
+from httpd_server_notice import HttpServerNotice
 from core import logger, utils
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class exit_(Exception):
@@ -47,7 +48,7 @@ class Kmotion:
 
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.ramdisk_dir = config_main['ramdisk_dir']
 
         self.init_core = InitCore(self.kmotion_dir)
@@ -61,6 +62,7 @@ class Kmotion:
         self.daemons.append(Kmotion_setd(self.kmotion_dir))
         self.daemons.append(Kmotion_split(self.kmotion_dir))
         self.daemons.append(Detector(self.kmotion_dir))
+        self.daemons.append(HttpServerNotice(self.kmotion_dir))
 
     def start(self):
         """

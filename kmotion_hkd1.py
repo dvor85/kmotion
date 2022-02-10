@@ -13,10 +13,9 @@ from core import logger, utils
 from core.www_logs import WWWLog
 from multiprocessing import Process
 import os
-from io import open
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Kmotion_Hkd1(Process):
@@ -44,7 +43,7 @@ class Kmotion_Hkd1(Process):
 
     def read_config(self):
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.images_dbase_dir = config_main['images_dbase_dir']
         self.max_size = config_main['images_dbase_limit_gb'] * 2 ** 30
 

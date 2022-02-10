@@ -20,7 +20,7 @@ class first_snap(action.Action):
         from core.config import Settings
         cfg = Settings.get_instance(kmotion_dir)
         config_main = cfg.get('kmotion_rc')
-        self.log.setLevel(config_main['log_level'])
+        self.log.setLevel(min(config_main['log_level'], self.log.getEffectiveLevel()))
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.images_dbase_dir = config_main['images_dbase_dir']
 

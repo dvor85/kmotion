@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import logging
-from logging.handlers import SysLogHandler
+from logging.handlers import SysLogHandler, RotatingFileHandler
 import sys
 
 
@@ -14,6 +14,22 @@ WARN = WARNING
 INFO = 20
 DEBUG = 10
 NOTSET = 0
+
+
+class WWWLogger(logging.Logger):
+
+    def __init__(self, name, level=NOTSET):
+        logging.Logger.__init__(self, name, level=level)
+
+        # stream_format = logging.Formatter(fmt="%(asctime)-19s: %(name)s[%(module)s]: %(levelname)s: %(message)s")
+        # stream_handler = logging.StreamHandler(stream=sys.stdout)
+        # stream_handler.setFormatter(stream_format)
+        # self.addHandler(stream_handler)
+
+        f_format = logging.Formatter(fmt="%(asctime)-19s: %(levelname)s: %(message)s")
+        f_handler = RotatingFileHandler(filename='/var/log/kmotion/kmotion.log', maxBytes=1024 * 100, backupCount=4)
+        f_handler.setFormatter(f_format)
+        self.addHandler(f_handler)
 
 
 class Logger(logging.Logger):
@@ -37,9 +53,13 @@ def getLogger(name, level=logging.NOTSET):
     Returns the logger with the specified name.
     name       - The name of the logger to retrieve
     """
-    logging.setLoggerClass(Logger)
-
-    log = logging.getLogger(name)
-    log.setLevel(level)
+    if name == 'www_logs':
+        logging.setLoggerClass(WWWLogger)
+        log = logging.getLogger(name)
+        log.setLevel(level)
+    else:
+        logging.setLoggerClass(Logger)
+        log = logging.getLogger(name)
+        log.setLevel(level)
 
     return log

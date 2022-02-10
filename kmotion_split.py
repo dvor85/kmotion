@@ -12,7 +12,7 @@ import events
 import os
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Kmotion_split(Process):
@@ -30,7 +30,7 @@ class Kmotion_split(Process):
         self.daemon = True
         self.kmotion_dir = kmotion_dir
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.events_dir = os.path.join(self.ramdisk_dir, 'events')
         self.max_duration = config_main.get('video_length', 300)
