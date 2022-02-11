@@ -1,0 +1,12 @@
+/var/log/kmotion/*.log {
+	rotate 4
+	size 100k
+	compress
+	delaycompress
+	missingok
+	notifempty
+	copytruncate
+        postrotate
+            /usr/bin/killall -HUP motion
+        endscript
+}

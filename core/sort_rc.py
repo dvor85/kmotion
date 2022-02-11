@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
-from io import open
 
 # Copyright 2008 David Selby dave6502@googlemail.com
 

@@ -75,20 +75,12 @@ class MotionDaemon(Process):
         if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):
             #             self.init_motion.init_motion_out()  # clear 'motion_out'
             log.info('starting motion')
-            self.motion_daemon = subprocess.Popen(
-                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir), '-d', '4'],
-                close_fds=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                shell=False)
             motion_out = '/var/log/kmotion/motion.log'
             utils.makedirs(os.path.dirname(motion_out))
-            subprocess.Popen('grep --line-buffered -v "saved to"',
-                             shell=True,
-                             close_fds=True,
-                             stdout=open(motion_out, 'w'),
-                             stderr=subprocess.STDOUT,
-                             stdin=self.motion_daemon.stdout)
+            self.motion_daemon = subprocess.Popen(
+                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir), '-d', '4', '-l', motion_out],
+                close_fds=True,
+                shell=False)
         else:
             log.critical('no motion.conf, motion not active')
 

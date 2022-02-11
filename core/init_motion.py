@@ -11,7 +11,6 @@ from core import logger
 import os
 from core.config import Settings
 from six import iterkeys
-from io import open
 from core import utils
 
 log = logger.getLogger('kmotion', logger.ERROR)

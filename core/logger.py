@@ -21,13 +21,8 @@ class WWWLogger(logging.Logger):
     def __init__(self, name, level=NOTSET):
         logging.Logger.__init__(self, name, level=level)
 
-        # stream_format = logging.Formatter(fmt="%(asctime)-19s: %(name)s[%(module)s]: %(levelname)s: %(message)s")
-        # stream_handler = logging.StreamHandler(stream=sys.stdout)
-        # stream_handler.setFormatter(stream_format)
-        # self.addHandler(stream_handler)
-
         f_format = logging.Formatter(fmt="%(asctime)-19s: %(levelname)s: %(message)s")
-        f_handler = RotatingFileHandler(filename='/var/log/kmotion/kmotion.log', maxBytes=1024 * 100, backupCount=4)
+        f_handler = RotatingFileHandler('/var/log/kmotion/kmotion.log')
         f_handler.setFormatter(f_format)
         self.addHandler(f_handler)
 

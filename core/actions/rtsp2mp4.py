@@ -14,7 +14,6 @@ import signal
 from core.actions import action
 import re
 from core import utils
-from io import open
 
 
 class rtsp2mp4(action.Action):

@@ -45,8 +45,7 @@ class RebootCams():
 
     def reboot_cam(self, cam):
         state_file = os.path.join(self.ramdisk_dir, 'states', str(cam))
-        while not self.force_reboot and (str(cam) in os.listdir(self.events_dir) or
-                                         events.get_state(state_file) == events.STATE_START):
+        while not self.force_reboot and (str(cam) in os.listdir(self.events_dir) or events.get_state(state_file) == events.STATE_START):
             time.sleep(10)
         cam_lost = CameraLost(self.kmotion_dir, cam)
         cam_lost.reboot_camera()

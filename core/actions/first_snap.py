@@ -2,11 +2,11 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 
-import sys
 import os
 import time
 import shutil
 import datetime
+from core import utils
 from core.actions import action
 
 
@@ -42,7 +42,7 @@ class first_snap(action.Action):
             try:
                 self.log.debug('copy {src} to {dst}'.format(**p))
                 if not os.path.isdir(os.path.dirname(p['dst'])):
-                    os.makedirs(os.path.dirname(p['dst']))
+                    utils.makedirs(os.path.dirname(p['dst']))
                 time.sleep(1)
                 shutil.copy(**p)
             except Exception:
