@@ -12,11 +12,10 @@ import datetime
 from core import logger
 from multiprocessing import Process
 import os
-from io import open
 from six import iterkeys
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Hkd2_Feed():
@@ -133,7 +132,7 @@ class Kmotion_Hkd2(Process):
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
 

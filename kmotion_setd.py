@@ -20,7 +20,7 @@ from core.mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
 from core.config import Settings
 import signal
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Kmotion_setd(Process):
@@ -32,7 +32,7 @@ class Kmotion_setd(Process):
         self.active = False
         self.kmotion_dir = kmotion_dir
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
 
     def run(self):
         """
@@ -112,5 +112,8 @@ class Kmotion_setd(Process):
     def stop(self):
         log.info('stop {name}'.format(name=__name__))
         self.active = False
-        if self.pid:
-            os.kill(self.pid, signal.SIGKILL)
+        try:
+            if self.pid:
+                os.kill(self.pid, signal.SIGKILL)
+        except Exception as e:
+            log.debug(e)

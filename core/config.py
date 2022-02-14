@@ -7,7 +7,7 @@ from . import logger, utils
 from threading import Lock
 from logging import _nameToLevel
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Settings():
@@ -47,6 +47,7 @@ class Settings():
                     for k, v in self.kmotion_parser.items(section):
                         config[k] = utils.parse_str(v)
                 config['log_level'] = _nameToLevel.get(config.get('log_level', 'info').upper(), logger.INFO)
+                log.setLevel(min(config['log_level'], log.getEffectiveLevel()))
             except Exception as e:
                 log.exception(e)
             self.config['kmotion_rc'] = config

@@ -2264,16 +2264,22 @@ KM.display_logs_ = function () {
         // show the logs
         var log_html = '';
         for (var i=events.length-1; i >= 0; i--) {
-            if (events[i].search(new RegExp('failed|error|Deleting current|Incorrect', "i")) !== -1) {
-                    log_html += '<span style="color:' + KM.RED + ';">' + format_event(events[i]) + '</span>';
-                }
-                else if (events[i].search(new RegExp('Deleting|Initial', "i")) !== -1) {
-                    log_html +=  '<span style="color:' + KM.BLUE + ';">' + format_event(events[i]) + '</span>';
-                }
-                else {
-                    log_html += format_event(events[i]);
-                }
+            if ((i==events.length-1) && (events[i].search(new RegExp('shutting', "i")) !== -1)) {
+                log_html += '<span style="color:' + KM.RED + ';">' + format_event(events[i]) + '</span>';
             }
+            else if (events[i].search(new RegExp('fatal|critical|failed|error|emg|err|alr|crt', "i")) !== -1) {
+                log_html += '<span style="color:' + KM.RED + ';">' + format_event(events[i]) + '</span>';
+            }
+            else if (events[i].search(new RegExp('warning|wrn', "i")) !== -1) {
+                log_html +=  '<span style="color:' + KM.YELLOW + ';">' + format_event(events[i]) + '</span>';
+            }
+            else if (events[i].search(new RegExp('debug|dbg', "i")) !== -1) {
+                log_html +=  '<span style="color:' + KM.DARK_GREY + ';">' + format_event(events[i]) + '</span>';
+            }
+            else {
+                log_html += format_event(events[i]);
+            }
+        }
             config_html.innerHTML = log_html;
             KM.hide_loading(config_html);
     }
@@ -2744,6 +2750,9 @@ KM.display_config_ = function () {
                   </div>\
                   <div class="config_form"><label for="feed_noise_tune">Noise tune:</label>\
                     <input type="checkbox" id="feed_noise_tune" onchange="KM.conf_feed_highlight(this);" />\
+                  </div>\
+                  <div class="config_form"><label for="ext_motion_detector">External motion detector:</label>\
+                    <input type="checkbox" id="ext_motion_detector" onchange="KM.conf_feed_highlight(this);" />\
                   </div>\
                   <hr/>\
                   <div class="config_form"><label for="feed_show_box">Enable motion highlighting:</label>\
@@ -3444,7 +3453,7 @@ KM.videoPlayer = function() {
             }
             return false;
         }
-        
+
     }
 
     function set_video_player(params) {

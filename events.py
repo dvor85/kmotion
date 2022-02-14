@@ -6,6 +6,7 @@ import sys
 import subprocess
 from core import logger
 from six.moves import cPickle
+from six import iteritems
 import time
 from core.actions import actions
 import os
@@ -15,7 +16,7 @@ from core.config import Settings
 STATE_START = 'start'
 STATE_END = 'end'
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 def set_event_time(event_file):
@@ -46,20 +47,35 @@ def get_state(state_file, state=STATE_END):
 
 class Events:
 
-    def __init__(self, kmotion_dir, feed, state):
+    def __init__(self, kmotion_dir, feed_ip, state):
         self.kmotion_dir = kmotion_dir
-        self.feed = int(feed)
 
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        self.config = cfg.get('www_rc')
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
+
         self.ramdisk_dir = config_main['ramdisk_dir']
         self.images_dbase_dir = config_main['images_dbase_dir']
+
+        if '.' in feed_ip:
+            self.feed = self.find_feed_by_ip(feed_ip)
+        else:
+            self.feed = int(feed_ip)
+        if not self.feed:
+            raise ValueError(f"Can't {state} event. Unrecognized feed {self.feed}")
 
         self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
         self.state_file = os.path.join(self.ramdisk_dir, 'states', str(self.feed))
         self.state = state
         self.set_last_state(self.state)
+
+    def find_feed_by_ip(self, ip):
+        log.debug('find feed by ip "{0}"'.format(ip))
+        if ip:
+            for feed, conf in iteritems(self.config['feeds']):
+                if conf.get('feed_enabled', False) and ip in conf['feed_url']:
+                    return feed
 
     def set_last_state(self, state):
         return set_state(self.state_file, state)
@@ -86,11 +102,13 @@ class Events:
 
     def start(self):
         self.state = STATE_START
-        if not os.path.isfile(self.event_file):
-            log.debug('start: creating: {0}'.format(self.event_file))
-            self.set_event_time()
+        must_start_actions = not os.path.isfile(self.event_file)
 
-        actions.Actions(self.kmotion_dir, self.feed).start()
+        log.debug('start: creating: {0}'.format(self.event_file))
+        self.set_event_time()
+
+        if must_start_actions:
+            actions.Actions(self.kmotion_dir, self.feed).start()
         if self.get_last_state() != self.state:
             self.end()
 
@@ -115,4 +133,7 @@ class Events:
 
 if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.dirname(__file__))
-    Events(kmotion_dir, sys.argv[1], sys.argv[2]).main()
+    try:
+        Events(kmotion_dir, sys.argv[1], sys.argv[2]).main()
+    except Exception as e:
+        log.error(e)

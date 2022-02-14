@@ -8,7 +8,7 @@ import os
 import time
 from . import logger, utils
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Mutex():

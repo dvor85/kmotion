@@ -14,7 +14,7 @@ from core.config import Settings
 from six import iterkeys, iteritems
 
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class MotionDaemon(Process):
@@ -35,8 +35,10 @@ class MotionDaemon(Process):
         self.motion_daemon = None
         self.stop_motion()
         cfg = Settings.get_instance(kmotion_dir)
-        log.setLevel(cfg.get('kmotion_rc')['log_level'])
+        config_main = cfg.get('kmotion_rc')
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.config = cfg.get('www_rc')
+        self.motion_webcontrol_port = config_main.get('motion_webcontrol_port', 8080)
 
     def feed2thread(self, feed):
         return sorted([f for f in iterkeys(self.config['feeds'])
@@ -55,14 +57,15 @@ class MotionDaemon(Process):
             return False
 
     def pause_motion_detector(self, thread):
-
+        while not self.is_port_alive(self.motion_webcontrol_port):
+            self.sleep(0.5)
+        res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{thread}/detection/pause", timeout=3)
         try:
-            res = requests.get("http://localhost:8080/{feed_thread}/detection/pause".format(feed_thread=thread))
             res.raise_for_status()
             log.debug('pause detection feed_thread {feed_thread} success'.format(feed_thread=thread))
             return True
         except Exception:
-            log.debug('pause detection feed_thread {feed_thread} failed with status code {code}'.format(
+            log.error('pause detection feed_thread {feed_thread} failed with status code {code}'.format(
                 feed_thread=thread, code=res.getcode()))
 
     def start_motion(self):
@@ -72,21 +75,14 @@ class MotionDaemon(Process):
         if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):
             #             self.init_motion.init_motion_out()  # clear 'motion_out'
             log.info('starting motion')
+            motion_out = '/var/log/kmotion/motion.log'
+            utils.makedirs(os.path.dirname(motion_out))
             self.motion_daemon = subprocess.Popen(
-                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir), '-d', '4'],
+                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir), '-d', '4', '-l', motion_out],
                 close_fds=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
                 shell=False)
-            motion_out = os.path.join(self.kmotion_dir, 'www/motion_out')
-            subprocess.Popen('grep --line-buffered -v "saved to"',
-                             shell=True,
-                             close_fds=True,
-                             stdout=open(motion_out, 'w'),
-                             stderr=subprocess.STDOUT,
-                             stdin=self.motion_daemon.stdout)
         else:
-            log.error('no motion.conf, motion not active')
+            log.critical('no motion.conf, motion not active')
 
     def stop(self):
         log.info('stop {name}'.format(name=__name__))
@@ -103,7 +99,7 @@ class MotionDaemon(Process):
         # while self.count_motion_running() > 0:
         #     subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)
 
-        log.info('motion killed')
+        log.debug('motion killed')
 
     def run(self):
         """
@@ -115,14 +111,14 @@ class MotionDaemon(Process):
         log.info('starting daemon [{pid}]'.format(pid=self.pid))
         while self.active:
             try:
-                if not self.is_port_alive(8080):
+                if not self.is_port_alive(self.motion_webcontrol_port):
                     self.stop_motion()
                 if self.count_motion_running() != 1:
                     self.stop_motion()
                     self.start_motion()
 
                 for feed, conf in iteritems(self.config['feeds']):
-                    if conf.get('feed_enabled', False) and conf.get('motion_detector', 1) == 0:
+                    if conf.get('feed_enabled', False) and conf.get('ext_motion_detector', False):
                         self.pause_motion_detector(self.feed2thread(feed))
 
 #                 raise Exception('motion killed')

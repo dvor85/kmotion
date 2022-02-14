@@ -9,7 +9,7 @@ from core import utils, logger
 from six import iteritems, iterkeys
 from io import open
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Archive():
@@ -21,7 +21,7 @@ class Archive():
         self.username = utils.safe_str(env.get('REMOTE_USER'))
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.images_dbase_dir = config_main['images_dbase_dir']
         www_rc = 'www_rc_%s' % (self.username)
         if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):

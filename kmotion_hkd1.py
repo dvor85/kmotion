@@ -10,13 +10,12 @@ configuration. Checks the current kmotion software version every 24 hours.
 
 import time
 from core import logger, utils
-from core.www_logs import WWWLog
 from multiprocessing import Process
 import os
-from io import open
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
+www_logs = logger.getLogger('www_logs', logger.DEBUG)
 
 
 class Kmotion_Hkd1(Process):
@@ -30,7 +29,6 @@ class Kmotion_Hkd1(Process):
         self.kmotion_dir = kmotion_dir
         self.max_size = 0  # max size permitted for the images dbase
         self.motion_log = os.path.join(self.kmotion_dir, 'www', 'motion_out')
-        self.www_logs = WWWLog(self.kmotion_dir)
         self.read_config()
 
     def sleep(self, timeout):
@@ -44,7 +42,7 @@ class Kmotion_Hkd1(Process):
 
     def read_config(self):
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.images_dbase_dir = config_main['images_dbase_dir']
         self.max_size = config_main['images_dbase_limit_gb'] * 2 ** 30
 
@@ -81,7 +79,7 @@ class Kmotion_Hkd1(Process):
                     _size = utils.get_dir_size(self.images_dbase_dir)
                     log.info('size of {} = {}'.format(self.images_dbase_dir, utils.sizeof_fmt(_size)))
                     if _size > self.max_size:
-                        log.info('image storage limit reached')
+                        log.warn('image storage limit reached')
 
                         dir_ = os.listdir(self.images_dbase_dir)
                         dir_.sort()
@@ -92,11 +90,12 @@ class Kmotion_Hkd1(Process):
                                 fulld = os.path.join(self.images_dbase_dir, d)
                                 if time.strftime('%Y%m%d') == d:
                                     log.error('** CRITICAL ERROR ** crash - delete todays data, \'images_dbase\' is too small')
-                                    self.www_logs.add_no_space_event()
+                                    www_logs.error('Deleting todays data, \'images_dbase\' is too small')
 
                                 log.info('try to delete {dir}'.format(dir=fulld))
                                 if utils.rmdir(fulld):
-                                    self.www_logs.add_deletion_event(d)
+                                    log.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
+                                    www_logs.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
                                     break
                             except Exception as e:
                                 log.error('deleting of "{dir}" error: {error}'.format(dir=fulld, error=e))

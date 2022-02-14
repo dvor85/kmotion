@@ -16,18 +16,19 @@ import signal
 import time
 
 import subprocess
-from core.www_logs import WWWLog
 from motion_daemon import MotionDaemon
 from core.init_core import InitCore
 from kmotion_hkd1 import Kmotion_Hkd1
 from kmotion_hkd2 import Kmotion_Hkd2
 from kmotion_setd import Kmotion_setd
 from kmotion_split import Kmotion_split
-from motion_detector import Detector
+from motion_detector_monitor import Detector
+from httpd_server_notice import HttpServerNotice
 from core import logger, utils
 from core.config import Settings
 
-log = logger.Logger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.ERROR)
+www_logs = logger.getLogger('www_logs', logger.DEBUG)
 
 
 class exit_(Exception):
@@ -43,11 +44,10 @@ class Kmotion:
 
         signal.signal(signal.SIGTERM, self.signal_term)
         self.pidfile = '/run/kmotion/kmotion.pid'
-        self.www_log = WWWLog(self.kmotion_dir)
 
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
-        log.setLevel(config_main['log_level'])
+        log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.ramdisk_dir = config_main['ramdisk_dir']
 
         self.init_core = InitCore(self.kmotion_dir)
@@ -61,6 +61,7 @@ class Kmotion:
         self.daemons.append(Kmotion_setd(self.kmotion_dir))
         self.daemons.append(Kmotion_split(self.kmotion_dir))
         self.daemons.append(Detector(self.kmotion_dir))
+        self.daemons.append(HttpServerNotice(self.kmotion_dir))
 
     def start(self):
         """
@@ -78,7 +79,7 @@ class Kmotion:
         except IOError:
             log.warning("Can't write pid to pidfile")
 
-        self.www_log.add_startup_event()
+        www_logs.info('kmotion starting up')
 
         # init the ramdisk dir
         self.init_core.init_ramdisk_dir()
@@ -150,13 +151,15 @@ class Kmotion:
 
 
 if __name__ == '__main__':
-    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
-#     option = ''
-#     if len(sys.argv) > 1:
-#         option = sys.argv[1]
-    kmotion = Kmotion(kmotion_dir)
-    kmotion.kill_other()
-    kmotion.start()
-    kmotion.wait_termination()
-    kmotion.www_log.add_shutdown_event()
-    log.info("Exit")
+    try:
+        kmotion_dir = os.path.abspath(os.path.dirname(__file__))
+        kmotion = Kmotion(kmotion_dir)
+        kmotion.kill_other()
+        kmotion.start()
+        kmotion.wait_termination()
+        www_logs.info('kmotion shutting down')
+        log.info("Exit")
+    except Exception as e:
+        log.error(e)
+        www_logs.error(e)
+        raise e
