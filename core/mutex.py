@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 """
 Export mutex lock functions for the '../www/mutex/' files
 """
 
 import os
 import time
-from . import logger, utils
+from pathlib import Path
+from . import logger
+
 
 log = logger.getLogger('kmotion', logger.ERROR)
 
@@ -16,12 +17,12 @@ class Mutex():
     def __init__(self, kmotion_dir, mutex):
         self.kmotion_dir = kmotion_dir
         self.mutex = mutex
-        log.debug('init_mutex() - init mutex : %s' % self.mutex)
-        self.mutex_dir = '%s/www/mutex/%s' % (self.kmotion_dir, self.mutex)
-        if not os.path.isdir(self.mutex_dir):
-            utils.makedirs(self.mutex_dir)
+        log.debug(f'init_mutex() - init mutex : {self.mutex}')
+        self.mutex_dir = Path(self.kmotion_dir, 'www', 'mutex', self.mutex)
+        if not self.mutex_dir.is_dir():
+            self.mutex_dir.mkdir(parents=True)
 
-    def acquire(self):
+    def acquire(self, pid):
         """
         Aquire the 'mutex' mutex lock, very carefully
 
@@ -38,10 +39,10 @@ class Mutex():
             time.sleep(0.01)
 
         # add our lock
-        with open(os.path.join(self.mutex_dir, str(os.getpid())), 'w'):
+        with open(self.mutex_dir / str(pid), 'w'):
             pass
 
-    def release(self):
+    def release(self, pid):
         """
         Release the 'mutex' mutex lock
 
@@ -52,27 +53,26 @@ class Mutex():
         """
 
         try:
-            os.unlink(os.path.join(self.mutex_dir, str(os.getpid())))
+            m = Path(self.mutex_dir, str(pid))
+            if m.is_file():
+                m.unlink()
         except Exception:
             pass
 
     def __enter__(self):
-        self.acquire()
+        self.acquire(os.getpid())
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.release()
+        self.release(os.getpid())
 
     def is_lock(self):
 
         files = os.listdir(self.mutex_dir)
         files.sort()
         for m in files:
-            if not os.path.isdir(os.path.join('/proc', m)):
-                try:
-                    os.unlink(os.path.join(self.mutex_dir, m))
-                except Exception:
-                    pass
+            if not Path('/proc', m).is_dir():
+                self.release(m)
             else:
                 return True
 

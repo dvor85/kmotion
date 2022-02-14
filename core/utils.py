@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
 import sys
@@ -147,6 +146,8 @@ def makedirs(path, mode=0o775, user=None, group=None):
 
 
 def rmdir(path):
+    if isinstance(path, Path):
+        path = path.as_posix()
     shutil.rmtree(path, ignore_errors=True)
     return not os.path.exists(path)
 

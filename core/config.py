@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import os
-from .mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
-from . import logger, utils
+from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
+from core import logger, utils
 from threading import Lock
 from logging import _nameToLevel
 
@@ -88,9 +87,8 @@ class Settings():
                             try:
                                 if 'display_feeds_' in k:
                                     display = utils.parse_str(k.replace('display_feeds_', ''))
-                                    config['display_feeds'][display] = utils.uniq(
-                                        [utils.parse_str(i) for i in v.split(',')
-                                         if www_parser.has_section('motion_feed%02i' % int(i))])
+                                    config['display_feeds'][display] = utils.uniq([utils.parse_str(i) for i in v.split(',')
+                                                                                   if www_parser.has_section(f'motion_feed{int(i):02d}')])
                                 else:
                                     conf[k] = utils.parse_str(v)
                             except Exception as e:

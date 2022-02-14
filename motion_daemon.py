@@ -12,6 +12,7 @@ from core import logger, utils
 import requests
 from core.config import Settings
 from six import iterkeys, iteritems
+from pathlib import Path
 
 
 log = logger.getLogger('kmotion', logger.ERROR)
@@ -52,7 +53,7 @@ class MotionDaemon(Process):
 
     def is_port_alive(self, port):
         try:
-            return utils.uni(subprocess.check_output('netstat -ntl | grep %i' % port, shell=True)) != ''
+            return utils.uni(subprocess.check_output(f'netstat -ntl | grep {port}', shell=True)) != ''
         except Exception:
             return False
 
@@ -62,30 +63,26 @@ class MotionDaemon(Process):
         res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{thread}/detection/pause", timeout=3)
         try:
             res.raise_for_status()
-            log.debug('pause detection feed_thread {feed_thread} success'.format(feed_thread=thread))
+            log.debug(f'pause detection feed_thread {thread} success')
             return True
         except Exception:
-            log.error('pause detection feed_thread {feed_thread} failed with status code {code}'.format(
-                feed_thread=thread, code=res.getcode()))
+            log.error(f'pause detection feed_thread {thread} failed with status code {res.getcode()}')
 
     def start_motion(self):
         # check for a 'motion.conf' file before starting 'motion'
 
         self.init_motion.gen_motion_configs()
-        if os.path.isfile('%s/core/motion_conf/motion.conf' % self.kmotion_dir):
-            #             self.init_motion.init_motion_out()  # clear 'motion_out'
+        m_conf = Path(self.kmotion_dir, 'core', 'motion_conf', 'motion.conf')
+        if m_conf.is_file():
             log.info('starting motion')
             motion_out = '/var/log/kmotion/motion.log'
             utils.makedirs(os.path.dirname(motion_out))
-            self.motion_daemon = subprocess.Popen(
-                ['motion', '-c', '{kmotion_dir}/core/motion_conf/motion.conf'.format(kmotion_dir=self.kmotion_dir), '-d', '4', '-l', motion_out],
-                close_fds=True,
-                shell=False)
+            self.motion_daemon = subprocess.Popen(['motion', '-c', m_conf, '-d', '4', '-l', motion_out], close_fds=True, shell=False)
         else:
             log.critical('no motion.conf, motion not active')
 
     def stop(self):
-        log.info('stop {name}'.format(name=__name__))
+        log.info(f'stop {__name__}')
         self.active = False
         self.stop_motion()
 
@@ -108,7 +105,7 @@ class MotionDaemon(Process):
         return  : none
         """
         self.active = True
-        log.info('starting daemon [{pid}]'.format(pid=self.pid))
+        log.info(f'starting daemon [{self.pid}]')
         while self.active:
             try:
                 if not self.is_port_alive(self.motion_webcontrol_port):

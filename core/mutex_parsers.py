@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 '''
 Created on 18.12.2014
 
 @author: demon
 '''
 from six.moves import configparser
-from . import sort_rc
-import os
+from core import sort_rc
 from core.mutex import Mutex
+from pathlib import Path
 
 
 def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):
@@ -16,13 +15,13 @@ def mutex_www_parser_wr(kmotion_dir, parser, www_rc='www_rc'):
     Safely write a parser instance to 'www_rc' under mutex control.
 
     args    : kmotion_dir ... the 'root' directory of kmotion
-        parser      ... the parser instance 
+        parser      ... the parser instance
         excepts :
         return  :
     """
-    www_rc_file = '%s/www/%s' % (kmotion_dir, www_rc)
+    www_rc_file = Path(kmotion_dir, 'www', www_rc)
     with Mutex(kmotion_dir, www_rc):
-        with open(www_rc_file, 'w') as f_obj:
+        with www_rc_file.open(mode='w') as f_obj:
             parser.write(f_obj)
         sort_rc.sort_rc(www_rc_file)
 
@@ -36,9 +35,9 @@ def mutex_kmotion_parser_wr(kmotion_dir, parser):
         excepts :
         return  :
     """
-    kmotion_rc_file = os.path.join(kmotion_dir, 'kmotion_rc')
+    kmotion_rc_file = Path(kmotion_dir, 'kmotion_rc')
     with Mutex(kmotion_dir, 'kmotion_rc'):
-        with open(kmotion_rc_file, 'w') as f_obj:
+        with kmotion_rc_file.open(mode='w') as f_obj:
             parser.write(f_obj)
         sort_rc.sort_rc(kmotion_rc_file)
 
@@ -55,7 +54,7 @@ def mutex_www_parser_rd(kmotion_dir, www_rc='www_rc'):
 
     parser = configparser.ConfigParser()
     with Mutex(kmotion_dir, www_rc):
-        parser.read('%s/www/%s' % (kmotion_dir, www_rc), encoding="utf-8")
+        parser.read(f'{kmotion_dir}/www/{www_rc}', encoding="utf-8")
     return parser
 
 
@@ -71,5 +70,5 @@ def mutex_kmotion_parser_rd(kmotion_dir):
 
     parser = configparser.ConfigParser()
     with Mutex(kmotion_dir, 'kmotion_rc'):
-        parser.read('{}/kmotion_rc'.format(kmotion_dir), encoding="utf-8")
+        parser.read(f'{kmotion_dir}/kmotion_rc', encoding="utf-8")
     return parser

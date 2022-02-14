@@ -31,7 +31,6 @@ class HttpServerNotice(Process):
         self.config = cfg.get('www_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.ramdisk_dir = config_main['ramdisk_dir']
-        self.events_dir = os.path.join(self.ramdisk_dir, 'events')
         notice_address = config_main.get('notice_address', ':48100').split(':')
         self.httpd = make_server(notice_address[0], int(notice_address[1]), self.application)
 
@@ -70,7 +69,7 @@ class HttpServerNotice(Process):
 
     def run(self, *args, **kwargs):
         self.active = True
-        log.info('starting daemon [{pid}]'.format(pid=self.pid))
+        log.info(f'starting daemon [{self.pid}]')
         while self.active and len(self.config['feeds']) > 0:
             try:
                 self.httpd.serve_forever()
@@ -79,7 +78,7 @@ class HttpServerNotice(Process):
                 self.sleep(60)
 
     def stop(self):
-        log.info('stop {name}'.format(name=__name__))
+        log.info(f'stop {__name__}')
         self.active = False
         if self.httpd:
             self.httpd.server_close()

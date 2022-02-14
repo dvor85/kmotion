@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
+from pathlib import Path
 
 # Copyright 2008 David Selby dave6502@googlemail.com
 
@@ -38,8 +38,10 @@ def sort_rc(file_rc):
 
     section = ''
     sections = {}
+    if not isinstance(file_rc, Path):
+        file_rc = Path(file_rc)
 
-    with open(file_rc, 'r+', encoding='utf-8') as f_obj:
+    with file_rc.open(mode='r+') as f_obj:
         for line in [line.rstrip() for line in f_obj]:
             if line == '':
                 continue

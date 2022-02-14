@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 """
 Exports various methods used to initialize core configuration
@@ -12,6 +11,7 @@ import os
 from six import iterkeys
 from core.utils import makedirs
 from core.config import Settings
+from pathlib import Path
 
 log = logger.getLogger('kmotion', logger.DEBUG)
 
@@ -34,19 +34,19 @@ class InitCore:
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         config = cfg.get('www_rc')
 
-        self.ramdisk_dir = config_main['ramdisk_dir']
-        self.images_dbase_dir = config_main['images_dbase_dir']
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
+        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
         self.port = config_main['listen_port']
         self.title = config_main['title']
-        self.AUTH_block = """
+        self.AUTH_block = f"""
         # ** INFORMATION ** Users digest file enabled ...
         AuthType Basic
         AuthName "kmotion"
         Require valid-user
-        AuthUserFile %s/www/passwords/users_digest\n""" % self.kmotion_dir
+        AuthUserFile {self.kmotion_dir}/www/passwords/users_digest\n"""
 
-        self.www_dir = os.path.join(self.kmotion_dir, 'www/www')
-        self.wsgi_scripts = os.path.join(self.kmotion_dir, 'wsgi')
+        self.www_dir = Path(self.kmotion_dir, 'www', 'www')
+        self.wsgi_scripts = Path(self.kmotion_dir, 'wsgi')
 
         self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
 
@@ -59,28 +59,28 @@ class InitCore:
         excepts :
         return  : none
         """
+        log.debug('init ramdisk dir')
+        states_dir = Path(self.ramdisk_dir, 'states')
+        if not states_dir.is_dir():
+            log.debug('creating \'states\' folder')
+            states_dir.mkdir(parents=True)
 
-        states_dir = os.path.join(self.ramdisk_dir, 'states')
-        if not os.path.isdir(states_dir):
-            log.debug('init_ramdisk_dir() - creating \'states\' folder')
-            makedirs(states_dir)
+        for state_file in states_dir.glob('*'):
+            if state_file.is_file():
+                log.debug(f"deleting {state_file}")
+                state_file.unlink()
 
-        for sfile in os.listdir(states_dir):
-            state_file = os.path.join(states_dir, sfile)
-            if os.path.isfile(state_file):
-                log.debug('init_ramdisk_dir() - deleting \'%s\' file' % (state_file))
-                os.unlink(state_file)
-
-        events_dir = os.path.join(self.ramdisk_dir, 'events')
-        if not os.path.isdir(events_dir):
-            log.debug('init_ramdisk_dir() - creating \'events\' folder')
-            makedirs(events_dir)
+        events_dir = Path(self.ramdisk_dir, 'events')
+        if not events_dir.is_dir():
+            log.debug('creating \'events\' folder')
+            events_dir.mkdir(parents=True)
 
         for feed in self.camera_ids:
-            if not os.path.isdir('%s/%02i' % (self.ramdisk_dir, feed)):
+            f_dir = Path(self.ramdisk_dir, f'{feed:02d}')
+            if not f_dir.is_dir():
                 try:
-                    makedirs('%s/%02i' % (self.ramdisk_dir, feed))
-                    log.debug('init_ramdisk_dir() - creating \'%02i\' folder' % feed)
+                    f_dir.mkdir(parents=True)
+                    log.debug(f'creating \'{feed:02d}\' folder')
                 except OSError:
                     pass
 
@@ -97,15 +97,12 @@ class InitCore:
         return  : none
         """
 
-        # use BASH rather than os.mkfifo(), FIFO bug workaround :)
-        fifos = [os.path.join(self.kmotion_dir, 'www/fifo_settings_wr'), ]
+        fifos = [Path(self.kmotion_dir, 'www', 'fifo_settings_wr')]
         # os.path.join(self.kmotion_dir, 'www/fifo_motion_detector')]
         for fifo in fifos:
             try:
-                if not os.path.exists(fifo):
-                    subprocess.check_call(['mkfifo', fifo])
-                    os.chown(fifo, uid, gid)
-                    os.chmod(fifo, 0o660)
+                if not fifo.is_fifo():
+                    os.mkfifo(fifo, 0o660, dir_fd=None)
             except Exception as e:
                 log.error(e)
 
@@ -117,17 +114,14 @@ class InitCore:
         return  : none
         """
 
-        log.debug('gen_vhost() - Generating vhost/kmotion file')
+        log.debug('Generating vhost/kmotion file')
 
         try:
-            vhost_dir = os.path.join(self.kmotion_dir, 'www/vhosts')
-            if not os.path.isdir(vhost_dir):
-                makedirs(vhost_dir)
-            tmpl_dir = os.path.join(self.kmotion_dir, 'www/templates')
-            for vhost_tmpl in os.listdir(tmpl_dir):
-                with open(os.path.join(vhost_dir, vhost_tmpl), 'w', encoding="utf-8") as f_obj1:
-                    tmpl = Template(open(os.path.join(tmpl_dir, vhost_tmpl), 'r', encoding="utf-8").read())
-                    f_obj1.write(tmpl.safe_substitute(**self.__dict__))
+            vhost_dir = Path(self.kmotion_dir, 'www', 'vhosts')
+            vhost_dir.mkdir(parents=True, exist_ok=True)
+            tmpl_dir = Path(self.kmotion_dir, 'www', 'templates')
+            for vhost_tmpl in tmpl_dir.glob('*'):
+                Path(vhost_dir, vhost_tmpl.name).write_text(Template(vhost_tmpl.read_text()).safe_substitute(**self.__dict__))
 
         except IOError:
             log.exception('ERROR by generating vhosts/kmotion file')

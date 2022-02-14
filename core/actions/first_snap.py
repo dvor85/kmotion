@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
-
-import os
 import time
 import shutil
 import datetime
-from core import utils
 from core.actions import action
+from pathlib import Path
 
 
 class first_snap(action.Action):
@@ -21,30 +18,23 @@ class first_snap(action.Action):
         cfg = Settings.get_instance(kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         self.log.setLevel(min(config_main['log_level'], self.log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
-        self.images_dbase_dir = config_main['images_dbase_dir']
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
+        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
 
     def start(self):
         action.Action.start(self)
         dtime = datetime.datetime.now()
-        jpg = '%s.jpg' % dtime.strftime('%Y%m%d%H%M%S')
-        jpg_dir = '%s/%02i' % (self.ramdisk_dir, self.feed)
 
-        p = {'src': os.path.join(jpg_dir, jpg),
-             'dst': os.path.join(self.images_dbase_dir,
-                                 dtime.strftime('%Y%m%d'),
-                                 '%02i' % self.feed,
-                                 'snap',
-                                 '{cam}_{dtime}.jpg'.format(cam=self.feed,
-                                                            dtime=dtime.strftime('%Y%m%d_%H%M%S')))}
+        src = Path(self.ramdisk_dir, f"{self.feed:02d}", f'{dtime:%Y%m%d%H%M%S}.jpg')
+        dst = Path(self.images_dbase_dir, dtime.strftime('%Y%m%d'), f'{self.feed:02d}', 'snap', f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.jpg')
 
-        if os.path.isfile(p['src']):
+        if src.is_file():
             try:
-                self.log.debug('copy {src} to {dst}'.format(**p))
-                if not os.path.isdir(os.path.dirname(p['dst'])):
-                    utils.makedirs(os.path.dirname(p['dst']))
+                self.log.debug(f'copy {src} to {dst}')
+                if not dst.parent.is_dir():
+                    dst.parent.mkdir(parents=True)
                 time.sleep(1)
-                shutil.copy(**p)
+                shutil.copy(src, dst)
             except Exception:
                 self.log.exception('error while copy jpg to snap dir.')
 
