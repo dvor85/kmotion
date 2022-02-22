@@ -14,7 +14,7 @@ class Action():
         self.key = 'action'
 
     def start(self):
-        self.log.info('start {0} action feed: {1}'.format(self.key, self.feed))
+        self.log.info(f'start {self.key} action feed: {self.feed}')
 
     def end(self):
-        self.log.info('end {0} action feed: {1}'.format(self.key, self.feed))
+        self.log.info(f'end {self.key} action feed: {self.feed}')

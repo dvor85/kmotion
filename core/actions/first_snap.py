@@ -26,13 +26,12 @@ class first_snap(action.Action):
         dtime = datetime.datetime.now()
 
         src = Path(self.ramdisk_dir, f"{self.feed:02d}", f'{dtime:%Y%m%d%H%M%S}.jpg')
-        dst = Path(self.images_dbase_dir, dtime.strftime('%Y%m%d'), f'{self.feed:02d}', 'snap', f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.jpg')
+        dst = Path(self.images_dbase_dir, dtime.strftime('%Y%m%d'), f'{self.feed:02}', 'snap', f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.jpg')
 
         if src.is_file():
             try:
                 self.log.debug(f'copy {src} to {dst}')
-                if not dst.parent.is_dir():
-                    dst.parent.mkdir(parents=True)
+                dst.parent.mkdir(parents=True, exist_ok=True)
                 time.sleep(1)
                 shutil.copy(src, dst)
             except Exception:

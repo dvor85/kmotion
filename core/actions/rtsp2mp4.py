@@ -48,7 +48,7 @@ class rtsp2mp4(action.Action):
 
     def get_grabber_pids(self):
         try:
-            return utils.uni(subprocess.check_output(f'pgrep -f "^ffmpeg.+{self.feed_grab_url}.*"', shell=True)).splitlines()
+            return utils.uni(subprocess.check_output(['pgrep', '-f', f'"^ffmpeg.+{self.feed_grab_url}.*"'], shell=False)).splitlines()
         except Exception:
             return []
 
@@ -99,12 +99,8 @@ class rtsp2mp4(action.Action):
             movie_dir = Path(self.images_dbase_dir, dtime.strftime("%Y%m%d"), f'{self.feed:02d}', 'movie')
 
             if len(self.get_grabber_pids()) == 0:
-
-                if not movie_dir.is_dir():
-                    movie_dir.mkdir(parents=True)
-
+                movie_dir.mkdir(parents=True, exist_ok=True)
                 dst = Path(movie_dir, f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.mp4')
-
                 self.start_grab(self.feed_grab_url, dst, dtime)
 
                 if len(self.get_grabber_pids()) == 0 and dst.is_file():
@@ -116,11 +112,11 @@ class rtsp2mp4(action.Action):
         action.Action.end(self)
         for pid in self.get_grabber_pids():
             try:
-                dst = shlex.split(self.get_cmdline(pid))[-1]
+                dst = Path(shlex.split(self.get_cmdline(pid))[-1])
                 os.kill(int(pid), signal.SIGTERM)
 
-                if os.path.isfile(dst) and not os.path.getsize(dst) > 0:
-                    os.unlink(dst)
+                if dst.is_file() and not dst.stat().st_size > 0:
+                    dst.unlink()
 
                 time.sleep(1)
             except Exception:

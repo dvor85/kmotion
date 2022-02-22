@@ -59,17 +59,6 @@ def uniq(seq):
     return noDupes
 
 
-def rListFiles(path):
-    files = []
-    path = uni(path)
-    for f in map(uni, os.listdir(path)):
-        if os.path.isdir(os.path.join(path, f)):
-            files += rListFiles(os.path.join(path, f))
-        else:
-            files.append(os.path.join(path, f))
-    return files
-
-
 def _get_uid(name):
     """Returns a gid, given a group name."""
     if name is None:
@@ -127,8 +116,7 @@ def chown(path, user=None, group=None):
 
 
 def get_dir_size(path):
-    if not isinstance(path, Path):
-        path = Path(path)
+    path = Path(path)
     total_size = 0
     for p in path.rglob('*'):
         if p.is_file():
@@ -137,8 +125,7 @@ def get_dir_size(path):
 
 
 def makedirs(path, mode=0o775, user=None, group=None):
-    if not isinstance(path, Path):
-        path = Path(path)
+    path = Path(path)
     if not path.is_dir():
         path.mkdir(mode, parents=True)
         path.chmod(mode)
@@ -146,10 +133,9 @@ def makedirs(path, mode=0o775, user=None, group=None):
 
 
 def rmdir(path):
-    if isinstance(path, Path):
-        path = path.as_posix()
-    shutil.rmtree(path, ignore_errors=True)
-    return not os.path.exists(path)
+    path = Path(path)
+    shutil.rmtree(path.as_posix(), ignore_errors=True)
+    return not path.exists()
 
 
 def uni(s, from_encoding='utf8'):
@@ -194,9 +180,9 @@ def str2(s, to_encoding='utf8'):
 def sizeof_fmt(num, suffix="B"):
     for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(num) < 1024.0:
-            return "{num:3.1f}{unit}{suffix}".format(num=num, unit=unit, suffix=suffix)
+            return f"{num:3.1f}{unit}{suffix}"
         num /= 1024.0
-    return "{num:.1f}Yi{suffix}".format(num=num, suffix=suffix)
+    return f"{num:.1f}Yi{suffix}"
 
 
 def get_user_name():

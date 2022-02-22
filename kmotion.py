@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 
 """
@@ -14,7 +13,7 @@ different working directory
 import os
 import signal
 import time
-
+from pathlib import Path
 import subprocess
 from motion_daemon import MotionDaemon
 from core.init_core import InitCore
@@ -39,16 +38,16 @@ class Kmotion:
 
     def __init__(self, kmotion_dir):
         self.pid = os.getpid()
-        self.kmotion_dir = kmotion_dir
+        self.kmotion_dir = Path(kmotion_dir)
         self.active = False
 
         signal.signal(signal.SIGTERM, self.signal_term)
-        self.pidfile = '/run/kmotion/kmotion.pid'
+        self.pidfile = Path('/run/kmotion/kmotion.pid')
 
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
 
         self.init_core = InitCore(self.kmotion_dir)
 
@@ -72,10 +71,9 @@ class Kmotion:
         return  : none
         """
 
-        log.info('starting kmotion [{pid}]'.format(pid=self.pid))
+        log.info(f'starting kmotion [{self.pid}]')
         try:
-            with open(self.pidfile, 'w') as pf:
-                pf.write(str(self.pid))
+            self.pidfile.write_text(str(self.pid))
         except IOError:
             log.warning("Can't write pid to pidfile")
 
@@ -111,8 +109,7 @@ class Kmotion:
     def kill_other(self):
         log.debug('killing daemons ...')
         try:
-            with open(self.pidfile, 'r') as pf:
-                pid = pf.read()
+            pid = self.pidfile.read_text()
             os.kill(int(pid), signal.SIGTERM)
         except Exception:
             log.warning("Can't read pid from pidfile")
@@ -121,8 +118,8 @@ class Kmotion:
 
     def get_kmotion_pids(self):
         try:
-            stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s.*"' % os.path.basename(__file__), shell=True))
-            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(self.pid)]
+            stdout = utils.uni(subprocess.check_output(f'pgrep -f "^python.+{Path(__file__).name}.*"', shell=True))
+            return [pid for pid in stdout.splitlines() if Path('/proc', pid).is_dir() and int(pid) != self.pid]
         except Exception:
             return []
 
@@ -144,15 +141,15 @@ class Kmotion:
             pass
         for d in self.daemons:
             try:
-                log.info("wait for {}".format(d.name))
+                log.info(f"wait for {d.name}")
                 d.join(1.1 / len(self.daemons))
             except Exception:
-                log.exception('wait_termination of {daemon}'.format(daemon=d.name))
+                log.exception(f'wait_termination of {d.name}')
 
 
 if __name__ == '__main__':
     try:
-        kmotion_dir = os.path.abspath(os.path.dirname(__file__))
+        kmotion_dir = Path(__file__).absolute().parent
         kmotion = Kmotion(kmotion_dir)
         kmotion.kill_other()
         kmotion.start()

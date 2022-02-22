@@ -3,9 +3,8 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, generators
 # image_resize an image using the PIL image library
 
-import os
 import sys
-from core import utils
+from pathlib import Path
 
 
 def image_resize(src, dst, scale=1):
@@ -18,31 +17,27 @@ def image_resize(src, dst, scale=1):
         if scale == 1:
             raise Exception('Nothing resize')
         from PIL import Image
-        if os.path.lexists(dst):
-            os.unlink(dst)
+        if dst.exists() or dst.is_symlink():
+            dst.unlink()
         im = Image.open(src)
         im2 = im.resize((int(im.width * scale), int(im.height * scale)), Image.NEAREST)
         im2.save(dst)
     except Exception:
-        os.symlink(src, dst)
+        dst.symlink_to(src)
 
 
 def main(src, scale):
-    if os.path.isfile(src):
-        src_dir, src_name = os.path.split(src)
-        dst_dir = os.path.join(src_dir, 'www')
-        last_jpg = os.path.join(src_dir, 'last.jpg')
-        if not os.path.isdir(dst_dir):
-            utils.makedirs(dst_dir)
+    src = Path(src)
+    if src.is_file():
+        dst_dir = Path(src.parent, 'www')
+        last_jpg = Path(src.parent, 'last.jpg')
+        dst_dir.mkdir(parents=True, exist_ok=True)
 
-        dst = os.path.join(dst_dir, src_name)
+        dst = dst_dir / src.name
         image_resize(src, dst, scale)
-        if os.path.lexists(last_jpg):
-            os.unlink(last_jpg)
-        os.symlink(dst, last_jpg)
-
-        # with open(, 'w') as f_obj:
-        #    f_obj.write(dst)
+        if last_jpg.exists() or last_jpg.is_symlink():
+            last_jpg.unlink()
+        last_jpg.symlink_to(dst)
 
 
 if __name__ == "__main__":

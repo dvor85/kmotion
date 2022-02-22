@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
-import os
 from core import logger
 import events
 import time
 from multiprocessing import Process
+from pathlib import Path
 from core.config import Settings
+
 
 log = logger.getLogger('kmotion', logger.ERROR)
 
@@ -29,8 +29,8 @@ class Detector(Process):
         config_main = cfg.get('kmotion_rc')
         self.config = cfg.get('www_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
-        self.events_dir = os.path.join(self.ramdisk_dir, 'events')
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
+        self.events_dir = Path(self.ramdisk_dir, 'events')
 
     def sleep(self, timeout):
         t = 0
@@ -43,15 +43,14 @@ class Detector(Process):
 
     def run(self):
         self.active = True
-        log.info('starting daemon [{pid}]'.format(pid=self.pid))
+        log.info(f'starting daemon [{self.pid}]')
         while self.active and len(self.config['feeds']) > 0:
             try:
-                for ev in os.listdir(self.events_dir):
+                for evf in self.events_dir.glob('*'):
                     try:
-                        evf = os.path.join(self.events_dir, ev)
                         last_event_time = events.get_event_time(evf)
-                        if self.config['feeds'][int(ev)].get('ext_motion_detector', False) and (time.time() - last_event_time) >= self.no_motion_secs:
-                            events.Events(self.kmotion_dir, ev, events.STATE_END).end()
+                        if self.config['feeds'][int(evf.name)].get('ext_motion_detector', False) and (time.time() - last_event_time) >= self.no_motion_secs:
+                            events.Events(self.kmotion_dir, evf.name, events.STATE_END).end()
                     except Exception as e:
                         log.error(e)
 
@@ -61,13 +60,13 @@ class Detector(Process):
                 self.sleep(60)
 
     def stop(self):
-        log.info('stop {name}'.format(name=__name__))
+        log.info(f'stop {__name__}')
         self.active = False
 
 
 if __name__ == '__main__':
     log.debug('start motion detector monitor')
-    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    kmotion_dir = Path(__file__).absolute().parent.parent
     detector = Detector(kmotion_dir)
     detector.start()
     detector.join()

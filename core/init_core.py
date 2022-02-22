@@ -5,11 +5,9 @@ Exports various methods used to initialize core configuration
 """
 
 from core import logger
-import subprocess
 from string import Template
 import os
 from six import iterkeys
-from core.utils import makedirs
 from core.config import Settings
 from pathlib import Path
 

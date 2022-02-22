@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import sys
 import os
@@ -15,7 +14,6 @@ from core import logger
 from core.config import Settings
 from core import utils
 
-kmotion_dir = os.path.abspath(os.path.dirname(__file__))
 log = logger.getLogger('kmotion', logger.ERROR)
 
 
@@ -30,7 +28,6 @@ class HttpServerNotice(Process):
         config_main = cfg.get('kmotion_rc')
         self.config = cfg.get('www_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
         notice_address = config_main.get('notice_address', ':48100').split(':')
         self.httpd = make_server(notice_address[0], int(notice_address[1]), self.application)
 

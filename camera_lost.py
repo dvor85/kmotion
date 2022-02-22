@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 '''
 @author: demon
 '''
@@ -8,6 +7,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import subprocess
 import sys
 import os
+from pathlib import Path
 import time
 import requests
 from core import utils, logger
@@ -25,6 +25,7 @@ class CameraLost:
         try:
             self.kmotion_dir = kmotion_dir
             self.cam_id = int(cam_id)
+            self.name = Path(__file__).name
 
             cfg = Settings.get_instance(self.kmotion_dir)
             config = cfg.get('www_rc')
@@ -49,7 +50,7 @@ class CameraLost:
                     res = requests.get(self.camera_url, auth=(self.feed_username, self.feed_password))
                     res.raise_for_status()
                 except Exception:
-                    log.error('error while getting image from camera {cam_id}'.format(cam_id=self.cam_id))
+                    log.error(f'error while getting image from camera {self.cam_id}')
                 finally:
                     time.sleep(60)
 
@@ -59,34 +60,34 @@ class CameraLost:
             self.restart_thread(self.cam_id)
 
         else:
-            log.error('{file} {cam_id} already running'.format(file=os.path.basename(__file__), cam_id=self.cam_id))
+            log.error(f'{self.name} {self.cam_id} already running')
 
     def reboot_camera(self):
         try:
             res = requests.get(self.reboot_url, auth=(self.feed_username, self.feed_password))
             res.raise_for_status()
-            log.info('reboot {0} success'.format(self.cam_id))
+            log.info(f'reboot {self.cam_id} success')
             return True
         except Exception:
-            log.debug('reboot {0} failed with status code {1}'.format(self.cam_id, res.getcode()))
+            log.debug(f'reboot {self.cam_id} failed with status code {res.getcode()}')
 
     def restart_thread(self, cam_id):
         try:
             res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{cam_id}/action/restart")
             res.raise_for_status()
-            log.debug('restart camera {cam_id} success'.format(cam_id=cam_id))
+            log.debug(f'restart camera {cam_id} success')
             return True
         except Exception:
-            log.debug('restart camera {cam_id} failed with status code {code}'.format(cam_id=cam_id, code=res.getcode()))
+            log.debug(f'restart camera {cam_id} failed with status code {res.getcode()}')
 
     def get_prev_instances(self):
         try:
-            stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s %i$"' % (os.path.basename(__file__), self.cam_id), shell=True))
-            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+            stdout = utils.uni(subprocess.check_output(['pgrep', '-f', f'"^python.+{self.name} {self.cam_id}$"'], shell=False))
+            return [pid for pid in stdout.splitlines() if Path('/proc', pid).is_dir() and int(pid) != os.getpid()]
         except Exception:
             return []
 
 
 if __name__ == '__main__':
-    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
+    kmotion_dir = Path(__file__).absolute().parent
     CameraLost(kmotion_dir, sys.argv[1]).main()

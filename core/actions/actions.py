@@ -10,7 +10,7 @@ log = None
 class Actions():
 
     def __init__(self, kmotion_dir, feed):
-        sys.path.append(kmotion_dir)
+        sys.path.append(kmotion_dir.as_posix())
 
         from core import logger
         global log

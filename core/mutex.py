@@ -6,7 +6,7 @@ Export mutex lock functions for the '../www/mutex/' files
 import os
 import time
 from pathlib import Path
-from . import logger
+from core import logger
 
 
 log = logger.getLogger('kmotion', logger.ERROR)
@@ -39,8 +39,7 @@ class Mutex():
             time.sleep(0.01)
 
         # add our lock
-        with open(self.mutex_dir / str(pid), 'w'):
-            pass
+        Path(self.mutex_dir, str(pid)).touch()
 
     def release(self, pid):
         """

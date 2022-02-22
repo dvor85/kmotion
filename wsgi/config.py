@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
-import os
 import json
 from six import itervalues
+from pathlib import Path
 from core.config import Settings
 from core import utils, logger
 
@@ -18,15 +17,15 @@ class Config():
 
         self.username = utils.safe_str(env.get('REMOTE_USER'))
 
-        www_rc = 'www_rc_%s' % (self.username)
-        if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
+        www_rc = f'www_rc_{self.username}'
+        if not Path(kmotion_dir, 'www', www_rc).is_file():
             raise Exception('Incorrect configuration!')
 
         conf = Settings.get_instance(kmotion_dir)
         self.config = conf.get(www_rc)
         config_main = conf.get('kmotion_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
         self.title = config_main.get('title', 'Surveillance')
 
     def read(self):
@@ -52,9 +51,7 @@ class Config():
             if self.config['misc']['config_enabled']:
                 config = json.loads(jdata)
                 config['user'] = self.username
-                with open('%s/www/fifo_settings_wr' % self.kmotion_dir, 'w') as pipeout:
-                    pipeout.write(json.dumps(config))
-
+                Path(self.kmotion_dir, 'www', 'fifo_settings_wr').write_text(json.dumps(config))
             return ''
         except Exception:
             log.critical("write error", exc_info=1)
@@ -70,6 +67,6 @@ class Config():
 
 
 if __name__ == '__main__':
-    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    kmotion_dir = Path(__file__).absolute().parent.parent
     print(Config(kmotion_dir, {}).read())
 #     requests.post("http://127.0.0.1:8080/config", json={'jsonrpc': '2.0', 'method': 'config', 'id': '1', 'params': {'read': '1'} }, headers={"Content-type": "application/json"}).content

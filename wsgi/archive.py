@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
-import os
-import sys
 import datetime
 from core.config import Settings
 from core import utils, logger
 from six import iteritems, iterkeys
-from io import open
+from pathlib import Path
 
 log = logger.getLogger('kmotion', logger.ERROR)
 
@@ -22,9 +19,9 @@ class Archive():
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.images_dbase_dir = config_main['images_dbase_dir']
-        www_rc = 'www_rc_%s' % (self.username)
-        if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
+        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
+        www_rc = f'www_rc_{self.username}'
+        if not Path(kmotion_dir, 'www', www_rc).is_file():
             raise Exception('Incorrect configuration!')
         self.config = cfg.get(www_rc)
 
@@ -43,20 +40,18 @@ class Archive():
         for feed, conf in iteritems(self.config['feeds']):
             try:
                 if conf.get('feed_enabled'):
-                    feed_dir = os.path.join(self.images_dbase_dir, date, '%02i' % feed)
-                    title = conf.get('feed_name', '%02i' % feed)
-                    if os.path.isdir(feed_dir):
-                        with open(os.path.join(feed_dir, 'title'), 'r', encoding="utf-8") as f_obj:
-                            title = f_obj.read()
-
-                        feeds_list[feed] = {'title': title}
+                    feed_title = Path(self.images_dbase_dir, date, f'{feed:02}', 'title')
+                    title = conf.get('feed_name', f'{feed:02}')
+                    if feed_title.is_file():
+                        title = feed_title.read_text()
+                    feeds_list[feed] = {'title': title}
             except Exception as e:
                 log.exception("Get feeds error")
 
         return feeds_list
 
     def get_dates(self):
-        dates = [i for i in os.listdir(self.images_dbase_dir) if len(i) == 8]
+        dates = [i.name for i in self.images_dbase_dir.iterdir() if i.is_dir()]
         dates.sort(reverse=True)
 
         return dates
@@ -65,34 +60,29 @@ class Archive():
         return int(hhmmss_str[0:2]) * 3600 + int(hhmmss_str[2:4]) * 60 + int(hhmmss_str[4:6])
 
     def journal_data(self, date, feed):
-
         journal = {"movies": [], "snaps": []}
         if feed in iterkeys(self.config['feeds']):
-            movies_dir = '%s/%s/%02i/movie' % (self.images_dbase_dir, date, feed)
-            if os.path.isdir(movies_dir):
-                movies = os.listdir(movies_dir)
-                movies.sort()
-                for m in movies:
-                    mf = os.path.join(movies_dir, m)
-                    end = datetime.datetime.fromtimestamp(os.path.getmtime(mf))
+            movies_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'movie')
+            if movies_dir.is_dir():
+                movies = movies_dir.glob('*')
+                for mf in movies:
+                    end = datetime.datetime.fromtimestamp(mf.stat().st_mtime)
                     dt = datetime.datetime.now() - end
                     if dt.total_seconds() > 10:
                         movie = {}
-                        movie['start'] = self.hhmmss_secs(os.path.splitext(m)[0][-6:])
+                        movie['start'] = self.hhmmss_secs(mf.stem[-6:])
                         movie['end'] = self.hhmmss_secs(end.strftime('%H%M%S'))
-                        movie['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
+                        movie['file'] = Path('/images_dbase', mf.relative_to(self.images_dbase_dir)).as_posix()
                         journal['movies'].append(movie)
 
-            snaps_dir = '%s/%s/%02i/snap' % (self.images_dbase_dir, date, feed)
-            if os.path.isdir(snaps_dir):
-                snaps = os.listdir(snaps_dir)
-                snaps.sort()
-                for m in snaps:
-                    mf = os.path.join(snaps_dir, m)
+            snaps_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'snap')
+            if snaps_dir.is_dir():
+                snaps = snaps_dir.glob('*')
+                for mf in snaps:
                     snap = {}
-                    snap['start'] = self.hhmmss_secs(os.path.splitext(m)[0][-6:])
+                    snap['start'] = self.hhmmss_secs(mf.stem[-6:])
                     snap['end'] = snap['start']
-                    snap['file'] = os.path.normpath(mf.replace(self.images_dbase_dir, '/images_dbase/'))
+                    snap['file'] = Path('/images_dbase', mf.relative_to(self.images_dbase_dir)).as_posix()
                     journal['snaps'].append(snap)
 
         return journal

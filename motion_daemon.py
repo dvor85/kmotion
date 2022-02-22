@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 '''
 @author: demon
 '''
-import os
 import time
 import subprocess
 from core.init_motion import InitMotion
@@ -42,18 +40,19 @@ class MotionDaemon(Process):
         self.motion_webcontrol_port = config_main.get('motion_webcontrol_port', 8080)
 
     def feed2thread(self, feed):
-        return sorted([f for f in iterkeys(self.config['feeds'])
-                       if self.config['feeds'][f].get('feed_enabled', False)]).index(feed) + 1
+        return sorted([f for f in iterkeys(self.config['feeds']) if self.config['feeds'][f].get('feed_enabled', False)]).index(feed) + 1
 
     def count_motion_running(self):
         try:
-            return len(utils.uni(subprocess.check_output('pgrep -f "^motion.+-c.*"', shell=True)).splitlines())
+            return len(utils.uni(subprocess.check_output(['pgrep', '-f', '"^motion.+-c.*"'], shell=False)).splitlines())
         except Exception:
             return 0
 
     def is_port_alive(self, port):
         try:
-            return utils.uni(subprocess.check_output(f'netstat -ntl | grep {port}', shell=True)) != ''
+            out = utils.uni(subprocess.check_output(['netstat', '-n', '-t', '-l'], shell=False)).splitlines()
+            for l in out:
+                return str(port) in l
         except Exception:
             return False
 
@@ -75,8 +74,8 @@ class MotionDaemon(Process):
         m_conf = Path(self.kmotion_dir, 'core', 'motion_conf', 'motion.conf')
         if m_conf.is_file():
             log.info('starting motion')
-            motion_out = '/var/log/kmotion/motion.log'
-            utils.makedirs(os.path.dirname(motion_out))
+            motion_out = Path('/var/log/kmotion/motion.log')
+            motion_out.parent.mkdir(parents=True, exist_ok=True)
             self.motion_daemon = subprocess.Popen(['motion', '-c', m_conf, '-d', '4', '-l', motion_out], close_fds=True, shell=False)
         else:
             log.critical('no motion.conf, motion not active')
@@ -92,10 +91,7 @@ class MotionDaemon(Process):
             self.motion_daemon.kill()
             self.motion_daemon = None
 
-        subprocess.call('pkill -f "^motion.+-c.*"', shell=True)
-        # while self.count_motion_running() > 0:
-        #     subprocess.call('pkill -9 -f "^motion.+-c.*"', shell=True)
-
+        subprocess.call(['pkill', '-f', '"^motion.+-c.*"'], shell=False)
         log.debug('motion killed')
 
     def run(self):

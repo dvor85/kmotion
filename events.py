@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 import sys
 import subprocess
@@ -12,6 +11,7 @@ from core.actions import actions
 import os
 from core import utils
 from core.config import Settings
+from pathlib import Path
 
 STATE_START = 'start'
 STATE_END = 'end'
@@ -20,26 +20,26 @@ log = logger.getLogger('kmotion', logger.ERROR)
 
 
 def set_event_time(event_file):
-    with open(event_file, 'wb') as dump:
+    with Path(event_file).open(mode='wb') as dump:
         cPickle.dump(time.time(), dump)
 
 
 def get_event_time(event_file):
     try:
-        with open(event_file, 'rb') as dump:
+        with Path(event_file).open(mode='rb') as dump:
             return cPickle.load(dump)
     except Exception:
         return time.time()
 
 
 def set_state(state_file, state):
-    with open(state_file, 'wb') as dump:
+    with Path(state_file).open(mode='wb') as dump:
         cPickle.dump(state, dump)
 
 
 def get_state(state_file, state=STATE_END):
     try:
-        with open(state_file, 'rb') as dump:
+        with Path(state_file).open(mode='rb') as dump:
             return cPickle.load(dump)
     except Exception:
         return state
@@ -55,8 +55,8 @@ class Events:
         self.config = cfg.get('www_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
 
-        self.ramdisk_dir = config_main['ramdisk_dir']
-        self.images_dbase_dir = config_main['images_dbase_dir']
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
+        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
 
         if '.' in feed_ip:
             self.feed = self.find_feed_by_ip(feed_ip)
@@ -65,13 +65,13 @@ class Events:
         if not self.feed:
             raise ValueError(f"Can't {state} event. Unrecognized feed {self.feed}")
 
-        self.event_file = os.path.join(self.ramdisk_dir, 'events', str(self.feed))
-        self.state_file = os.path.join(self.ramdisk_dir, 'states', str(self.feed))
+        self.event_file = Path(self.ramdisk_dir, 'events', str(self.feed))
+        self.state_file = Path(self.ramdisk_dir, 'states', str(self.feed))
         self.state = state
         self.set_last_state(self.state)
 
     def find_feed_by_ip(self, ip):
-        log.debug('find feed by ip "{0}"'.format(ip))
+        log.debug(f'find feed by ip "{ip}"')
         if ip:
             for feed, conf in iteritems(self.config['feeds']):
                 if conf.get('feed_enabled', False) and ip in conf['feed_url']:
@@ -96,15 +96,15 @@ class Events:
             elif self.state == STATE_END:
                 self.end()
             else:
-                log.error('command "{0}" not recognized'.format(self.state))
+                log.error(f'command "{self.state}" not recognized')
         else:
-            log.debug('{file} {feed} already running'.format(**{'file': os.path.basename(__file__), 'feed': self.feed}))
+            log.debug(f'{Path(__file__).name} {self.feed} already running')
 
     def start(self):
         self.state = STATE_START
-        must_start_actions = not os.path.isfile(self.event_file)
+        must_start_actions = not self.event_file.is_file()
 
-        log.debug('start: creating: {0}'.format(self.event_file))
+        log.debug(f'start: creating: {self.event_file}')
         self.set_event_time()
 
         if must_start_actions:
@@ -116,23 +116,23 @@ class Events:
         self.state = STATE_END
         actions.Actions(self.kmotion_dir, self.feed).end()
 
-        if os.path.isfile(self.event_file):
-            log.debug('end: delete {0}'.format(self.event_file))
-            os.unlink(self.event_file)
+        if self.event_file.is_file():
+            log.debug(f'end: delete {self.event_file}')
+            self.event_file.unlink()
 
         if self.get_last_state() != self.state:
             self.start()
 
     def get_prev_instances(self):
         try:
-            stdout = utils.uni(subprocess.check_output('pgrep -f "^python.+%s %i.*"' % (os.path.basename(__file__), self.feed), shell=True))
-            return [pid for pid in stdout.splitlines() if os.path.isdir(os.path.join('/proc', pid)) and pid != str(os.getpid())]
+            stdout = utils.uni(subprocess.check_output(f'pgrep -f "^python.+{Path(__file__).name} {self.feed}.*"', shell=True))
+            return [pid for pid in stdout.splitlines() if Path('/proc', pid).is_dir() and int(pid) != os.getpid()]
         except Exception:
             return []
 
 
 if __name__ == '__main__':
-    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
+    kmotion_dir = Path(__file__).absolute().parent
     try:
         Events(kmotion_dir, sys.argv[1], sys.argv[2]).main()
     except Exception as e:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
 """
 Copys, moves or deletes files
@@ -12,6 +11,7 @@ import datetime
 from core import logger
 from multiprocessing import Process
 import os
+from pathlib import Path
 from six import iterkeys
 from core.config import Settings
 
@@ -44,8 +44,8 @@ class Hkd2_Feed():
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
-        self.ramdisk_dir = config_main['ramdisk_dir']
-        self.images_dbase_dir = config_main['images_dbase_dir']
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
+        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
         # sys.exit()
 
         self.feed_snap_interval = config['feeds'][self.feed].get('feed_snap_interval', 0)
@@ -64,7 +64,7 @@ class Hkd2_Feed():
         return  : none
         """
 
-        jpg_dir = '%s/%02i' % (self.ramdisk_dir, self.feed)
+        jpg_dir = Path(self.ramdisk_dir, f'{self.feed:02}')
         jpg_list = os.listdir(jpg_dir)
         jpg_list.sort()
 
@@ -74,45 +74,34 @@ class Hkd2_Feed():
         # move or delete them
         while (len(jpg_list) >= 10):
             jpg = jpg_list.pop(0)
-            dtime = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(jpg_dir, jpg)))
-
             if jpg != 'last.jpg':
-                p = {'src': os.path.join(jpg_dir, jpg),
-                     'dst': os.path.join(self.images_dbase_dir,
-                                         dtime.strftime('%Y%m%d'),
-                                         '%02i' % self.feed,
-                                         'snap',
-                                         '{cam}_{dtime}.jpg'.format(cam=self.feed,
-                                                                    dtime=dtime.strftime('%Y%m%d_%H%M%S')))}
+                src = Path(jpg_dir, jpg)
+                dtime = datetime.datetime.fromtimestamp(src.stat().st_mtime)
+                dst = Path(self.images_dbase_dir, f'{dtime:%Y%m%d}', f'{self.feed:02}', 'snap', f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.jpg')
 
-                if os.path.isfile(p['src']) and self.feed_snap_enabled and self.snap_time <= dtime:
+                if src.is_file() and self.feed_snap_enabled and self.snap_time <= dtime:
                     try:
-                        log.debug('service_snap() - copy {src} to {dst}'.format(**p))
-                        if not os.path.isdir(os.path.dirname(p['dst'])):
-                            os.makedirs(os.path.dirname(p['dst']))
-                        shutil.copy(**p)
+                        log.debug(f'service_snap() - copy {src} to {dst}')
+                        dst.mkdir(parents=True, exist_ok=True)
+                        shutil.copy(src, dst)
                     except Exception:
                         log.exception('service_snap() - error while copy jpg to snap dir.')
                     finally:
                         self.inc_snap_time(self.feed_snap_interval)
 
-                log.debug('service_snap() - delete {src}'.format(**p))
-                os.remove(os.path.join(jpg_dir, jpg))
+                log.debug(f'service_snap() - delete {src}')
+                src.unlink()
 
-                feed_www_jpg = os.path.join(jpg_dir, 'www', jpg)
-                if os.path.lexists(feed_www_jpg):
-                    os.remove(feed_www_jpg)
+                feed_www_jpg = Path(jpg_dir, 'www', jpg)
+                if feed_www_jpg.exists() or feed_www_jpg.is_symlink():
+                    feed_www_jpg.unlink()
 
     def update_title(self):
         # updates 'name' with name string
         try:
-            title = '%s/%s/%02i/title' % (self.images_dbase_dir, time.strftime('%Y%m%d'), self.feed)
-            if not os.path.isdir(os.path.dirname(title)):
-                os.makedirs(os.path.dirname(title))
-
-            if not os.path.isfile(title):
-                with open(title, 'w', encoding="utf-8") as f_obj:
-                    f_obj.write(self.feed_name)
+            title = Path(self.images_dbase_dir, time.strftime('%Y%m%d'), f'{self.feed:02}', 'title')
+            title.parent.mkdir(parents=True, exist_ok=True)
+            title.write_text(self.feed_name)
         except Exception:
             log.critical('** CRITICAL ERROR **', exc_info=1)
 
@@ -133,7 +122,6 @@ class Kmotion_Hkd2(Process):
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
         self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
 
     def sleep(self, timeout):
@@ -154,7 +142,7 @@ class Kmotion_Hkd2(Process):
         return  : none
         """
         self.active = True
-        log.info('starting daemon [{pid}]'.format(pid=self.pid))
+        log.info(f'starting daemon [{self.pid}]')
         while self.active:
             try:
                 self.instance_list = []  # list of Hkd2_Feed instances
@@ -171,5 +159,5 @@ class Kmotion_Hkd2(Process):
                 self.sleep(60)
 
     def stop(self):
-        log.info('stop {name}'.format(name=__name__))
+        log.info(f'stop {__name__}')
         self.active = False

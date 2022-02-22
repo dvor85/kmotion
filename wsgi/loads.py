@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 
-import os
 import subprocess
 from datetime import timedelta
+from pathlib import Path
 from core.config import Settings
 from core import utils, logger
 
@@ -56,11 +55,13 @@ class Loads:
         config_main = cfg.get('kmotion_rc')
         log.setLevel(config_main['log_level'])
 
-        www_rc = 'www_rc_%s' % (self.username)
-        if not os.path.isfile(os.path.join(kmotion_dir, 'www', www_rc)):
+        www_rc = f'www_rc_{self.username}'
+        if not Path(kmotion_dir, 'www', www_rc).is_file():
             raise Exception('Incorrect configuration!')
         self.config = cfg.get(www_rc)
         self.config_main = cfg.get('kmotion_rc')
+        self.images_dbase_dir = self.config_main['images_dbase_dir']
+        self.ramdisk_dir = self.config_main['ramdisk_dir']
 
     def __call__(self):
         data = {}
@@ -96,11 +97,9 @@ class Loads:
                                         cu=vmstat_d["sy"],
                                         cs=vmstat_d["us"])
 
-                dfout = utils.uni(subprocess.check_output('df -h "{images_dbase_dir}"'.format(
-                    images_dbase_dir=self.config_main['images_dbase_dir']), shell=True)).splitlines()[1].split()
+                dfout = utils.uni(subprocess.check_output(f'df -h "{self.images_dbase_dir}"', shell=True)).splitlines()[1].split()
                 data['fsarch'] = dfout[2:]
-                dfout = utils.uni(subprocess.check_output('df -h "{ramdisk_dir}"'.format(
-                    ramdisk_dir=self.config_main['ramdisk_dir']), shell=True)).splitlines()[1].split()
+                dfout = utils.uni(subprocess.check_output(f'df -h "{self.ramdisk_dir}"', shell=True)).splitlines()[1].split()
                 data['fsramdisk'] = dfout[2:]
         except Exception:
             log.critical("loads error", exc_info=1)

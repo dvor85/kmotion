@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 '''
 
 @author: demon
@@ -11,6 +10,7 @@ from core import logger
 import events
 import os
 from core.config import Settings
+from pathlib import Path
 
 log = logger.getLogger('kmotion', logger.ERROR)
 
@@ -31,8 +31,8 @@ class Kmotion_split(Process):
         self.kmotion_dir = kmotion_dir
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
-        self.events_dir = os.path.join(self.ramdisk_dir, 'events')
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
+        self.events_dir = Path(self.ramdisk_dir, 'events')
         self.max_duration = config_main.get('video_length', 300)
         self.semaphore = threading.Semaphore(8)
         self.locks = {}
@@ -46,10 +46,10 @@ class Kmotion_split(Process):
         try:
             lock.acquire()
             try:
-                event_file = os.path.join(self.events_dir, feed)
+                event_file = Path(self.events_dir, feed)
 
                 if (time.time() - events.get_event_time(event_file)) >= self.max_duration:
-                    log.debug('split feed %s' % (feed))
+                    log.debug(f'split feed {feed}')
                     events.Events(self.kmotion_dir, feed, events.STATE_START).end()
             finally:
                 lock.release()
@@ -57,7 +57,7 @@ class Kmotion_split(Process):
             self.semaphore.release()
 
     def run(self):
-        log.info('starting daemon [{pid}]'.format(pid=self.pid))
+        log.info(f'starting daemon [{self.pid}]')
         self.active = True
         while self.active:
             try:
@@ -80,5 +80,5 @@ class Kmotion_split(Process):
         return self.active
 
     def stop(self):
-        log.info('stop {name}'.format(name=__name__))
+        log.info(f'stop {__name__}')
         self.active = False

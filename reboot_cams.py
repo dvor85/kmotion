@@ -11,6 +11,7 @@ from camera_lost import CameraLost
 from core.config import Settings
 import argparse
 from six import iterkeys
+from pathlib import Path
 
 log = logger.getLogger('kmotion', logger.ERROR)
 
@@ -34,8 +35,8 @@ class RebootCams():
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.ramdisk_dir = config_main['ramdisk_dir']
-        self.events_dir = os.path.join(self.ramdisk_dir, 'events')
+        self.ramdisk_dir = Path(config_main['ramdisk_dir'])
+        self.events_dir = Path(self.ramdisk_dir, 'events')
 
         if options.cam:
             self.camera_ids = options.cam
@@ -44,7 +45,7 @@ class RebootCams():
         self.force_reboot = options.force
 
     def reboot_cam(self, cam):
-        state_file = os.path.join(self.ramdisk_dir, 'states', str(cam))
+        state_file = Path(self.ramdisk_dir, 'states', str(cam))
         while not self.force_reboot and (str(cam) in os.listdir(self.events_dir) or events.get_state(state_file) == events.STATE_START):
             time.sleep(10)
         cam_lost = CameraLost(self.kmotion_dir, cam)
@@ -57,6 +58,6 @@ class RebootCams():
 
 if __name__ == '__main__':
     log.debug('start reboot_cams')
-    kmotion_dir = os.path.abspath(os.path.dirname(__file__))
+    kmotion_dir = Path(__file__).absolute().parent
     reboot_cams = RebootCams(kmotion_dir)
     reboot_cams.main()

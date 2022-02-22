@@ -7,7 +7,6 @@ changes. All changes should be in just this module.
 """
 
 from core import logger
-import os
 from core.config import Settings
 from six import iterkeys
 from core import utils
@@ -209,9 +208,9 @@ post_capture 10
 
                 f_obj1.write('picture_output {0}\n'.format('on' if fps > 1 else 'off'))
                 f_obj1.write('picture_quality {0}\n'.format(self.config['feeds'][feed].get('feed_quality', 85)))
-                f_obj1.write(f'picture_filename {feed:02d}/%%Y%%m%%d%%H%%M%%S%%q\n')
+                f_obj1.write(f'picture_filename {feed:02d}/%Y%m%d%H%M%S%q\n')
                 f_obj1.write('snapshot_interval 1\n')
-                f_obj1.write(f'snapshot_filename {feed:02d}/%%Y%%m%%d%%H%%M%%S\n')
+                f_obj1.write(f'snapshot_filename {feed:02d}/%Y%m%d%H%M%S\n')
 
                 f_obj1.write('')
 
@@ -221,7 +220,7 @@ post_capture 10
                     f_obj1.write(f'on_event_end {self.kmotion_dir}/events.py {feed} end\n')
 
                 f_obj1.write(f'on_camera_lost {self.kmotion_dir}/camera_lost.py {feed}\n')
-                f_obj1.write(f"on_picture_save {self.kmotion_dir}/picture_save.py %%f {self.config['feeds'][feed].get('feed_webpicture_scale', 1)}\n")
+                f_obj1.write(f"on_picture_save {self.kmotion_dir}/picture_save.py %f {self.config['feeds'][feed].get('feed_webpicture_scale', 1)}\n")
 
 # Module test code
 
@@ -229,5 +228,5 @@ post_capture 10
 if __name__ == '__main__':
 
     print('\nModule self test ... generating motion.conf and cameras\n')
-    kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    kmotion_dir = Path(__file__).absolute().parent.parent
     InitMotion(kmotion_dir).gen_motion_configs()

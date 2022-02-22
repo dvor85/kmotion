@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os
+from pathlib import Path
 from core.mutex_parsers import mutex_kmotion_parser_rd, mutex_www_parser_rd
 from core import logger, utils
 from threading import Lock
@@ -10,7 +10,7 @@ log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Settings():
-    VERSION = '9.0.0'
+    VERSION = '9.1.0'
     _instance = None
     _lock = Lock()
 
@@ -54,7 +54,7 @@ class Settings():
         return self.config['kmotion_rc']
 
     def _read_www_rc(self, www_rc='www_rc'):
-        if not os.path.isfile(os.path.join(self.kmotion_dir, 'www', www_rc)):
+        if not Path(self.kmotion_dir, 'www', www_rc).is_file():
             raise Exception('Incorrect configuration!')
         if not self.config.get(www_rc):
             self.config[www_rc] = {}
@@ -88,11 +88,11 @@ class Settings():
                                 if 'display_feeds_' in k:
                                     display = utils.parse_str(k.replace('display_feeds_', ''))
                                     config['display_feeds'][display] = utils.uniq([utils.parse_str(i) for i in v.split(',')
-                                                                                   if www_parser.has_section(f'motion_feed{int(i):02d}')])
+                                                                                   if www_parser.has_section(f'motion_feed{int(i):02}')])
                                 else:
                                     conf[k] = utils.parse_str(v)
                             except Exception as e:
-                                log.exception('error: {error}'.format(error=e))
+                                log.exception(f'error: {e}')
 
                         if 'motion_feed' in section:
                             feed = int(section.replace('motion_feed', ''))
@@ -103,7 +103,7 @@ class Settings():
                         elif len(conf) > 0:
                             config[section] = conf
                     except Exception as e:
-                        log.exception('error: {error}'.format(error=e))
+                        log.exception(f'error: {e}')
 
                 displays[4] = len(config['feeds'])
                 for display in displays:
