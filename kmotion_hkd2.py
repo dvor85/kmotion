@@ -46,7 +46,6 @@ class Hkd2_Feed():
         config = cfg.get('www_rc')
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
         self.images_dbase_dir = Path(config_main['images_dbase_dir'])
-        # sys.exit()
 
         self.feed_snap_interval = config['feeds'][self.feed].get('feed_snap_interval', 0)
         self.feed_snap_enabled = self.feed_snap_interval > 0
@@ -65,8 +64,7 @@ class Hkd2_Feed():
         """
 
         jpg_dir = Path(self.ramdisk_dir, f'{self.feed:02}')
-        jpg_list = os.listdir(jpg_dir)
-        jpg_list.sort()
+        jpg_list = sorted(os.listdir(jpg_dir))
 
         self.update_title()
 
@@ -82,7 +80,7 @@ class Hkd2_Feed():
                 if src.is_file() and self.feed_snap_enabled and self.snap_time <= dtime:
                     try:
                         log.debug(f'service_snap() - copy {src} to {dst}')
-                        dst.mkdir(parents=True, exist_ok=True)
+                        dst.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy(src, dst)
                     except Exception:
                         log.exception('service_snap() - error while copy jpg to snap dir.')

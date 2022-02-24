@@ -125,7 +125,7 @@ class Events:
 
     def get_prev_instances(self):
         try:
-            stdout = utils.uni(subprocess.check_output(f'pgrep -f "^python.+{Path(__file__).name} {self.feed}.*"', shell=True))
+            stdout = utils.uni(subprocess.check_output(['pgrep', '-f', f"^python.+{Path(__file__).name} {self.feed}.*"], shell=False))
             return [pid for pid in stdout.splitlines() if Path('/proc', pid).is_dir() and int(pid) != os.getpid()]
         except Exception:
             return []

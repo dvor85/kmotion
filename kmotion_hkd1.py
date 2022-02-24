@@ -63,23 +63,23 @@ class Kmotion_Hkd1(Process):
                     log.info(f'size of {self.images_dbase_dir} = {utils.sizeof_fmt(_size)}')
                     if _size > self.max_size:
                         log.warn('image storage limit reached')
+                        try:
+                            fulld = next(self.images_dbase_dir.iterdir())
+                            if fulld.is_dir():
+                                d = fulld.name
+                                if time.strftime('%Y%m%d') == d:
+                                    log.error("** CRITICAL ERROR ** crash - delete todays data, 'images_dbase' is too small")
+                                    www_logs.error("Deleting todays data, 'images_dbase' is too small")
 
-                        # if need to delete current recording, shut down kmotion
-                        for fulld in self.images_dbase_dir.glob('*'):
-                            try:
-                                if fulld.is_dir():
-                                    d = fulld.name
-                                    if time.strftime('%Y%m%d') == d:
-                                        log.error("** CRITICAL ERROR ** crash - delete todays data, 'images_dbase' is too small")
-                                        www_logs.error("Deleting todays data, 'images_dbase' is too small")
-
-                                    log.info(f'try to delete {fulld}')
-                                    if utils.rmdir(fulld):
-                                        log.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
-                                        www_logs.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
-                                        break
-                            except Exception as e:
-                                log.error(f'deleting of "{fulld}" error: {e}')
+                                log.info(f'try to delete {fulld}')
+                                if utils.rmdir(fulld):
+                                    log.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
+                                    www_logs.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
+                        except StopIteration:
+                            log.error('There are no dates to delete. May be incorrect configuration.')
+                            www_logs.error('There are no dates to delete. May be incorrect configuration.')
+                        except Exception as e:
+                            log.error(f'deleting of "{fulld}" error: {e}')
 
             except Exception as e:  # global exception catch
                 log.critical('** CRITICAL ERROR **', exc_info=1)

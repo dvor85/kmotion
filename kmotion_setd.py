@@ -65,7 +65,7 @@ class Kmotion_setd(Process):
                     for section in iterkeys(self.config):
                         if section == 'feeds':
                             for feed in iterkeys(self.config[section]):
-                                feed_section = f'motion_feed{feed:02}'
+                                feed_section = f'motion_feed{int(feed):02}'
                                 if not www_parser.has_section(feed_section):
                                     www_parser.add_section(feed_section)
                                 for k, v in iteritems(self.config[section][feed]):
@@ -82,7 +82,7 @@ class Kmotion_setd(Process):
                                 www_parser.add_section(misc_section)
                             for k, v in iteritems(self.config[section]):
                                 if len(v) > 0:
-                                    www_parser.set(misc_section, f'display_feeds_{k:02}', ','.join([str(i) for i in v]))
+                                    www_parser.set(misc_section, f'display_feeds_{int(k):02}', ','.join([str(i) for i in v]))
                         elif isinstance(self.config[section], dict):
                             if not www_parser.has_section(section):
                                 www_parser.add_section(section)

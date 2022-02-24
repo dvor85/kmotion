@@ -13,7 +13,7 @@ from six import iterkeys, iteritems
 from pathlib import Path
 
 
-log = logger.getLogger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.DEBUG)
 
 
 class MotionDaemon(Process):
@@ -44,7 +44,7 @@ class MotionDaemon(Process):
 
     def count_motion_running(self):
         try:
-            return len(utils.uni(subprocess.check_output(['pgrep', '-f', '"^motion.+-c.*"'], shell=False)).splitlines())
+            return len(utils.uni(subprocess.check_output(['pgrep', '-f', '^motion.+-c.*'], shell=False)).splitlines())
         except Exception:
             return 0
 
@@ -52,7 +52,8 @@ class MotionDaemon(Process):
         try:
             out = utils.uni(subprocess.check_output(['netstat', '-n', '-t', '-l'], shell=False)).splitlines()
             for l in out:
-                return str(port) in l
+                if str(port) in l:
+                    return True
         except Exception:
             return False
 
@@ -91,7 +92,7 @@ class MotionDaemon(Process):
             self.motion_daemon.kill()
             self.motion_daemon = None
 
-        subprocess.call(['pkill', '-f', '"^motion.+-c.*"'], shell=False)
+        subprocess.call(['pkill', '-f', '^motion.+-c.*'], shell=False)
         log.debug('motion killed')
 
     def run(self):

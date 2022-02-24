@@ -48,7 +48,7 @@ class rtsp2mp4(action.Action):
 
     def get_grabber_pids(self):
         try:
-            return utils.uni(subprocess.check_output(['pgrep', '-f', f'"^ffmpeg.+{self.feed_grab_url}.*"'], shell=False)).splitlines()
+            return utils.uni(subprocess.check_output(['pgrep', '-f', f"^ffmpeg.+{self.feed_grab_url}.*"], shell=False)).splitlines()
         except Exception:
             return []
 

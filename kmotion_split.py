@@ -8,7 +8,6 @@ from multiprocessing import Process
 import time
 from core import logger
 import events
-import os
 from core.config import Settings
 from pathlib import Path
 
@@ -62,9 +61,8 @@ class Kmotion_split(Process):
         while self.active:
             try:
                 if self.sleep(15):
-                    events = os.listdir(self.events_dir)
-                    for event in events:
-                        threading.Thread(target=self.main, args=(event,)).start()
+                    for event in self.events_dir.iterdir():
+                        threading.Thread(target=self.main, args=(event.name,)).start()
 
             except Exception:
                 log.critical('** CRITICAL ERROR **', exc_info=1)

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, unicode_literals, print_function, generators
 import sys
 from pathlib import Path
 from jsonrpc2 import JsonRpcApplication
 
 
-kmotion_dir = Path(__file__).parent.parent
+kmotion_dir = Path(__file__).absolute().parent.parent
 sys.path.insert(0, kmotion_dir.as_posix())
 
 

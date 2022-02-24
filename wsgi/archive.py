@@ -45,15 +45,13 @@ class Archive():
                     if feed_title.is_file():
                         title = feed_title.read_text()
                     feeds_list[feed] = {'title': title}
-            except Exception as e:
+            except Exception:
                 log.exception("Get feeds error")
 
         return feeds_list
 
     def get_dates(self):
-        dates = [i.name for i in self.images_dbase_dir.iterdir() if i.is_dir()]
-        dates.sort(reverse=True)
-
+        dates = sorted([i.name for i in self.images_dbase_dir.iterdir() if i.is_dir()], reverse=True)
         return dates
 
     def hhmmss_secs(self, hhmmss_str):
@@ -64,8 +62,7 @@ class Archive():
         if feed in iterkeys(self.config['feeds']):
             movies_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'movie')
             if movies_dir.is_dir():
-                movies = movies_dir.glob('*')
-                for mf in movies:
+                for mf in movies_dir.iterdir():
                     end = datetime.datetime.fromtimestamp(mf.stat().st_mtime)
                     dt = datetime.datetime.now() - end
                     if dt.total_seconds() > 10:
@@ -77,8 +74,7 @@ class Archive():
 
             snaps_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'snap')
             if snaps_dir.is_dir():
-                snaps = snaps_dir.glob('*')
-                for mf in snaps:
+                for mf in snaps_dir.iterdir():
                     snap = {}
                     snap['start'] = self.hhmmss_secs(mf.stem[-6:])
                     snap['end'] = snap['start']

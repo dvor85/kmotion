@@ -67,7 +67,7 @@ class Loads:
         data = {}
         try:
             if self.config['misc']['config_enabled']:
-                data['uname'] = utils.uni(subprocess.check_output('uname -srvo', shell=True)).strip()
+                data['uname'] = utils.uni(subprocess.check_output(['uname', '-srvo'], shell=False)).strip()
                 data['cpu'] = 0
                 with open('/proc/cpuinfo', 'r') as f_obj:
                     for l in f_obj:
@@ -83,7 +83,7 @@ class Loads:
                     uptime = str(timedelta(seconds=uptime_seconds))
                     data['up'] = uptime
 
-                vmstat = utils.uni(subprocess.check_output('vmstat -s', shell=True)).splitlines()
+                vmstat = utils.uni(subprocess.check_output(['vmstat', '-s'], shell=False)).splitlines()
                 data['memstat'] = dict(mt=vmstat[0].split()[0],
                                        mf=vmstat[4].split()[0],
                                        mb=vmstat[5].split()[0],
@@ -91,15 +91,15 @@ class Loads:
                                        st=vmstat[7].split()[0],
                                        su=vmstat[8].split()[0])
 
-                vmstat_a = utils.uni(subprocess.check_output('vmstat', shell=True)).splitlines()[1:]
+                vmstat_a = utils.uni(subprocess.check_output(['vmstat'], shell=False)).splitlines()[1:]
                 vmstat_d = dict((k, v) for (k, v) in zip(vmstat_a[0].split(), vmstat_a[1].split()))
                 data['cpuusage'] = dict(ci=vmstat_d["wa"],
                                         cu=vmstat_d["sy"],
                                         cs=vmstat_d["us"])
 
-                dfout = utils.uni(subprocess.check_output(f'df -h "{self.images_dbase_dir}"', shell=True)).splitlines()[1].split()
+                dfout = utils.uni(subprocess.check_output(['df', '-h', self.images_dbase_dir], shell=False)).splitlines()[1].split()
                 data['fsarch'] = dfout[2:]
-                dfout = utils.uni(subprocess.check_output(f'df -h "{self.ramdisk_dir}"', shell=True)).splitlines()[1].split()
+                dfout = utils.uni(subprocess.check_output(['df', '-h', self.ramdisk_dir], shell=False)).splitlines()[1].split()
                 data['fsramdisk'] = dfout[2:]
         except Exception:
             log.critical("loads error", exc_info=1)
