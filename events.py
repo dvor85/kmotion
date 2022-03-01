@@ -63,7 +63,7 @@ class Events:
         else:
             self.feed = int(feed_ip)
         if not self.feed:
-            raise ValueError(f"Can't {state} event. Unrecognized feed {self.feed}")
+            raise ValueError(f"Can't {state} event. {feed_ip} is not configured.")
 
         self.event_file = Path(self.ramdisk_dir, 'events', str(self.feed))
         self.state_file = Path(self.ramdisk_dir, 'states', str(self.feed))
@@ -74,7 +74,7 @@ class Events:
         log.debug(f'find feed by ip "{ip}"')
         if ip:
             for feed, conf in iteritems(self.config['feeds']):
-                if conf.get('feed_enabled', False) and ip in conf['feed_url']:
+                if conf.get('feed_enabled', False) and conf.get('ext_motion_detector', False) and ip in conf['feed_url']:
                     return feed
 
     def set_last_state(self, state):

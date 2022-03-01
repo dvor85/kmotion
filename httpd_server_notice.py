@@ -50,15 +50,16 @@ class HttpServerNotice(Process):
                 status = '404 Not Found'
 
             log.debug(body)
+            log.info(f"{env['REMOTE_ADDR']} {env['REQUEST_METHOD']} {env['PATH_INFO']}")
             ev = events.Events(self.kmotion_dir, env['REMOTE_ADDR'], events.STATE_START)
             threading.Thread(target=ev.start).start()
 
         except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
+            log.error(f'{exc_type}: {exc_value}')
             status = '500 Error'
             if log.getEffectiveLevel() == logger.DEBUG:
                 body = f'{exc_type}: {exc_value}'
-                log.error(body)
         finally:
             respond(status, [('Content-type', 'text/plain'),
                              ('Content-Length', str(len(body)))])

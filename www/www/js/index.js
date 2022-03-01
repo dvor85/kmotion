@@ -2128,16 +2128,18 @@ KM.display_archive_ = function () {
             document.onkeydown = function(e) {
                     switch (e.which) {
                     case 39:
-                        snap_id+=1;
-                        playlist_hlight(snap_id);
+                        direct=1;
+                        play();
                         break;
                     case 37:
-                        snap_id-=1;
-                        playlist_hlight(snap_id);
+                        direct=-1;
+                        play();
                         break;
                     case 32:
                         playpause();
                         break;
+                    default:
+                        return true;
                     }
                 return false;
                 }
@@ -2149,20 +2151,28 @@ KM.display_archive_ = function () {
         }
 
         function play() {
-            KM.kill_timeout_ids(KM.ARCH_LOOP);
-            playlist_hlight(snap_id);
-            snap.src = movies['snaps'][snap_id]['file'];
-            time = new Date().getTime();
-            display_secs = movies['snaps'][snap_id]['start'];
-            update_playback_info(display_secs);
-            progress();
-            snap_id+=direct;
+            if (movies['snaps'][snap_id + direct]) {
+                snap_id+=direct;
+                KM.kill_timeout_ids(KM.ARCH_LOOP);
+                playlist_hlight(snap_id);
+                snap.src = movies['snaps'][snap_id]['file'];
+                time = new Date().getTime();
+                display_secs = movies['snaps'][snap_id]['start'];
+                update_playback_info(display_secs);
+                progress();
+            } else {
+                stop();
+            }
+
+        }
+
+        function stop() {
+            KM.session_id.current++;
         }
 
         function progress() {
             var rate = document.getElementById('playback_rate');
             if (rate !== null) {
-                direct = Math.sign(rate.value);
                 fps = Math.abs(rate.value);
             }
             delay = 1000/fps;
@@ -2171,7 +2181,7 @@ KM.display_archive_ = function () {
         function playpause() {
             KM.kill_timeout_ids(KM.ARCH_LOOP);
             if (KM.session_id.current === session_id) {
-                KM.session_id.current++;
+                stop();
             } else {
                 session_id = KM.session_id.current;
                 play();
@@ -2183,6 +2193,7 @@ KM.display_archive_ = function () {
             set_player: set_player,
             playpause: playpause,
             play: play,
+            stop: stop,
             progress: progress
         }
     }();
@@ -3447,6 +3458,8 @@ KM.videoPlayer = function() {
                     html5playerPlayPause();
                     tm=html5player.currentTime;
                     break;*/
+                default:
+                    return true;
                 }
                 KM.update_playback_info(cur_event_secs);
                 html5player=null;

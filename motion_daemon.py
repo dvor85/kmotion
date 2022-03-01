@@ -13,7 +13,7 @@ from six import iterkeys, iteritems
 from pathlib import Path
 
 
-log = logger.getLogger('kmotion', logger.DEBUG)
+log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class MotionDaemon(Process):
