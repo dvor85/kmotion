@@ -64,7 +64,7 @@ class CameraLost:
 
     def reboot_camera(self):
         try:
-            res = requests.get(self.reboot_url, auth=(self.feed_username, self.feed_password))
+            res = requests.get(self.reboot_url)
             res.raise_for_status()
             log.info(f'reboot {self.cam_id} success')
             return True
