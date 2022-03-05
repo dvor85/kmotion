@@ -41,19 +41,13 @@ class Kmotion_split(Process):
             self.locks[feed] = threading.Lock()
         lock = self.locks.get(feed)
 
-        self.semaphore.acquire()
-        try:
-            lock.acquire()
-            try:
+        with self.semaphore:
+            with lock:
                 event_file = Path(self.events_dir, feed)
 
-                if (time.time() - events.get_event_time(event_file)) >= self.max_duration:
+                if (time.time() - events.get_event_start_time(event_file)) >= self.max_duration:
                     log.debug(f'split feed {feed}')
                     events.Events(self.kmotion_dir, feed, events.STATE_START).end()
-            finally:
-                lock.release()
-        finally:
-            self.semaphore.release()
 
     def run(self):
         log.info(f'starting daemon [{self.pid}]')

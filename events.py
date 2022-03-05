@@ -19,17 +19,30 @@ STATE_END = 'end'
 log = logger.getLogger('kmotion', logger.ERROR)
 
 
-def set_event_time(event_file):
-    with Path(event_file).open(mode='wb') as dump:
-        cPickle.dump(time.time(), dump)
+def set_event_start(event_file):
+    event_file = Path(event_file)
+    if event_file.exists() and event_file.stat().st_size > 0:
+        event_file.touch()
+    else:
+        with event_file.open(mode='wb') as dump:
+            cPickle.dump(time.time(), dump)
 
 
-def get_event_time(event_file):
+def get_event_change_time(event_file):
+    event_file = Path(event_file)
+    if event_file.exists():
+        return event_file.stat().st_mtime
+    else:
+        return time.time()
+
+
+def get_event_start_time(event_file):
+    event_file = Path(event_file)
     try:
-        with Path(event_file).open(mode='rb') as dump:
+        with event_file.open(mode='rb') as dump:
             return cPickle.load(dump)
     except Exception:
-        return time.time()
+        return get_event_change_time(event_file)
 
 
 def set_state(state_file, state):
@@ -83,11 +96,11 @@ class Events:
     def get_last_state(self):
         return get_state(self.state_file, self.state)
 
-    def set_event_time(self):
-        return set_event_time(self.event_file)
+    def set_event_start(self):
+        return set_event_start(self.event_file)
 
-    def get_event_time(self):
-        return get_event_time(self.event_file)
+    def get_event_start_time(self):
+        return get_event_start_time(self.event_file)
 
     def main(self):
         if len(self.get_prev_instances()) == 0:
@@ -105,7 +118,7 @@ class Events:
         must_start_actions = not self.event_file.is_file()
 
         log.debug(f'start: creating: {self.event_file}')
-        self.set_event_time()
+        self.set_event_start()
 
         if must_start_actions:
             actions.Actions(self.kmotion_dir, self.feed).start()

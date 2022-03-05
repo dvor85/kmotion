@@ -46,9 +46,9 @@ class Detector(Process):
         log.info(f'starting daemon [{self.pid}]')
         while self.active and len(self.config['feeds']) > 0:
             try:
-                for evf in self.events_dir.glob('*'):
+                for evf in self.events_dir.iterdir():
                     try:
-                        last_event_time = events.get_event_time(evf)
+                        last_event_time = events.get_event_change_time(evf)
                         if self.config['feeds'][int(evf.name)].get('ext_motion_detector', False) and (time.time() - last_event_time) >= self.no_motion_secs:
                             events.Events(self.kmotion_dir, evf.name, events.STATE_END).end()
                     except Exception as e:
