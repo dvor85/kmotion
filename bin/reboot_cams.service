@@ -4,4 +4,4 @@ Description=kmotion reboot cameras
 [Service]
 Type=simple
 User=videouser
-ExecStart=/usr/local/kmotion3/reboot_cams.py
+ExecStart=/usr/local/kmotion3/reboot_cams.py reboot
