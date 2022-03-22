@@ -64,7 +64,7 @@ class Kmotion_Hkd1(Process):
                     if _size > self.max_size:
                         log.warn('image storage limit reached')
                         try:
-                            fulld = next(self.images_dbase_dir.iterdir())
+                            fulld = sorted(self.images_dbase_dir.iterdir())[0]
                             if fulld.is_dir():
                                 d = fulld.name
                                 if time.strftime('%Y%m%d') == d:
