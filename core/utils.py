@@ -134,7 +134,7 @@ def makedirs(path, mode=0o775, user=None, group=None):
 
 def rmdir(path):
     path = Path(path)
-    shutil.rmtree(path.as_posix(), ignore_errors=True)
+    shutil.rmtree(path.as_posix())
     return not path.exists()
 
 
