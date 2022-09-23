@@ -45,7 +45,7 @@ class CameraLost:
         if len(self.get_prev_instances()) == 0:
             need_reboot = True
             time.sleep(60)
-            for t in range(10):
+            for _ in range(10):
                 try:
                     res = requests.get(self.camera_url, auth=(self.feed_username, self.feed_password))
                     res.raise_for_status()
@@ -54,9 +54,8 @@ class CameraLost:
                 finally:
                     time.sleep(60)
 
-            if need_reboot:
-                if self.reboot_camera():
-                    time.sleep(60)
+            if need_reboot and self.reboot_camera():
+                time.sleep(60)
             self.restart_thread(self.cam_id)
 
         else:

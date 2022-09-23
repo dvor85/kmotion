@@ -11,7 +11,6 @@ from core.config import Settings
 import argparse
 import requests
 import urllib
-from six import iterkeys
 from pathlib import Path
 
 log = logger.getLogger('kmotion', logger.ERROR)
@@ -54,7 +53,7 @@ class RebootCams():
         if self.options.cam:
             self.camera_ids = self.options.cam
         else:
-            self.camera_ids = sorted([f for f in iterkeys(self.config['feeds']) if self.config['feeds'][f].get('feed_enabled', False)])
+            self.camera_ids = sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled', False)])
 
     def reboot_cam(self, cam):
         state_file = Path(self.ramdisk_dir, 'states', str(cam))

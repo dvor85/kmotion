@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-from six import itervalues
 from pathlib import Path
 from core.config import Settings
 from core import utils, logger
@@ -37,10 +36,9 @@ class Config():
                       }
             exclude_options = ('feed_reboot_url',)
             config.update(self.config)
-            for conf in itervalues(config['feeds']):
-                for eo in exclude_options:
-                    if eo in conf:
-                        del(conf[eo])
+            for conf in config['feeds'].values():
+                for eo in set(conf).intersection(exclude_options):
+                    del(conf[eo])
 
             return config
         except Exception:

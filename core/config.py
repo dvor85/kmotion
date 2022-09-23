@@ -10,7 +10,7 @@ log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class Settings():
-    VERSION = '9.1.0'
+    VERSION = '9.1.1'
     _instance = None
     _lock = Lock()
 
@@ -43,8 +43,7 @@ class Settings():
             try:
                 self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
                 for section in self.kmotion_parser.sections():
-                    for k, v in self.kmotion_parser.items(section):
-                        config[k] = utils.parse_str(v)
+                    config.update({k: utils.parse_str(v) for k, v in self.kmotion_parser.items(section)})
                 config['log_level'] = _nameToLevel.get(config.get('log_level', 'info').upper(), logger.INFO)
                 log.setLevel(min(config['log_level'], log.getEffectiveLevel()))
             except Exception as e:
@@ -65,18 +64,10 @@ class Settings():
                           "display_feeds": {}
                           }
 
-                displays = {1: 1,
-                            2: 4,
-                            3: 9,
-                            4: 1,
-                            5: 6,
-                            6: 13,
-                            7: 8,
-                            8: 10,
-                            9: 2,
-                            10: 2,
-                            11: 2,
-                            12: 2}
+                displays = {1: 1, 2: 4, 3: 9,
+                            4: 1, 5: 6, 6: 13,
+                            7: 8, 8: 10, 9: 2,
+                            10: 2, 11: 2, 12: 2}
                 for display in displays:
                     config['display_feeds'][display] = []
 

@@ -9,7 +9,6 @@ from multiprocessing import Process
 from core import logger, utils
 import requests
 from core.config import Settings
-from six import iterkeys, iteritems
 from pathlib import Path
 
 
@@ -40,7 +39,7 @@ class MotionDaemon(Process):
         self.motion_webcontrol_port = config_main.get('motion_webcontrol_port', 8080)
 
     def feed2thread(self, feed):
-        return sorted([f for f in iterkeys(self.config['feeds']) if self.config['feeds'][f].get('feed_enabled', False)]).index(feed) + 1
+        return sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled', False)]).index(feed) + 1
 
     def count_motion_running(self):
         try:
@@ -51,9 +50,7 @@ class MotionDaemon(Process):
     def is_port_alive(self, port):
         try:
             out = utils.uni(subprocess.check_output(['netstat', '-n', '-t', '-l'], shell=False)).splitlines()
-            for l in out:
-                if str(port) in l:
-                    return True
+            return any(str(port) in l for l in out)
         except Exception:
             return False
 
@@ -111,7 +108,7 @@ class MotionDaemon(Process):
                     self.stop_motion()
                     self.start_motion()
 
-                for feed, conf in iteritems(self.config['feeds']):
+                for feed, conf in self.config['feeds'].items():
                     if conf.get('feed_enabled', False) and conf.get('ext_motion_detector', False):
                         self.pause_motion_detector(self.feed2thread(feed))
 

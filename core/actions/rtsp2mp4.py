@@ -79,12 +79,7 @@ class rtsp2mp4(action.Action):
                 audio = f"-c:a {codec} -ac 1 -ar 22050 -b:a 64k"
 
         metadata = f'-metadata creation_time="{dtime:%Y-%m-%d %H:%M:%S}" -metadata title="{self.feed_name}"'
-
-        if self.recode:
-            vcodec = f"-c:v libx264 -preset ultrafast -profile:v baseline -b:v {self.feed_kbs}k -qp 30"
-        else:
-            vcodec = '-c:v copy'
-
+        vcodec = f"-c:v libx264 -preset ultrafast -profile:v baseline -b:v {self.feed_kbs}k -qp 30" if self.recode else '-c:v copy'
         grab = f"ffmpeg -loglevel error -threads auto -rtsp_transport tcp -n -i {src} {vcodec} {audio} {metadata} {dst}"
 
         self.log.debug(f"try start grabbing {src} to {dst}")

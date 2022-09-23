@@ -5,8 +5,7 @@ import sys
 import re
 import pwd
 import shutil
-import six
-from six.moves import urllib_parse
+import urllib.parse
 from pathlib import Path
 
 
@@ -15,7 +14,7 @@ __re_spaces = re.compile(r'\s+')
 
 
 def url_add_auth(url, auth):
-    parts = urllib_parse.urlparse(url)
+    parts = urllib.parse.urlparse(url)
     return parts._replace(netloc="{auth}@{netloc}".format(auth=":".join(auth), netloc=parts.netloc)).geturl()
 
 
@@ -98,7 +97,7 @@ def chown(path, user=None, group=None):
     if user is None:
         _user = -1
     # user can either be an int (the uid) or a string (the system username)
-    elif isinstance(user, six.text_type):
+    elif isinstance(user, str):
         _user = _get_uid(user)
         if _user is None:
             raise LookupError("no such user: {!r}".format(user))
@@ -117,11 +116,7 @@ def chown(path, user=None, group=None):
 
 def get_dir_size(path):
     path = Path(path)
-    total_size = 0
-    for p in path.rglob('*'):
-        if p.is_file():
-            total_size += p.stat().st_size
-    return total_size
+    return sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
 
 
 def makedirs(path, mode=0o775, user=None, group=None):
@@ -146,35 +141,18 @@ def uni(s, from_encoding='utf8'):
     :return: unicode
     """
 
-    if isinstance(s, six.binary_type):
+    if isinstance(s, bytes):
         return s.decode(from_encoding, 'ignore')
-    return "{}".format(s)
+    return str(s)
 
 
 def utf(s, to_encoding='utf8'):
     """
     PY2 - Кодирует :s: в :to_encoding:
     """
-    try:
-        return six.ensure_binary(s, to_encoding, errors='ignore')
-    except TypeError:
-        try:
-            return six.binary_type(s)
-        except:
-            return s
-
-
-def str2(s, to_encoding='utf8'):
-    """
-    PY2 - Кодирует :s: в :to_encoding:
-    """
-    try:
-        return six.ensure_str(s, to_encoding, errors='ignore')
-    except TypeError:
-        try:
-            return six.text_type(s)
-        except:
-            return s
+    if isinstance(s, str):
+        return s.encode(to_encoding, errors='ignore')
+    return str(s)
 
 
 def sizeof_fmt(num, suffix="B"):

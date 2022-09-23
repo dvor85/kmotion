@@ -2,7 +2,7 @@
 
 import logging
 from logging.handlers import SysLogHandler, RotatingFileHandler
-import sys
+# import sys
 
 
 CRITICAL = 50

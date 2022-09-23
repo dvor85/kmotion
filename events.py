@@ -4,8 +4,7 @@
 import sys
 import subprocess
 from core import logger
-from six.moves import cPickle
-from six import iteritems
+import pickle
 import time
 from core.actions import actions
 import os
@@ -25,7 +24,7 @@ def set_event_start(event_file):
         event_file.touch()
     else:
         with event_file.open(mode='wb') as dump:
-            cPickle.dump(time.time(), dump)
+            pickle.dump(time.time(), dump)
 
 
 def get_event_change_time(event_file):
@@ -40,20 +39,20 @@ def get_event_start_time(event_file):
     event_file = Path(event_file)
     try:
         with event_file.open(mode='rb') as dump:
-            return cPickle.load(dump)
+            return pickle.load(dump)
     except Exception:
         return get_event_change_time(event_file)
 
 
 def set_state(state_file, state):
     with Path(state_file).open(mode='wb') as dump:
-        cPickle.dump(state, dump)
+        pickle.dump(state, dump)
 
 
 def get_state(state_file, state=STATE_END):
     try:
         with Path(state_file).open(mode='rb') as dump:
-            return cPickle.load(dump)
+            return pickle.load(dump)
     except Exception:
         return state
 
@@ -86,7 +85,7 @@ class Events:
     def find_feed_by_ip(self, ip):
         log.debug(f'find feed by ip "{ip}"')
         if ip:
-            for feed, conf in iteritems(self.config['feeds']):
+            for feed, conf in self.config['feeds'].items():
                 if conf.get('feed_enabled', False) and conf.get('ext_motion_detector', False) and ip in conf['feed_url']:
                     return feed
 

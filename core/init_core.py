@@ -7,7 +7,6 @@ Exports various methods used to initialize core configuration
 from core import logger
 from string import Template
 import os
-from six import iterkeys
 from core.config import Settings
 from pathlib import Path
 
@@ -46,7 +45,7 @@ class InitCore:
         self.www_dir = Path(self.kmotion_dir, 'www', 'www')
         self.wsgi_scripts = Path(self.kmotion_dir, 'wsgi')
 
-        self.camera_ids = sorted([f for f in iterkeys(config['feeds']) if config['feeds'][f].get('feed_enabled', False)])
+        self.camera_ids = sorted([f for f in config['feeds'] if config['feeds'][f].get('feed_enabled', False)])
 
     def init_ramdisk_dir(self):
         """
@@ -79,8 +78,8 @@ class InitCore:
                 try:
                     f_dir.mkdir(parents=True)
                     log.debug(f'creating \'{feed:02d}\' folder')
-                except OSError:
-                    pass
+                except OSError as e:
+                    log.error(e)
 
     def set_uid_gid_named_pipes(self, uid, gid):
         """

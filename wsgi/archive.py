@@ -3,7 +3,6 @@
 import datetime
 from core.config import Settings
 from core import utils, logger
-from six import iteritems, iterkeys
 from pathlib import Path
 
 log = logger.getLogger('kmotion', logger.ERROR)
@@ -37,14 +36,11 @@ class Archive():
 
     def get_feeds(self, date):
         feeds_list = {}
-        for feed, conf in iteritems(self.config['feeds']):
+        for feed, conf in self.config['feeds'].items():
             try:
                 if conf.get('feed_enabled'):
                     feed_title = Path(self.images_dbase_dir, date, f'{feed:02}', 'title')
-                    title = conf.get('feed_name', f'{feed:02}')
-                    if feed_title.is_file():
-                        title = feed_title.read_text()
-                    feeds_list[feed] = {'title': title}
+                    feeds_list[feed] = {'title': feed_title.read_text() if feed_title.is_file() else conf.get('feed_name', f'{feed:02}')}
             except Exception:
                 log.exception("Get feeds error")
 
@@ -59,18 +55,18 @@ class Archive():
 
     def journal_data(self, date, feed):
         journal = {"movies": [], "snaps": []}
-        if feed in iterkeys(self.config['feeds']):
+        if feed in self.config['feeds']:
             movies_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'movie')
             if movies_dir.is_dir():
                 for mf in movies_dir.iterdir():
                     end = datetime.datetime.fromtimestamp(mf.stat().st_mtime)
                     dt = datetime.datetime.now() - end
                     if dt.total_seconds() > 10:
-                        movie = {}
-                        movie['start'] = self.hhmmss_secs(mf.stem[-6:])
-                        movie['end'] = self.hhmmss_secs(end.strftime('%H%M%S'))
-                        movie['file'] = Path('/images_dbase', mf.relative_to(self.images_dbase_dir)).as_posix()
-                        journal['movies'].append(movie)
+                        journal['movies'].append({
+                            'start': self.hhmmss_secs(mf.stem[-6:]),
+                            'end': self.hhmmss_secs(end.strftime('%H%M%S')),
+                            'file': Path('/images_dbase', mf.relative_to(self.images_dbase_dir)).as_posix()
+                        })
 
             snaps_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'snap')
             if snaps_dir.is_dir():

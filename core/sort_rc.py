@@ -25,22 +25,14 @@ def sort_rc(file_rc):
         file_rc = Path(file_rc)
 
     with file_rc.open(mode='r+') as f_obj:
-        for line in [line.rstrip() for line in f_obj]:
-            if line == '':
-                continue
+        for line in map(str.strip, f_obj):
             if len(line) > 2 and line[0] == '[' and line[-1] == ']' and line != section:
                 section = line
-                sections[section] = []
-                continue
-            sections[section].append(line)
+            elif line and section:
+                sections.setdefault(section, []).append(line)
 
-        keys = list(sections.keys())
-        keys.sort()
         f_obj.seek(0)
-
-        for section in keys:
-            f_obj.write(f'\n{section}\n')
-            sections[section].sort()
-            for option in sections[section]:
-                f_obj.write(f"{option}\n")
+        for section in sorted(sections):
+            print(section, file=f_obj, sep='\n')
+            print(*sorted(sections[section]), file=f_obj, sep='\n')
         f_obj.truncate()

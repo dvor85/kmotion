@@ -58,7 +58,6 @@ class Kmotion_Hkd1(Process):
                 self.read_config()
 
                 while self.sleep(15 * 60):
-                    # if > 90% of max_size_gb, delete oldest
                     _size = utils.get_dir_size(self.images_dbase_dir)
                     log.info(f'size of {self.images_dbase_dir} = {utils.sizeof_fmt(_size)}')
                     if _size > self.max_size:

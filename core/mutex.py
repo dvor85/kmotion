@@ -19,8 +19,7 @@ class Mutex():
         self.mutex = mutex
         log.debug(f'init_mutex() - init mutex : {self.mutex}')
         self.mutex_dir = Path(self.kmotion_dir, 'www', 'mutex', self.mutex)
-        if not self.mutex_dir.is_dir():
-            self.mutex_dir.mkdir(parents=True)
+        self.mutex_dir.mkdir(parents=True, exist_ok=True)
 
     def acquire(self, pid):
         """
@@ -62,17 +61,13 @@ class Mutex():
         self.acquire(os.getpid())
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *args):
         self.release(os.getpid())
 
     def is_lock(self):
-
-        files = os.listdir(self.mutex_dir)
-        files.sort()
-        for m in files:
-            if not Path('/proc', m).is_dir():
-                self.release(m)
-            else:
+        for m in sorted(os.listdir(self.mutex_dir)):
+            if Path('/proc', m).is_dir():
                 return True
-
+            else:
+                self.release(m)
         return False

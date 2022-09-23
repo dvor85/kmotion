@@ -11,7 +11,6 @@ import time
 import json
 import subprocess
 import threading
-from six import iterkeys, iteritems
 from multiprocessing import Process
 from camera_lost import CameraLost
 from core.mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
@@ -62,33 +61,31 @@ class Kmotion_setd(Process):
                         raise Exception('Incorrect configuration!')
 
                     www_parser = mutex_www_parser_rd(self.kmotion_dir, www_rc)
-                    for section in iterkeys(self.config):
+                    for section in self.config:
                         if section == 'feeds':
-                            for feed in iterkeys(self.config[section]):
+                            for feed in self.config[section]:
                                 feed_section = f'motion_feed{int(feed):02}'
-                                if not www_parser.has_section(feed_section):
+                                if feed_section not in www_parser:
                                     www_parser.add_section(feed_section)
-                                for k, v in iteritems(self.config[section][feed]):
+                                for k, v in self.config[section][feed].items():
                                     if k == 'reboot_camera' and utils.parse_str(v) is True and www_rc_path.name == 'www_rc':
                                         cam_lost = CameraLost(self.kmotion_dir, feed)
                                         threading.Thread(target=cam_lost.reboot_camera).start()
                                     else:
                                         must_reload = True
-                                        val = str(v)
-                                        www_parser.set(feed_section, k, val)
+                                        www_parser.set(feed_section, k, str(v))
                         elif section == 'display_feeds':
                             misc_section = 'misc'
-                            if not www_parser.has_section(misc_section):
+                            if misc_section not in www_parser:
                                 www_parser.add_section(misc_section)
-                            for k, v in iteritems(self.config[section]):
+                            for k, v in self.config[section].items():
                                 if len(v) > 0:
-                                    www_parser.set(misc_section, f'display_feeds_{int(k):02}', ','.join([str(i) for i in v]))
+                                    www_parser.set(misc_section, f'display_feeds_{int(k):02}', ','.join(map(str, v)))
                         elif isinstance(self.config[section], dict):
-                            if not www_parser.has_section(section):
+                            if section not in www_parser:
                                 www_parser.add_section(section)
-                            for k, v in iteritems(self.config[section]):
-                                val = str(v)
-                                www_parser.set(section, k, val)
+                            [www_parser.set(section, k, str(v)) for k, v in self.config[section].items()]
+
                     mutex_www_parser_wr(self.kmotion_dir, www_parser, www_rc)
 
                     if must_reload and www_rc_path.name == 'www_rc':

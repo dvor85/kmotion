@@ -4,7 +4,7 @@ Created on 18.12.2014
 
 @author: demon
 '''
-from six.moves import configparser
+import configparser
 from core import sort_rc
 from core.mutex import Mutex
 from pathlib import Path
