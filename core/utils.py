@@ -84,47 +84,9 @@ def _get_gid(name):
     return None
 
 
-def chown(path, user=None, group=None):
-    """Change owner user and group of the given path.
-    user and group can be the uid/gid or the user/group names, and in that case,
-    they are converted to their respective uid/gid.
-    """
-
-    _user = user
-    _group = group
-
-    # -1 means don't change it
-    if user is None:
-        _user = -1
-    # user can either be an int (the uid) or a string (the system username)
-    elif isinstance(user, str):
-        _user = _get_uid(user)
-        if _user is None:
-            raise LookupError("no such user: {!r}".format(user))
-
-    if group is None:
-        _group = -1
-    elif not isinstance(group, int):
-        _group = _get_gid(group)
-        if _group is None:
-            raise LookupError("no such group: {!r}".format(group))
-
-    if not isinstance(path, Path):
-        path = Path(path)
-    os.chown(path.as_posix(), _user, _group)
-
-
 def get_dir_size(path):
     path = Path(path)
     return sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
-
-
-def makedirs(path, mode=0o775, user=None, group=None):
-    path = Path(path)
-    if not path.is_dir():
-        path.mkdir(mode, parents=True)
-        path.chmod(mode)
-        chown(path, user, group)
 
 
 def rmdir(path):
@@ -150,9 +112,9 @@ def utf(s, to_encoding='utf8'):
     """
     PY2 - Кодирует :s: в :to_encoding:
     """
-    if isinstance(s, str):
-        return s.encode(to_encoding, errors='ignore')
-    return str(s)
+    if isinstance(s, bytes):
+        return s
+    return str(s).encode(to_encoding, errors='ignore')
 
 
 def sizeof_fmt(num, suffix="B"):
