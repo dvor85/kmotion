@@ -67,7 +67,7 @@ def _get_uid(name):
     except AttributeError:
         result = None
     if result is not None:
-        return result[2]
+        return result
     return None
 
 
@@ -80,7 +80,7 @@ def _get_gid(name):
     except AttributeError:
         result = None
     if result is not None:
-        return result[3]
+        return result
     return None
 
 
@@ -93,6 +93,43 @@ def rmdir(path):
     path = Path(path)
     shutil.rmtree(path.as_posix())
     return not path.exists()
+
+
+def mkdir(path, mode=0o775, parents=True, exist_ok=True):
+    path = Path(path)
+    if not path.is_dir():
+        m = os.umask(0o000)
+        path.mkdir(mode=mode, parents=parents, exist_ok=exist_ok)
+        os.umask(m)
+
+
+def chown(path, user=None, group=None):
+    """Change owner user and group of the given path.
+    user and group can be the uid/gid or the user/group names, and in that case,
+    they are converted to their respective uid/gid.
+    """
+
+    _user = user
+    _group = group
+
+    # -1 means don't change it
+    if user is None:
+        _user = -1
+    # user can either be an int (the uid) or a string (the system username)
+    elif isinstance(user, str):
+        _user = _get_uid(user)
+        if _user is None:
+            raise LookupError("no such user: {!r}".format(user))
+
+    if group is None:
+        _group = -1
+    elif not isinstance(group, int):
+        _group = _get_gid(group)
+        if _group is None:
+            raise LookupError("no such group: {!r}".format(group))
+
+    path = Path(path)
+    os.chown(path.as_posix(), _user, _group)
 
 
 def uni(s, from_encoding='utf8'):

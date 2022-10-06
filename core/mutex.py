@@ -6,7 +6,7 @@ Export mutex lock functions for the '../www/mutex/' files
 import os
 import time
 from pathlib import Path
-from core import logger
+from core import logger, utils
 
 
 log = logger.getLogger('kmotion', logger.ERROR)
@@ -19,7 +19,8 @@ class Mutex():
         self.mutex = mutex
         log.debug(f'init_mutex() - init mutex : {self.mutex}')
         self.mutex_dir = Path(self.kmotion_dir, 'www', 'mutex', self.mutex)
-        self.mutex_dir.mkdir(parents=True, exist_ok=True)
+
+        utils.mkdir(self.mutex_dir)
 
     def acquire(self, pid):
         """

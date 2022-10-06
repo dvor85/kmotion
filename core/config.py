@@ -6,7 +6,7 @@ from core import logger, utils
 from threading import Lock
 from logging import _nameToLevel
 
-log = logger.getLogger('kmotion', logger.ERROR)
+log = logger.getLogger('kmotion', logger.DEBUG)
 
 
 class Settings():
@@ -42,6 +42,7 @@ class Settings():
             config = {}
             try:
                 self.kmotion_parser = mutex_kmotion_parser_rd(self.kmotion_dir)
+                log.debug(self.kmotion_parser.sections())
                 for section in self.kmotion_parser.sections():
                     config.update({k: utils.parse_str(v) for k, v in self.kmotion_parser.items(section)})
                 config['log_level'] = _nameToLevel.get(config.get('log_level', 'info').upper(), logger.INFO)

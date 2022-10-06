@@ -81,7 +81,7 @@ class InitMotion:
             mask += image_line * px_mult
 
         masks_dir = Path(self.kmotion_dir, 'core', 'masks')
-        masks_dir.mkdir(parents=True, exist_ok=True)
+        utils.mkdir(masks_dir)
         with Path(masks_dir, f'mask{feed:02d}.pgm').open(mode='wb') as f_obj:
             f_obj.write(b'P5\n')
             f_obj.write(utils.utf(f'{image_width} {image_height}\n'))
@@ -100,7 +100,7 @@ class InitMotion:
         """
 
         motion_conf_dir = Path(self.kmotion_dir, 'core', 'motion_conf')
-        motion_conf_dir.mkdir(parents=True, exist_ok=True)
+        utils.mkdir(motion_conf_dir)
         # delete all files in motion_conf
         for del_file in motion_conf_dir.glob('*'):
             if del_file.is_file():

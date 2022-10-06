@@ -94,7 +94,7 @@ class rtsp2mp4(action.Action):
             movie_dir = Path(self.images_dbase_dir, dtime.strftime("%Y%m%d"), f'{self.feed:02d}', 'movie')
 
             if len(self.get_grabber_pids()) == 0:
-                movie_dir.mkdir(parents=True, exist_ok=True)
+                utils.mkdir(movie_dir)
                 dst = Path(movie_dir, f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.mp4')
                 self.start_grab(self.feed_grab_url, dst, dtime)
 

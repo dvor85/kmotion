@@ -4,7 +4,7 @@
 Exports various methods used to initialize core configuration
 """
 
-from core import logger
+from core import logger, utils
 from string import Template
 import os
 from core.config import Settings
@@ -60,7 +60,7 @@ class InitCore:
         states_dir = Path(self.ramdisk_dir, 'states')
         if not states_dir.is_dir():
             log.debug('creating \'states\' folder')
-            states_dir.mkdir(parents=True)
+            utils.mkdir(states_dir)
 
         for state_file in states_dir.glob('*'):
             if state_file.is_file():
@@ -70,13 +70,13 @@ class InitCore:
         events_dir = Path(self.ramdisk_dir, 'events')
         if not events_dir.is_dir():
             log.debug('creating \'events\' folder')
-            events_dir.mkdir(parents=True)
+            utils.mkdir(events_dir)
 
         for feed in self.camera_ids:
             f_dir = Path(self.ramdisk_dir, f'{feed:02d}')
             if not f_dir.is_dir():
                 try:
-                    f_dir.mkdir(parents=True)
+                    utils.mkdir(f_dir)
                     log.debug(f'creating \'{feed:02d}\' folder')
                 except OSError as e:
                     log.error(e)
@@ -115,7 +115,7 @@ class InitCore:
 
         try:
             vhost_dir = Path(self.kmotion_dir, 'www', 'vhosts')
-            vhost_dir.mkdir(parents=True, exist_ok=True)
+            utils.mkdir(vhost_dir)
             tmpl_dir = Path(self.kmotion_dir, 'www', 'templates')
             for vhost_tmpl in tmpl_dir.glob('*'):
                 Path(vhost_dir, vhost_tmpl.name).write_text(Template(vhost_tmpl.read_text()).safe_substitute(**self.__dict__))

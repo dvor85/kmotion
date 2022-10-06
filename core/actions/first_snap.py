@@ -4,6 +4,7 @@ import time
 import shutil
 import datetime
 from core.actions import action
+from core import utils
 from pathlib import Path
 
 
@@ -31,7 +32,7 @@ class first_snap(action.Action):
         if src.is_file():
             try:
                 self.log.debug(f'copy {src} to {dst}')
-                dst.parent.mkdir(parents=True, exist_ok=True)
+                utils.mkdir(dst.parent)
                 time.sleep(1)
                 shutil.copy(src, dst)
             except Exception:

@@ -73,7 +73,7 @@ class MotionDaemon(Process):
         if m_conf.is_file():
             log.info('starting motion')
             motion_out = Path('/var/log/kmotion/motion.log')
-            motion_out.parent.mkdir(parents=True, exist_ok=True)
+            utils.mkdir(motion_out.parent)
             self.motion_daemon = subprocess.Popen(['motion', '-c', m_conf, '-d', '4', '-l', motion_out], close_fds=True, shell=False)
         else:
             log.critical('no motion.conf, motion not active')

@@ -8,7 +8,7 @@ Copys, moves or deletes files
 import time
 import shutil
 import datetime
-from core import logger
+from core import logger, utils
 from multiprocessing import Process
 import os
 from pathlib import Path
@@ -79,7 +79,7 @@ class Hkd2_Feed():
                 if src.is_file() and self.feed_snap_enabled and self.snap_time <= dtime:
                     try:
                         log.debug(f'service_snap() - copy {src} to {dst}')
-                        dst.parent.mkdir(parents=True, exist_ok=True)
+                        utils.mkdir(dst.parent)
                         shutil.copy(src, dst)
                     except Exception:
                         log.exception('service_snap() - error while copy jpg to snap dir.')
@@ -97,7 +97,7 @@ class Hkd2_Feed():
         # updates 'name' with name string
         try:
             title = Path(self.images_dbase_dir, time.strftime('%Y%m%d'), f'{self.feed:02}', 'title')
-            title.parent.mkdir(parents=True, exist_ok=True)
+            utils.mkdir(title.parent)
             title.write_text(self.feed_name)
         except Exception:
             log.critical('** CRITICAL ERROR **', exc_info=1)
