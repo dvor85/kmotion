@@ -58,12 +58,11 @@ class MotionDaemon(Process):
         while not self.is_port_alive(self.motion_webcontrol_port):
             self.sleep(0.5)
         res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{thread}/detection/pause", timeout=3)
-        try:
-            res.raise_for_status()
+        if res.ok:
             log.debug(f'pause detection feed_thread {thread} success')
             return True
-        except Exception:
-            log.error(f'pause detection feed_thread {thread} failed with status code {res.getcode()}')
+        else:
+            log.error(f'pause detection feed_thread {thread} failed with status code {res.status_code}')
 
     def start_motion(self):
         # check for a 'motion.conf' file before starting 'motion'

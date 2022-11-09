@@ -46,13 +46,10 @@ class CameraLost:
             need_reboot = True
             time.sleep(60)
             for _ in range(10):
-                try:
-                    res = requests.get(self.camera_url, auth=(self.feed_username, self.feed_password))
-                    res.raise_for_status()
-                except Exception:
+                res = requests.get(self.camera_url, auth=(self.feed_username, self.feed_password))
+                if not res.ok:
                     log.error(f'error while getting image from camera {self.cam_id}')
-                finally:
-                    time.sleep(60)
+                time.sleep(60)
 
             if need_reboot and self.reboot_camera():
                 time.sleep(60)
@@ -62,22 +59,20 @@ class CameraLost:
             log.error(f'{self.name} {self.cam_id} already running')
 
     def reboot_camera(self):
-        try:
-            res = requests.get(self.reboot_url)
-            res.raise_for_status()
+        res = requests.get(self.reboot_url)
+        if res.ok:
             log.info(f'reboot {self.cam_id} success')
             return True
-        except Exception:
-            log.debug(f'reboot {self.cam_id} failed with status code {res.getcode()}')
+        else:
+            log.debug(f'reboot {self.cam_id} failed with status code {res.status_code}')
 
     def restart_thread(self, cam_id):
-        try:
-            res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{cam_id}/action/restart")
-            res.raise_for_status()
+        res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{cam_id}/action/restart")
+        if res.ok:
             log.debug(f'restart camera {cam_id} success')
             return True
-        except Exception:
-            log.debug(f'restart camera {cam_id} failed with status code {res.getcode()}')
+        else:
+            log.debug(f'restart camera {cam_id} failed with status code {res.status_code}')
 
     def get_prev_instances(self):
         try:
