@@ -47,8 +47,12 @@ class CameraLost:
             time.sleep(60)
             for _ in range(10):
                 res = requests.get(self.camera_url, auth=(self.feed_username, self.feed_password))
-                if not res.ok:
+                need_reboot = not res.ok
+                if need_reboot:
                     log.error(f'error while getting image from camera {self.cam_id}')
+                else:
+                    break
+
                 time.sleep(60)
 
             if need_reboot and self.reboot_camera():
