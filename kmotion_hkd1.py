@@ -7,10 +7,12 @@ configuration. Checks the current kmotion software version every 24 hours.
 """
 
 import time
+import sys
 from core import logger, utils
 from multiprocessing import Process
 from core.config import Settings
 from pathlib import Path
+import subprocess
 
 log = logger.getLogger('kmotion', logger.ERROR)
 www_logs = logger.getLogger('www_logs', logger.DEBUG)
@@ -41,7 +43,15 @@ class Kmotion_Hkd1(Process):
         config_main = Settings.get_instance(self.kmotion_dir).get('kmotion_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.images_dbase_dir = Path(config_main['images_dbase_dir'])
-        self.max_size = config_main['images_dbase_limit_gb'] * 2 ** 30
+        fs_size = sys.maxsize
+        try:
+            out = utils.uni(subprocess.check_output(['df', self.images_dbase_dir], shell=False)).splitlines()[-1]
+            fs_size = int(out.split()[1]) * 1024
+        except Exception as e:
+            log.error(e)
+
+        self.max_size = min(config_main['images_dbase_limit_gb'] * 2 ** 30, fs_size)
+        log.info(f'Max size of {self.images_dbase_dir} = {utils.sizeof_fmt(self.max_size)}')
 
     def run(self):
         """

@@ -47,7 +47,7 @@ class InitCore:
 
         self.camera_ids = sorted([f for f in config['feeds'] if config['feeds'][f].get('feed_enabled', False)])
 
-    def init_ramdisk_dir(self):
+    def init_dirs(self):
         """
         Init the ramdisk setting up the kmotion, events and tmp folders.
         Exception trap in case dir created between test and mkdirs.
@@ -56,7 +56,8 @@ class InitCore:
         excepts :
         return  : none
         """
-        log.debug('init ramdisk dir')
+        log.debug('init dirs')
+        utils.mkdir(self.images_dbase_dir)
         states_dir = Path(self.ramdisk_dir, 'states')
         if not states_dir.is_dir():
             log.debug('creating \'states\' folder')
@@ -128,5 +129,5 @@ if __name__ == '__main__':
     kmotion_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     print(kmotion_dir)
     InitCore(kmotion_dir).gen_vhost()
-    InitCore(kmotion_dir).init_ramdisk_dir()
+    InitCore(kmotion_dir).init_dirs()
     InitCore(kmotion_dir).set_uid_gid_named_pipes(os.getuid(), os.getgid())

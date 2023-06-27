@@ -80,7 +80,7 @@ class Kmotion:
         www_logs.info('kmotion starting up')
 
         # init the ramdisk dir
-        self.init_core.init_ramdisk_dir()
+        self.init_core.init_dirs()
 
         self.init_core.gen_vhost()
 
