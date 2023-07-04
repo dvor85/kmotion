@@ -126,11 +126,11 @@ daemon off
 quiet on
 webcontrol_localhost on
 webcontrol_port {self.motion_webcontrol_port}
-webcontrol_interface 2
+#webcontrol_interface 2
 stream_localhost on
 text_right %Y-%m-%d\\n%T
-text_left CAMERA %t\\nD %D N %N
-movie_output off
+text_left CAMERA %t
+#movie_output off
 despeckle_filter EedDl
 
 ''')
@@ -201,8 +201,8 @@ post_capture 10
                 f_obj1.write('locate_motion_mode {0}\n'.format('on' if self.config['feeds'][feed].get('feed_show_box') else 'off'))
                 f_obj1.write('locate_motion_style box\n')
 
-                f_obj1.write('picture_output {0}\n'.format('on' if fps > 1 else 'off'))
-                f_obj1.write('picture_quality {0}\n'.format(self.config['feeds'][feed].get('feed_quality', 85)))
+                # f_obj1.write('picture_output {0}\n'.format('on' if fps > 1 else 'off'))
+                # f_obj1.write('picture_quality {0}\n'.format(self.config['feeds'][feed].get('feed_quality', 85)))
                 f_obj1.write(f'picture_filename {feed:02d}/%Y%m%d%H%M%S%q\n')
                 f_obj1.write('snapshot_interval 1\n')
                 f_obj1.write(f'snapshot_filename {feed:02d}/%Y%m%d%H%M%S\n')

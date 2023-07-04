@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
 """
 Called by the kmotion exe file this module re-initialises the kmotion core then
 reloads the kmotion daemon configs
@@ -157,6 +156,6 @@ if __name__ == '__main__':
         www_logs.info('kmotion shutting down')
         log.info("Exit")
     except Exception as e:
-        log.error(e)
+        log.critical('** CRITICAL ERROR **', exc_info=1)
         www_logs.error(e)
         raise e
