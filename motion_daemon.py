@@ -11,7 +11,6 @@ import requests
 from core.config import Settings
 from pathlib import Path
 
-
 log = logger.getLogger('kmotion', logger.ERROR)
 
 
@@ -49,8 +48,7 @@ class MotionDaemon(Process):
 
     def is_port_alive(self, port):
         try:
-            out = utils.uni(subprocess.check_output(['netstat', '-n', '-t', '-l'], shell=False)).splitlines()
-            return any(str(port) in l for l in out)
+            return bool(subprocess.check_output(['ss', '-lnt4H', f'sport = :{port}'], shell=False))
         except Exception:
             return False
 
