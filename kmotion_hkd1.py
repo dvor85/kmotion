@@ -80,12 +80,12 @@ class Kmotion_Hkd1(Process):
                                     if time.strftime('%Y%m%d') == d:
                                         log.error("** CRITICAL ERROR ** crash - delete todays data, 'images_dbase' is too small")
                                         www_logs.error("Deleting todays data, 'images_dbase' is too small")
-
-                                    log.info(f'try to delete {fulld}')
-                                    if utils.rmdir(fulld):
-                                        log.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
-                                        www_logs.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
-                                        break
+                                    if not d.startswith('.'):
+                                        log.info(f'try to delete {fulld}')
+                                        if utils.rmdir(fulld):
+                                            log.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
+                                            www_logs.warn(f'Deleting archive data for {d[:4]}/{d[4:6]}/{d[6:8]}')
+                                            break
                             except Exception as e:
                                 log.error(f'deleting of "{fulld}" error: {e}')
 

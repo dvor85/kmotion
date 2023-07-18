@@ -47,7 +47,7 @@ class Archive():
         return feeds_list
 
     def get_dates(self):
-        dates = sorted([i.name for i in self.images_dbase_dir.iterdir() if i.is_dir()], reverse=True)
+        dates = sorted([i.name for i in self.images_dbase_dir.iterdir() if i.is_dir() and not i.name.startswith('.')], reverse=True)
         return dates
 
     def hhmmss_secs(self, hhmmss_str):

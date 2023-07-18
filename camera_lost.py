@@ -60,7 +60,7 @@ class CameraLost:
             self.restart_thread(self.cam_id)
 
         else:
-            log.error(f'{self.name} {self.cam_id} already running')
+            log.warn(f'{self.name} {self.cam_id} already running')
 
     def reboot_camera(self):
         res = requests.get(self.reboot_url)
