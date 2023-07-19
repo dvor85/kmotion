@@ -45,6 +45,7 @@ class Hkd2_Feed():
         config = cfg.get('www_rc')
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
         self.images_dbase_dir = Path(config_main['images_dbase_dir'])
+        self.today_dir = self.images_dbase_dir / '.today'
 
         self.feed_snap_interval = config['feeds'][self.feed].get('feed_snap_interval', 0)
         self.feed_snap_enabled = self.feed_snap_interval > 0
@@ -74,7 +75,7 @@ class Hkd2_Feed():
             if jpg != 'last.jpg':
                 src = Path(jpg_dir, jpg)
                 dtime = datetime.datetime.fromtimestamp(src.stat().st_mtime)
-                dst = Path(self.images_dbase_dir, f'{dtime:%Y%m%d}', f'{self.feed:02}', 'snap', f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.jpg')
+                dst = Path(self.today_dir, f'{dtime:%Y%m%d}', f'{self.feed:02}', 'snap', f'{self.feed}_{dtime:%Y%m%d_%H%M%S}.jpg')
 
                 if src.is_file() and self.feed_snap_enabled and self.snap_time <= dtime:
                     try:
@@ -96,7 +97,7 @@ class Hkd2_Feed():
     def update_title(self):
         # updates 'name' with name string
         try:
-            title = Path(self.images_dbase_dir, time.strftime('%Y%m%d'), f'{self.feed:02}', 'title')
+            title = Path(self.today_dir, time.strftime('%Y%m%d'), f'{self.feed:02}', 'title')
             utils.mkdir(title.parent)
             title.write_text(self.feed_name)
         except Exception:

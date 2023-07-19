@@ -91,7 +91,7 @@ class rtsp2mp4(action.Action):
         action.Action.start(self)
         try:
             dtime = datetime.datetime.now()
-            movie_dir = Path(self.images_dbase_dir, dtime.strftime("%Y%m%d"), f'{self.feed:02d}', 'movie')
+            movie_dir = Path(self.images_dbase_dir, '.today', dtime.strftime("%Y%m%d"), f'{self.feed:02d}', 'movie')
 
             if len(self.get_grabber_pids()) == 0:
                 utils.mkdir(movie_dir)
