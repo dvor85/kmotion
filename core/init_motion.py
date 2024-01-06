@@ -201,6 +201,7 @@ post_capture 10
                 f_obj1.write('locate_motion_mode {0}\n'.format('on' if self.config['feeds'][feed].get('feed_show_box') else 'off'))
                 f_obj1.write('locate_motion_style box\n')
 
+                f_obj1.write('movie_output off\n')
                 # f_obj1.write('picture_output {0}\n'.format('on' if fps > 1 else 'off'))
                 # f_obj1.write('picture_quality {0}\n'.format(self.config['feeds'][feed].get('feed_quality', 85)))
                 f_obj1.write(f'picture_filename {feed:02d}/%Y%m%d%H%M%S%q\n')

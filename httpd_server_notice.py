@@ -43,11 +43,9 @@ class HttpServerNotice(Process):
     def application(self, env, respond):
         try:
             body = ''
+            status = '200 OK'
             if log.getEffectiveLevel() == logger.DEBUG:
-                status = '200 OK'
                 body = f"{events.STATE_START} event for {env['REMOTE_ADDR']}"
-            else:
-                status = '404 Not Found'
 
             log.debug(body)
             log.info(f"{env['REMOTE_ADDR']} {env['REQUEST_METHOD']} {env['PATH_INFO']}")
