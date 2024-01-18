@@ -1,11 +1,11 @@
 [dirs]
-images_dbase_dir = /mnt/kmotion/images_dbase
+archive_dir = /mnt/kmotion/images_dbase
 ramdisk_dir = /dev/shm/kmotion_ramdisk
 
 [misc]
 listen_port = 8100
 notice_address = 0.0.0.0:48110
-images_dbase_limit_gb = 480
+archive_limit_perc = 95
 video_length = 300
 log_level = info
 motion_webcontrol_port = 8080

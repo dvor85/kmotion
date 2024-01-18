@@ -68,7 +68,7 @@ class Events:
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
 
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
-        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
+        self.archive_dir = Path(config_main['archive_dir'])
 
         if '.' in feed_ip:
             self.feed = self.find_feed_by_ip(feed_ip)

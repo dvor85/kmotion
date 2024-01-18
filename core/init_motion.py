@@ -23,7 +23,7 @@ class InitMotion:
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.config = cfg.get('www_rc')
 
-        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
+        self.archive_dir = Path(config_main['archive_dir'])
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
         self.motion_webcontrol_port = config_main.get('motion_webcontrol_port', 8080)
 

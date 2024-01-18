@@ -28,7 +28,7 @@ class rtsp2mp4(action.Action):
         self.log.setLevel(min(config_main['log_level'], self.log.getEffectiveLevel()))
         config = cfg.get('www_rc')
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
-        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
+        self.archive_dir = Path(config_main['archive_dir'])
 
         self.event_file = Path(self.ramdisk_dir, 'events', str(self.feed))
 
@@ -91,7 +91,7 @@ class rtsp2mp4(action.Action):
         action.Action.start(self)
         try:
             dtime = datetime.datetime.now()
-            movie_dir = Path(self.images_dbase_dir, '.today', dtime.strftime("%Y%m%d"), f'{self.feed:02d}', 'movie')
+            movie_dir = Path(self.archive_dir, '.today', dtime.strftime("%Y%m%d"), f'{self.feed:02d}', 'movie')
 
             if len(self.get_grabber_pids()) == 0:
                 utils.mkdir(movie_dir)

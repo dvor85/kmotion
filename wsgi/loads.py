@@ -60,7 +60,7 @@ class Loads:
             raise Exception('Incorrect configuration!')
         self.config = cfg.get(www_rc)
         self.config_main = cfg.get('kmotion_rc')
-        self.images_dbase_dir = self.config_main['images_dbase_dir']
+        self.archive_dir = self.config_main['archive_dir']
         self.ramdisk_dir = self.config_main['ramdisk_dir']
 
     def __call__(self):
@@ -97,7 +97,7 @@ class Loads:
                                         cu=vmstat_d["sy"],
                                         cs=vmstat_d["us"])
 
-                dfout = utils.uni(subprocess.check_output(['df', '-h', self.images_dbase_dir], shell=False)).splitlines()[1].split()
+                dfout = utils.uni(subprocess.check_output(['df', '-h', self.archive_dir], shell=False)).splitlines()[1].split()
                 data['fsarch'] = dfout[2:]
                 dfout = utils.uni(subprocess.check_output(['df', '-h', self.ramdisk_dir], shell=False)).splitlines()[1].split()
                 data['fsramdisk'] = dfout[2:]

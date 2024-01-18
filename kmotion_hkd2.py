@@ -23,7 +23,7 @@ class Hkd2_Feed():
         self.kmotion_dir = kmotion_dir  # the 'root' directory of kmotion
         self.feed = int(feed)  # the feed number
         self.ramdisk_dir = ''  # the 'root' dir of the ramdisk
-        self.images_dbase_dir = ''  # the 'root' dir of the images dbase
+        self.archive_dir = ''  # the 'root' dir of the images dbase
         self.feed_snap_enabled = False  # feed snap enabled
         self.feed_snap_interval = 0  # snap interval in seconds
         self.feed_fps = 1  # frame fps
@@ -44,8 +44,8 @@ class Hkd2_Feed():
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
-        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
-        self.today_dir = self.images_dbase_dir / '.today'
+        self.archive_dir = Path(config_main['archive_dir'])
+        self.today_dir = self.archive_dir / '.today'
 
         self.feed_snap_interval = config['feeds'][self.feed].get('feed_snap_interval', 0)
         self.feed_snap_enabled = self.feed_snap_interval > 0
@@ -56,7 +56,7 @@ class Hkd2_Feed():
     def main(self):
         """
         Copys, moves or deletes files from 'ramdisk_dir/kmotion' to
-        'images_dbase_dir/snap' generating a 'sanitized' snap sequence.
+        'archive_dir/snap' generating a 'sanitized' snap sequence.
 
         args    :
         excepts :

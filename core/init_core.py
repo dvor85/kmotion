@@ -32,7 +32,7 @@ class InitCore:
         config = cfg.get('www_rc')
 
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
-        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
+        self.archive_dir = Path(config_main['archive_dir'])
         self.port = config_main['listen_port']
         self.title = config_main['title']
         self.AUTH_block = f"""
@@ -57,7 +57,7 @@ class InitCore:
         return  : none
         """
         log.debug('init dirs')
-        utils.mkdir(self.images_dbase_dir)
+        utils.mkdir(self.archive_dir)
         states_dir = Path(self.ramdisk_dir, 'states')
         if not states_dir.is_dir():
             log.debug('creating \'states\' folder')

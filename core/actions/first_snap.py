@@ -20,8 +20,8 @@ class first_snap(action.Action):
         config_main = cfg.get('kmotion_rc')
         self.log.setLevel(min(config_main['log_level'], self.log.getEffectiveLevel()))
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
-        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
-        self.today_dir = self.images_dbase_dir / '.today'
+        self.archive_dir = Path(config_main['archive_dir'])
+        self.today_dir = self.archive_dir / '.today'
 
     def start(self):
         action.Action.start(self)

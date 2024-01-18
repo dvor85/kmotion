@@ -18,8 +18,8 @@ class Archive():
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.images_dbase_dir = Path(config_main['images_dbase_dir'])
-        self.today_dir = self.images_dbase_dir / '.today'
+        self.archive_dir = Path(config_main['archive_dir'])
+        self.today_dir = self.archive_dir / '.today'
         www_rc = f'www_rc_{self.username}'
         if not Path(kmotion_dir, 'www', www_rc).is_file():
             raise Exception('Incorrect configuration!')
@@ -42,7 +42,7 @@ class Archive():
                 if conf.get('feed_enabled'):
                     feed_title = Path(self.today_dir, date, f'{feed:02}', 'title')
                     if not feed_title.is_file():
-                        feed_title = Path(self.images_dbase_dir, date, f'{feed:02}', 'title')
+                        feed_title = Path(self.archive_dir, date, f'{feed:02}', 'title')
 
                     feeds_list[feed] = {'title': feed_title.read_text() if feed_title.is_file() else conf.get('feed_name', f'{feed:02}')}
             except Exception:
@@ -54,7 +54,7 @@ class Archive():
         today_list = []
         if self.today_dir.is_dir():
             today_list = sorted((f.name for f in self.today_dir.iterdir() if f.is_dir() and not f.name.startswith('.')), reverse=True)
-        dates = today_list + sorted([f.name for f in self.images_dbase_dir.iterdir() if f.is_dir() and not f.name.startswith('.')], reverse=True)
+        dates = today_list + sorted([f.name for f in self.archive_dir.iterdir() if f.is_dir() and not f.name.startswith('.')], reverse=True)
         return dates
 
     def hhmmss_secs(self, hhmmss_str):
@@ -65,7 +65,7 @@ class Archive():
         if feed in self.config['feeds']:
             movies_dir = Path(self.today_dir, date, f'{feed:02}', 'movie')
             if not movies_dir.is_dir():
-                movies_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'movie')
+                movies_dir = Path(self.archive_dir, date, f'{feed:02}', 'movie')
             if movies_dir.is_dir():
                 for mf in sorted(movies_dir.iterdir()):
                     end = datetime.fromtimestamp(mf.stat().st_mtime)
@@ -74,18 +74,18 @@ class Archive():
                         journal['movies'].append({
                             'start': self.hhmmss_secs(mf.stem[-6:]),
                             'end': self.hhmmss_secs(end.strftime('%H%M%S')),
-                            'file': Path('/images_dbase', mf.relative_to(self.images_dbase_dir)).as_posix()
+                            'file': Path('/archive', mf.relative_to(self.archive_dir)).as_posix()
                         })
 
             snaps_dir = Path(self.today_dir, date, f'{feed:02}', 'snap')
             if not snaps_dir.is_dir():
-                snaps_dir = Path(self.images_dbase_dir, date, f'{feed:02}', 'snap')
+                snaps_dir = Path(self.archive_dir, date, f'{feed:02}', 'snap')
             if snaps_dir.is_dir():
                 for mf in sorted(snaps_dir.iterdir()):
                     snap = {}
                     snap['start'] = self.hhmmss_secs(mf.stem[-6:])
                     snap['end'] = snap['start']
-                    snap['file'] = Path('/images_dbase', mf.relative_to(self.images_dbase_dir)).as_posix()
+                    snap['file'] = Path('/archive', mf.relative_to(self.archive_dir)).as_posix()
                     journal['snaps'].append(snap)
 
         return journal

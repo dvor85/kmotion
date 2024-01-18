@@ -37,8 +37,8 @@ Listen ${port}
 	    </IfVersion>
     </Directory>
     
-    Alias /images_dbase/ ${images_dbase_dir}/
-    <Directory ${images_dbase_dir}/>
+    Alias /archive/ ${archive_dir}/
+    <Directory ${archive_dir}/>
         # secure login ...
         ${AUTH_block}
 	
