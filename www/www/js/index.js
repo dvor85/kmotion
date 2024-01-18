@@ -1916,7 +1916,7 @@ KM.display_archive_ = function () {
                 lines[i].classList.remove('playlist_hlight');
             } else {
                 lines[i].classList.add('playlist_hlight');
-                lines[i].scrollIntoView(false);
+                lines[i].scrollIntoView({block: "center", inline: "center", behavior: "smooth"});
             }
         }
         display_secs = movies[view][movie_index]["start"];
