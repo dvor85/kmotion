@@ -63,15 +63,20 @@ class InitCore:
             log.debug('creating \'states\' folder')
             utils.mkdir(states_dir)
 
-        for state_file in states_dir.glob('*'):
-            if state_file.is_file():
-                log.debug(f"deleting {state_file}")
-                state_file.unlink()
+        for f in states_dir.glob('*'):
+            if f.is_file():
+                log.debug(f"deleting {f}")
+                f.unlink()
 
         events_dir = Path(self.ramdisk_dir, 'events')
         if not events_dir.is_dir():
             log.debug('creating \'events\' folder')
             utils.mkdir(events_dir)
+
+        for f in events_dir.glob('*'):
+            if f.is_file():
+                log.debug(f"deleting {f}")
+                f.unlink()
 
         for feed in self.camera_ids:
             f_dir = Path(self.ramdisk_dir, f'{feed:02d}')

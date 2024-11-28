@@ -7,7 +7,6 @@ from multiprocessing import Process
 from pathlib import Path
 from core.config import Settings
 
-
 log = logger.getLogger('kmotion', logger.ERROR)
 
 
@@ -47,12 +46,13 @@ class Detector(Process):
         while self.active and len(self.config['feeds']) > 0:
             try:
                 for evf in self.events_dir.iterdir():
-                    try:
-                        last_event_time = events.get_event_change_time(evf)
-                        if self.config['feeds'][int(evf.name)].get('ext_motion_detector', False) and (time.time() - last_event_time) >= self.no_motion_secs:
-                            events.Events(self.kmotion_dir, evf.name, events.STATE_END).end()
-                    except Exception as e:
-                        log.error(e)
+                    if self.config['feeds'][int(evf)].get('feed_enabled', False):
+                        try:
+                            last_event_time = events.get_event_change_time(evf)
+                            if self.config['feeds'][int(evf.name)].get('ext_motion_detector', False) and (time.time() - last_event_time) >= self.no_motion_secs:
+                                events.Events(self.kmotion_dir, evf.name, events.STATE_END).end()
+                        except Exception as e:
+                            log.error(e)
 
                 self.sleep(1)
             except Exception as e:
