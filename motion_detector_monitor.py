@@ -46,7 +46,7 @@ class Detector(Process):
         while self.active and len(self.config['feeds']) > 0:
             try:
                 for evf in self.events_dir.iterdir():
-                    if self.config['feeds'][int(evf)].get('feed_enabled', False):
+                    if self.config['feeds'][int(evf.name)].get('feed_enabled', False):
                         try:
                             last_event_time = events.get_event_change_time(evf)
                             if self.config['feeds'][int(evf.name)].get('ext_motion_detector', False) and (time.time() - last_event_time) >= self.no_motion_secs:

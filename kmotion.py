@@ -117,8 +117,8 @@ class Kmotion:
 
     def get_kmotion_pids(self):
         try:
-            stdout = utils.uni(subprocess.check_output(['pgrep', '-f', f"^python.+{Path(__file__).name}.*"], shell=False))
-            return [pid for pid in stdout.splitlines() if Path('/proc', pid).is_dir() and int(pid) != self.pid]
+            stdout = subprocess.check_output(['pgrep', '-f', f"^python.+{Path(__file__).name}.*"], shell=False, text=True).splitlines()
+            return [pid for pid in stdout if Path('/proc', pid).is_dir() and int(pid) != self.pid]
         except Exception:
             return []
 

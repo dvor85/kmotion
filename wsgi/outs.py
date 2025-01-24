@@ -5,7 +5,6 @@ from core.config import Settings
 from core import utils, logger
 import subprocess
 
-
 log = logger.getLogger('kmotion', logger.ERROR)
 
 
@@ -29,7 +28,7 @@ class Outs():
         lines = ''
         try:
             if self.config['misc']['logs_enabled']:
-                lines = utils.uni(subprocess.check_output(["/usr/bin/tail", "-n", "100", "/var/log/kmotion/motion.log"])).splitlines()
+                lines = subprocess.check_output(["/usr/bin/tail", "-n", "100", "/var/log/kmotion/motion.log"], text=True).splitlines()
                 return lines
         except Exception:
             log.critical("read outs error", exc_info=1)

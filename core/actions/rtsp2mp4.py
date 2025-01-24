@@ -48,7 +48,7 @@ class rtsp2mp4(action.Action):
 
     def get_grabber_pids(self):
         try:
-            return utils.uni(subprocess.check_output(['pgrep', '-f', f"^ffmpeg.+{self.feed_grab_url}.*"], shell=False)).splitlines()
+            return subprocess.check_output(['pgrep', '-f', f"^ffmpeg.+{self.feed_grab_url}.*".replace('?', '\?')], shell=False, text=True).splitlines()
         except Exception:
             return []
 
@@ -62,7 +62,7 @@ class rtsp2mp4(action.Action):
     def get_codec(self, codec):
         try:
             enc_regex = re.compile(f"\s*[AV.]{{6}}\s+(?P<codec>.*?{codec}.*?)\s+.*")
-            encoders = utils.uni(subprocess.check_output(["ffmpeg", "-loglevel", "error", "-encoders"])).splitlines()
+            encoders = subprocess.check_output(["ffmpeg", "-loglevel", "error", "-encoders"], shell=False, text=True).splitlines()
             for enc in encoders:
                 enc_match = enc_regex.match(enc)
                 if enc_match:

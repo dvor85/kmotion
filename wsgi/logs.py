@@ -32,7 +32,7 @@ class Logs():
         try:
             if self.config['misc']['logs_enabled']:
                 with Mutex(self.kmotion_dir, 'logs'):
-                    lines = utils.uni(subprocess.check_output(["/usr/bin/tail", "-n", "100", "/var/log/kmotion/kmotion.log"])).splitlines()
+                    lines = subprocess.check_output(["/usr/bin/tail", "-n", "100", "/var/log/kmotion/kmotion.log"], text=True).splitlines()
         except Exception:
             log.critical("read logs error", exc_info=1)
 

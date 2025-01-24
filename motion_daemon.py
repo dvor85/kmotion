@@ -42,7 +42,7 @@ class MotionDaemon(Process):
 
     def count_motion_running(self):
         try:
-            return len(utils.uni(subprocess.check_output(['pgrep', '-f', '^motion.+-c.*'], shell=False)).splitlines())
+            return len(subprocess.check_output(['pgrep', '-f', '^motion.+-c.*'], shell=False, text=True).splitlines())
         except Exception:
             return 0
 
