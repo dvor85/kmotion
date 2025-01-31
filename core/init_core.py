@@ -45,7 +45,7 @@ class InitCore:
         self.www_dir = Path(self.kmotion_dir, 'www', 'www')
         self.wsgi_scripts = Path(self.kmotion_dir, 'wsgi')
 
-        self.camera_ids = sorted([f for f in config['feeds'] if config['feeds'][f].get('feed_enabled', False)])
+        self.enabled_feeds = sorted([f for f in config['feeds'] if config['feeds'][f].get('feed_enabled', False)])
 
     def init_dirs(self):
         """
@@ -78,7 +78,7 @@ class InitCore:
                 log.debug(f"deleting {f}")
                 f.unlink()
 
-        for feed in self.camera_ids:
+        for feed in self.enabled_feeds:
             f_dir = Path(self.ramdisk_dir, f'{feed:02d}')
             if not f_dir.is_dir():
                 try:

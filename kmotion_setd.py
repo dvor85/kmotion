@@ -5,8 +5,9 @@ Waits on the 'fifo_settings_wr' fifo until data received then parse the data
 and modifiy 'www_rc'
 """
 
-import os
 from core import logger, utils
+import os
+import signal
 import time
 import json
 import subprocess
@@ -15,7 +16,6 @@ from multiprocessing import Process
 from camera_lost import CameraLost
 from core.mutex_parsers import mutex_www_parser_rd, mutex_www_parser_wr
 from core.config import Settings
-import signal
 from pathlib import Path
 
 log = logger.getLogger('kmotion', logger.ERROR)
@@ -24,7 +24,7 @@ log = logger.getLogger('kmotion', logger.ERROR)
 class Kmotion_setd(Process):
 
     def __init__(self, kmotion_dir):
-        Process.__init__(self)
+        super().__init__()
         self.name = 'setd'
         self.daemon = True
         self.active = False
@@ -89,11 +89,30 @@ class Kmotion_setd(Process):
                     mutex_www_parser_wr(self.kmotion_dir, www_parser, www_rc)
 
                     if must_reload and www_rc_path.name == 'www_rc':
-                        log.error('Reload kmotion...')
-                        subprocess.Popen([Path(self.kmotion_dir, 'kmotion.py')])
+                        log.info('Reload kmotion...')
+                        log.info(f"{os.getppid()}")
+                        os.kill(os.getppid(), signal.SIGTERM)
+
             except Exception:  # global exception catch
                 log.critical('** CRITICAL ERROR **', exc_info=1)
                 self.sleep(60)
+
+    def kill_other(self):
+        log.info('killing daemons ...')
+        try:
+            log.info(self.get_kmotion_pids())
+            for pid in self.get_kmotion_pids()[:1]:
+
+                os.kill(int(pid), signal.SIGTERM)
+        except Exception:
+            log.exception(f'kill_other')
+
+    def get_kmotion_pids(self):
+        try:
+            stdout = subprocess.check_output(['pgrep', '-f', f"^python.+kmotion.py$"], shell=False, text=True).splitlines()
+            return [pid for pid in stdout if Path('/proc', pid).is_dir()]
+        except Exception:
+            return []
 
     def sleep(self, timeout):
         t = 0
@@ -104,11 +123,14 @@ class Kmotion_setd(Process):
             time.sleep(precision)
         return self.active
 
+    def stop_process(self):
+        try:
+            self.kill()
+        except Exception as e:
+            log.debug(e)
+
     def stop(self):
         log.info(f'stop {__name__}')
         self.active = False
-        try:
-            if self.pid:
-                os.kill(self.pid, signal.SIGKILL)
-        except Exception as e:
-            log.debug(e)
+        self.stop_process()
+

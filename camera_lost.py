@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 import time
 import requests
-from core import utils, logger
+from core import logger
 from core.config import Settings
 
 log = logger.getLogger('kmotion', logger.ERROR)

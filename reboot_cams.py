@@ -51,9 +51,9 @@ class RebootCams():
         self.events_dir = Path(self.ramdisk_dir, 'events')
 
         if self.options.cam:
-            self.camera_ids = self.options.cam
+            self.enabled_feeds = self.options.cam
         else:
-            self.camera_ids = sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled', False)])
+            self.enabled_feeds = sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled', False)])
 
     def reboot_cam(self, cam):
         state_file = Path(self.ramdisk_dir, 'states', str(cam))
@@ -75,7 +75,7 @@ class RebootCams():
             log.warn(f'get query for {cam} unsuccessful with code {r.status_code}')
 
     def main(self):
-        for cam in self.camera_ids:
+        for cam in self.enabled_feeds:
             if self.options.command == 'reboot':
                 threading.Thread(target=self.reboot_cam, args=(cam,)).start()
             elif self.options.command == 'query':

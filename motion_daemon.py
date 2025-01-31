@@ -30,15 +30,11 @@ class MotionDaemon(Process):
         self.kmotion_dir = kmotion_dir
         self.init_motion = InitMotion(self.kmotion_dir)
         self.motion_daemon = None
-        self.stop_motion()
         cfg = Settings.get_instance(kmotion_dir)
         config_main = cfg.get('kmotion_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.config = cfg.get('www_rc')
         self.motion_webcontrol_port = config_main.get('motion_webcontrol_port', 8080)
-
-    def feed2thread(self, feed):
-        return sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled', False)]).index(feed) + 1
 
     def count_motion_running(self):
         try:
@@ -52,15 +48,15 @@ class MotionDaemon(Process):
         except Exception:
             return False
 
-    def pause_motion_detector(self, thread):
+    def pause_motion_detector(self, camera_id):
         while not self.is_port_alive(self.motion_webcontrol_port):
             self.sleep(0.5)
-        res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{thread}/detection/pause", timeout=3)
+        res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{camera_id}/detection/pause", timeout=3)
         if res.ok:
-            log.debug(f'pause detection feed_thread {thread} success')
+            log.debug(f'pause detection feed_thread {camera_id} success')
             return True
         else:
-            log.error(f'pause detection feed_thread {thread} failed with status code {res.status_code}')
+            log.error(f'pause detection feed_thread {camera_id} failed with status code {res.status_code}')
 
     def start_motion(self):
         # check for a 'motion.conf' file before starting 'motion'
@@ -78,9 +74,13 @@ class MotionDaemon(Process):
     def stop(self):
         log.info(f'stop {__name__}')
         self.active = False
-        self.stop_motion()
 
     def stop_motion(self):
+        if self.is_port_alive(self.motion_webcontrol_port):
+            res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/0/detection/end", timeout=1)
+            if res.ok:
+                log.debug(f'end motion daemon success')
+
         if self.motion_daemon is not None:
             log.info('kill motion daemon')
             self.motion_daemon.kill()
@@ -107,7 +107,7 @@ class MotionDaemon(Process):
 
                 for feed, conf in self.config['feeds'].items():
                     if conf.get('feed_enabled', False) and conf.get('ext_motion_detector', False):
-                        self.pause_motion_detector(self.feed2thread(feed))
+                        self.pause_motion_detector(feed)
 
 #                 raise Exception('motion killed')
 
@@ -115,6 +115,8 @@ class MotionDaemon(Process):
                 log.critical('** CRITICAL ERROR **', exc_info=1)
 
             self.sleep(60)
+
+        self.stop_motion()
 
     def sleep(self, timeout):
         t = 0

@@ -120,7 +120,7 @@ class Kmotion_Hkd2(Process):
         config_main = cfg.get('kmotion_rc')
         config = cfg.get('www_rc')
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
-        self.camera_ids = sorted([f for f in config['feeds'] if config['feeds'][f].get('feed_enabled', False)])
+        self.enabled_feeds = sorted([f for f in config['feeds'] if config['feeds'][f].get('feed_enabled', False)])
 
     def sleep(self, timeout):
         t = 0
@@ -143,7 +143,7 @@ class Kmotion_Hkd2(Process):
         log.info(f'starting daemon [{self.pid}]')
         while self.active:
             try:
-                self.instance_list = [Hkd2_Feed(self.kmotion_dir, feed) for feed in self.camera_ids]
+                self.instance_list = [Hkd2_Feed(self.kmotion_dir, feed) for feed in self.enabled_feeds]
                 while self.sleep(2):
                     for inst in self.instance_list:
                         try:

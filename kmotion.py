@@ -22,7 +22,7 @@ from kmotion_setd import Kmotion_setd
 from kmotion_split import Kmotion_split
 from motion_detector_monitor import Detector
 from httpd_server_notice import HttpServerNotice
-from core import logger, utils
+from core import logger
 from core.config import Settings
 
 log = logger.getLogger('kmotion', logger.ERROR)
@@ -41,7 +41,6 @@ class Kmotion:
         self.active = False
 
         signal.signal(signal.SIGTERM, self.signal_term)
-        self.pidfile = Path('/run/kmotion/kmotion.pid')
 
         cfg = Settings.get_instance(self.kmotion_dir)
         config_main = cfg.get('kmotion_rc')
@@ -69,12 +68,6 @@ class Kmotion:
         excepts :
         return  : none
         """
-
-        log.info(f'starting kmotion [{self.pid}]')
-        try:
-            self.pidfile.write_text(str(self.pid))
-        except IOError:
-            log.warning("Can't write pid to pidfile")
 
         www_logs.info('kmotion starting up')
 
@@ -105,15 +98,17 @@ class Kmotion:
         for d in self.daemons:
             d.stop()
 
+#         for d in self.daemons:
+#             if d.is_alive():
+#                 d.join(2)
+
     def kill_other(self):
         log.debug('killing daemons ...')
         try:
-            pid = self.pidfile.read_text()
-            os.kill(int(pid), signal.SIGTERM)
-        except Exception:
-            log.warning("Can't read pid from pidfile")
             for pid in self.get_kmotion_pids():
                 os.kill(int(pid), signal.SIGTERM)
+        except Exception:
+            log.exception(f'kill_other')
 
     def get_kmotion_pids(self):
         try:

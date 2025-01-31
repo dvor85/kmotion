@@ -7,6 +7,7 @@ listen_port = 8100
 notice_address = 0.0.0.0:48110
 archive_limit_perc = 95
 video_length = 300
+no_motion_secs = 12
 log_level = info
 motion_webcontrol_port = 8080
 title=Видеонаблюдение

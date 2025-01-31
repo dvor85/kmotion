@@ -18,7 +18,6 @@ class Detector(Process):
         self.daemon = True
         self.name = 'detector'
         self.kmotion_dir = kmotion_dir
-        self.no_motion_secs = 12
         self.locks = {}
         self.read_thread = None
         self.read_config()
@@ -30,6 +29,7 @@ class Detector(Process):
         log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
         self.events_dir = Path(self.ramdisk_dir, 'events')
+        self.no_motion_secs = config_main.get('no_motion_secs', 12)
 
     def sleep(self, timeout):
         t = 0

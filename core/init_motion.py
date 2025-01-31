@@ -27,7 +27,7 @@ class InitMotion:
         self.ramdisk_dir = Path(config_main['ramdisk_dir'])
         self.motion_webcontrol_port = config_main.get('motion_webcontrol_port', 8080)
 
-        self.camera_ids = sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled', False)])
+        self.enabled_feeds = sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled', False)])
 
     def create_mask(self, feed):
         """
@@ -106,7 +106,7 @@ class InitMotion:
             if del_file.is_file():
                 del_file.unlink()
 
-        if len(self.camera_ids) > 0:  # only populate 'motion_conf' if valid feeds
+        if len(self.enabled_feeds) > 0:  # only populate 'motion_conf' if valid feeds
             self.gen_motion_conf()
             self.gen_cameras_conf()
 
@@ -126,7 +126,7 @@ daemon off
 quiet on
 webcontrol_localhost on
 webcontrol_port {self.motion_webcontrol_port}
-#webcontrol_interface 2
+webcontrol_interface 1
 stream_localhost on
 text_right %Y-%m-%d\\n%T
 text_left CAMERA %t
@@ -134,7 +134,7 @@ text_left CAMERA %t
 despeckle_filter EedDl
 
 ''')
-            print(*[f'camera {self.kmotion_dir}/core/motion_conf/camera{feed:02d}.conf' for feed in self.camera_ids], file=f_obj1, sep='\n')
+            print(*[f'camera {self.kmotion_dir}/core/motion_conf/camera{feed:02d}.conf' for feed in self.enabled_feeds], file=f_obj1, sep='\n')
 
     def gen_cameras_conf(self):
         """
@@ -142,7 +142,7 @@ despeckle_filter EedDl
         files
         """
 
-        for feed in self.camera_ids:
+        for feed in self.enabled_feeds:
             with Path(self.kmotion_dir, 'core', 'motion_conf', f'camera{feed:02d}.conf').open('w') as f_obj1:
                 f_obj1.write('''
 # ------------------------------------------------------------------------------

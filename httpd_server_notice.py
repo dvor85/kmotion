@@ -18,6 +18,7 @@ log = logger.getLogger('kmotion', logger.ERROR)
 
 
 class HttpServerNotice(Process):
+
     def __init__(self, kmotion_dir):
         Process.__init__(self)
         self.active = False
@@ -73,13 +74,16 @@ class HttpServerNotice(Process):
                 log.critical('** CRITICAL ERROR **', exc_info=1)
                 self.sleep(60)
 
-    def stop(self):
-        log.info(f'stop {__name__}')
-        self.active = False
+    def stop_process(self):
         if self.httpd:
             self.httpd.server_close()
         try:
-            if self.pid:
-                os.kill(self.pid, signal.SIGKILL)
+            self.kill()
         except Exception as e:
             log.debug(e)
+
+    def stop(self):
+        log.info(f'stop {__name__}')
+        self.active = False
+        self.stop_process()
+

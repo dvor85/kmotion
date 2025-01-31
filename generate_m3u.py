@@ -34,12 +34,12 @@ class GenerateM3U():
         else:
             log.setLevel(min(config_main['log_level'], log.getEffectiveLevel()))
 
-        self.camera_ids = sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled')])
+        self.enabled_feeds = sorted([f for f in self.config['feeds'] if self.config['feeds'][f].get('feed_enabled')])
 
     def main(self):
         with self.out_m3u.open(mode='w') as fp:
             fp.write('#EXTM3U\n')
-            for cam in self.camera_ids:
+            for cam in self.enabled_feeds:
                 fp.write(f"#EXTINF:-1, {self.config['feeds'][cam]['feed_name']}\n")
                 feed_grab_url = utils.url_add_auth(self.config['feeds'][cam].get(f'rtsp2mp4_url', self.config['feeds'][cam]['feed_url']),
                                     (self.config['feeds'][cam]['feed_lgn_name'], self.config['feeds'][cam]['feed_lgn_pw']))
