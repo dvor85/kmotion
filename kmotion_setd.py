@@ -91,6 +91,7 @@ class Kmotion_setd(Process):
                     if must_reload and www_rc_path.name == 'www_rc':
                         log.info('Reload kmotion...')
                         log.info(f"{os.getppid()}")
+                        self.active = False
                         os.kill(os.getppid(), signal.SIGTERM)
 
             except Exception:  # global exception catch

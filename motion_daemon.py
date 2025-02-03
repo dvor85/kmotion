@@ -6,6 +6,7 @@ import time
 import subprocess
 from core.init_motion import InitMotion
 from multiprocessing import Process
+from threading import Thread, Event
 from core import logger, utils
 import requests
 from core.config import Settings
@@ -49,14 +50,22 @@ class MotionDaemon(Process):
             return False
 
     def pause_motion_detector(self, camera_id):
-        while not self.is_port_alive(self.motion_webcontrol_port):
-            self.sleep(0.5)
-        res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{camera_id}/detection/pause", timeout=3)
-        if res.ok:
-            log.debug(f'pause detection feed_thread {camera_id} success')
-            return True
-        else:
-            log.error(f'pause detection feed_thread {camera_id} failed with status code {res.status_code}')
+        if self.is_port_alive(self.motion_webcontrol_port):
+            res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{camera_id}/detection/pause", timeout=3)
+            if res.ok:
+                log.debug(f'pause detection feed_thread {camera_id} success')
+                return True
+            else:
+                log.error(f'pause detection feed_thread {camera_id} failed with status code {res.status_code}')
+
+    def restart_thread(self, cam_id):
+        if self.is_port_alive(self.motion_webcontrol_port):
+            res = requests.get(f"http://localhost:{self.motion_webcontrol_port}/{cam_id}/action/restart")
+            if res.ok:
+                log.debug(f'restart camera {cam_id} success')
+                return True
+            else:
+                log.debug(f'restart camera {cam_id} failed with status code {res.status_code}')
 
     def start_motion(self):
         # check for a 'motion.conf' file before starting 'motion'
@@ -68,6 +77,7 @@ class MotionDaemon(Process):
             motion_out = Path('/var/log/kmotion/motion.log')
             utils.mkdir(motion_out.parent)
             self.motion_daemon = subprocess.Popen(['motion', '-c', m_conf, '-d', '4', '-l', motion_out], close_fds=True, shell=False)
+            self.wait_for_webcontrol()
         else:
             log.critical('no motion.conf, motion not active')
 
@@ -89,6 +99,22 @@ class MotionDaemon(Process):
         subprocess.call(['pkill', '-f', '^motion.+-c.*'], shell=False)
         log.debug('motion killed')
 
+    def wait_for_webcontrol(self, timeout=10):
+        act = Event()
+
+        def wait():
+            act.set()
+            while self.active and act.is_set() and not self.is_port_alive(self.motion_webcontrol_port):
+                self.sleep(0.5)
+
+        t = Thread(target=wait)
+        t.start()
+        t.join(timeout)
+        if t.is_alive():
+            act.clear()
+        else:
+            return True
+
     def run(self):
         """
         args    :
@@ -96,18 +122,25 @@ class MotionDaemon(Process):
         return  : none
         """
         self.active = True
+        count_times = 0
         log.info(f'starting daemon [{self.pid}]')
         while self.active:
             try:
+                count_times += 1
                 if not self.is_port_alive(self.motion_webcontrol_port):
                     self.stop_motion()
+
                 if self.count_motion_running() != 1:
                     self.stop_motion()
                     self.start_motion()
 
-                for feed, conf in self.config['feeds'].items():
-                    if conf.get('feed_enabled', False) and conf.get('ext_motion_detector', False):
-                        self.pause_motion_detector(feed)
+                if count_times % 60 == 0:
+                    self.restart_thread(0)
+
+                if self.wait_for_webcontrol():
+                    for feed, conf in self.config['feeds'].items():
+                        if conf.get('feed_enabled', False) and conf.get('ext_motion_detector', False):
+                            self.pause_motion_detector(feed)
 
 #                 raise Exception('motion killed')
 
